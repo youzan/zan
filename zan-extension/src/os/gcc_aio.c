@@ -16,10 +16,14 @@
 
 
 
-#ifdef HAVE_GCC_AIO
 
 #include "swoole.h"
 #include "swAsyncIO.h"
+#include "swSignal.h"
+#include "swLog.h"
+#include "swGlobalVars.h"
+
+#ifdef HAVE_GCC_AIO
 #include <aio.h>
 
 typedef struct _swAio_gcc_t

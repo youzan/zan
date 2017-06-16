@@ -53,7 +53,7 @@ PHP_ARG_WITH(openssl_dir, for OpenSSL support,
 PHP_ARG_ENABLE(mysqlnd, enable mysqlnd support,
 [  --enable-mysqlnd       Do you have mysqlnd?], no, no)
 
-AC_DEFUN([SWOOLE_HAVE_PHP_EXT], [
+AC_DEFUN([ZAN_HAVE_PHP_EXT], [
     extname=$1
     haveext=$[PHP_]translit($1,a-z_-,A-Z__)
 
@@ -80,7 +80,7 @@ AC_DEFUN([SWOOLE_HAVE_PHP_EXT], [
     fi
 ])
 
-AC_DEFUN([AC_SWOOLE_CPU_AFFINITY],
+AC_DEFUN([AC_ZAN_CPU_AFFINITY],
 [
     AC_MSG_CHECKING([for cpu affinity])
     AC_TRY_COMPILE(
@@ -97,7 +97,7 @@ AC_DEFUN([AC_SWOOLE_CPU_AFFINITY],
     ])
 ])
 
-AC_DEFUN([AC_SWOOLE_HAVE_REUSEPORT],
+AC_DEFUN([AC_ZAN_HAVE_REUSEPORT],
 [
     AC_MSG_CHECKING([for socket REUSEPORT])
     AC_TRY_COMPILE(
@@ -132,7 +132,7 @@ fi
 if test "$PHP_ZAN" != "no"; then
 
     PHP_ADD_LIBRARY(pthread)
-    PHP_SUBST(SWOOLE_SHARED_LIBADD)
+    PHP_SUBST(ZAN_SHARED_LIBADD)
 
     AC_ARG_ENABLE(debug,
         [--enable-debug,  compile with debug symbols],
@@ -156,8 +156,8 @@ if test "$PHP_ZAN" != "no"; then
 		AC_DEFINE(SW_USE_HTTP2, 1, [enable http2.0 support])
     fi
 
-    AC_SWOOLE_CPU_AFFINITY
-    AC_SWOOLE_HAVE_REUSEPORT
+    AC_ZAN_CPU_AFFINITY
+    AC_ZAN_HAVE_REUSEPORT
 
     CFLAGS="-std=gnu99 -Wall -pthread $CFLAGS -fstack-check  -fbounds-check  -fstack-protector -fstack-protector-all -fno-strict-aliasing"
     LDFLAGS="$LDFLAGS -lpthread"
@@ -189,7 +189,7 @@ if test "$PHP_ZAN" != "no"; then
 
     AC_CHECK_LIB(z, gzgets, [
         AC_DEFINE(SW_HAVE_ZLIB, 1, [have zlib])
-        PHP_ADD_LIBRARY(z, 1, SWOOLE_SHARED_LIBADD)
+        PHP_ADD_LIBRARY(z, 1, ZAN_SHARED_LIBADD)
     ])
 
     if test `uname` = "Darwin"; then
@@ -203,14 +203,14 @@ if test "$PHP_ZAN" != "no"; then
             	PHP_ADD_LIBRARY_WITH_PATH(ssl, "${PHP_OPENSSL_DIR}/lib")
 		PHP_ADD_LIBRARY_WITH_PATH(crypto,"${PHP_OPENSSL_DIR}/lib")
             fi
-            PHP_ADD_LIBRARY(ssl, 1, SWOOLE_SHARED_LIBADD)
-            PHP_ADD_LIBRARY_WITH_PATH(crypto, /usr/local/opt/openssl/lib, SWOOLE_SHARED_LIBADD)
+            PHP_ADD_LIBRARY(ssl, 1, ZAN_SHARED_LIBADD)
+            PHP_ADD_LIBRARY_WITH_PATH(crypto, /usr/local/opt/openssl/lib, ZAN_SHARED_LIBADD)
             PHP_ADD_INCLUDE(/usr/local/opt/openssl/include)
         fi
     else
         AC_CHECK_LIB(rt, clock_gettime, AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [have clock_gettime]))
         AC_CHECK_LIB(rt, aio_read, AC_DEFINE(HAVE_GCC_AIO, 1, [have gcc aio]))
-        PHP_ADD_LIBRARY(rt, 1, SWOOLE_SHARED_LIBADD)
+        PHP_ADD_LIBRARY(rt, 1, ZAN_SHARED_LIBADD)
 
         if test "$PHP_OPENSSL" != "no" || test "$PHP_OPENSSL_DIR" != "no"; then
             AC_DEFINE(SW_USE_OPENSSL, 1, [enable openssl support])
@@ -221,9 +221,9 @@ if test "$PHP_ZAN" != "no"; then
 		PHP_ADD_LIBRARY_WITH_PATH(crypt,"${PHP_OPENSSL_DIR}/lib")
             fi
 	    
-            PHP_ADD_LIBRARY(ssl, 1, SWOOLE_SHARED_LIBADD)
-            PHP_ADD_LIBRARY(crypt, 1, SWOOLE_SHARED_LIBADD)
-            PHP_ADD_LIBRARY(crypto, 1, SWOOLE_SHARED_LIBADD)
+            PHP_ADD_LIBRARY(ssl, 1, ZAN_SHARED_LIBADD)
+            PHP_ADD_LIBRARY(crypt, 1, ZAN_SHARED_LIBADD)
+            PHP_ADD_LIBRARY(crypto, 1, ZAN_SHARED_LIBADD)
         fi
     fi
     if test "$PHP_CURL" != "no"; then
@@ -237,32 +237,32 @@ if test "$PHP_ZAN" != "no"; then
             AC_MSG_ERROR([libcurl not installed])
         fi
         
-        PHP_ADD_LIBRARY(curl, 1, SWOOLE_SHARED_LIBADD)
+        PHP_ADD_LIBRARY(curl, 1, ZAN_SHARED_LIBADD)
     fi
     
-    PHP_ADD_LIBRARY(pthread, 1, SWOOLE_SHARED_LIBADD)
+    PHP_ADD_LIBRARY(pthread, 1, ZAN_SHARED_LIBADD)
 
     if test "$PHP_ASYNC_REDIS" = "yes"; then
         AC_DEFINE(SW_USE_REDIS, 1, [enable async-redis support])
         os=`uname -s`
         case $os in
             Linux)
-                PHP_ADD_LIBRARY_WITH_PATH(hiredis_linux, ../lib, SWOOLE_SHARED_LIBADD)
+                PHP_ADD_LIBRARY_WITH_PATH(hiredis_linux, ../lib, ZAN_SHARED_LIBADD)
             ;;
             Darwin)
-                PHP_ADD_LIBRARY_WITH_PATH(hiredis_mac, ../lib, SWOOLE_SHARED_LIBADD)
+                PHP_ADD_LIBRARY_WITH_PATH(hiredis_mac, ../lib, ZAN_SHARED_LIBADD)
             ;;
         esac
     fi
  
 	if test "$PHP_HTTP2" = "yes"; then
-		PHP_ADD_LIBRARY(nghttp2, 1, SWOOLE_SHARED_LIBADD)
+		PHP_ADD_LIBRARY(nghttp2, 1, ZAN_SHARED_LIBADD)
     fi
     
     if test "$PHP_JEMALLOC" = "yes"; then
-        PHP_ADD_LIBRARY(jemalloc, 1, SWOOLE_SHARED_LIBADD)
+        PHP_ADD_LIBRARY(jemalloc, 1, ZAN_SHARED_LIBADD)
     elif test "$PHP_TCMALLOC" = "yes"; then
-    	PHP_ADD_LIBRARY(tcmalloc, 1, SWOOLE_SHARED_LIBADD)
+    	PHP_ADD_LIBRARY(tcmalloc, 1, ZAN_SHARED_LIBADD)
     fi
 
     swoole_source_file="swoole.c \

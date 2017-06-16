@@ -15,11 +15,11 @@
 */
 
 
-#ifdef HAVE_LINUX_AIO
 
 #include "swoole.h"
 #include "swAsyncIO.h"
 
+#ifdef HAVE_LINUX_AIO
 #include <sys/syscall.h>
 #include <linux/aio_abi.h>
 

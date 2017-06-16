@@ -15,10 +15,11 @@
 */
 
 
-#ifdef HAVE_RWLOCK
+
 
 #include "swLock.h"
 
+#ifdef HAVE_RWLOCK
 static int swRWLock_lock_rd(swLock *lock);
 static int swRWLock_lock_rw(swLock *lock);
 static int swRWLock_unlock(swLock *lock);
@@ -39,6 +40,7 @@ int swRWLock_create(swLock *lock, int use_in_process)
         return SW_ERR;
     }
 
+    int ret = SW_OK;
     if ((ret = pthread_rwlock_init(&lock->object.rwlock._lock, &lock->object.rwlock.attr)) < 0)
     {
         return SW_ERR;
