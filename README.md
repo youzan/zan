@@ -4,8 +4,12 @@
 <p align="center">
     <img src="https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small@2x.png?raw=true" alt="zanphp logo" srcset="https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small.png?raw=true 1x, https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small@2x.png?raw=true 2x, https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small.png?raw=true" width="210" height="210">
 </p>
-<p align="center">高效稳定、安全易用、线上实时验证的全异步高性能网络库，通过PHP扩展方式使用。</p>
+<p align="center">高效稳定、安全易用、线上实时验证的全异步高性能网络库，通过PHP扩展方式提供。</p>
 <p align="center">遵循Apache协议，基于Swoole 1.8.5版本分支重构研发。</p>
+</p>
+<p align="center">在此特别鸣谢Swoole开发组为PHP开源社区付出的努力和汗水。</p>
+
+[![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
 ## Zan做了哪些事儿
 1.  大量模块解耦拆分
@@ -14,7 +18,7 @@
 4.  支持时间轮算法
 5.  异步接口支持超时
 6.  增强Mysql client安全性(预处理、事务)
-7.  Nova协议支持
+7.  Nova协议支持(RPC协议)
 8.  支持平滑重启
 9.  接口单元测试覆盖率100%
 10. 实时、全面的API文档
