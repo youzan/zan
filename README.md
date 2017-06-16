@@ -4,10 +4,10 @@
 <p align="center">
     <img src="https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small@2x.png?raw=true" alt="zanphp logo" srcset="https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small.png?raw=true 1x, https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small@2x.png?raw=true 2x, https://github.com/youzan/zanphp.io/blob/master/src/img/zan-logo-small.png?raw=true" width="210" height="210">
 </p>
-<p align="center">一个底层网络库，通过PHP扩展方式使用
-完全遵循Apache协议，基于Swoole 1.8.5版本分支重构研发</p>
+<p align="center">高效稳定、安全易用、线上实时验证的 
+全异步高性能网络扩展库，通过PHP扩展方式使用。遵循Apache协议，基于Swoole 1.8.5版本分支重构研发</p>
 
-## Zan做了那些事儿
+## Zan做了哪些事儿
 1.  大量模块解耦拆分
 2.  修复大量Bug、逻辑缺陷(内存泄露、释放逻辑)
 3.  内置通用连接池
