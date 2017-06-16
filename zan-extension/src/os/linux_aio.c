@@ -20,6 +20,9 @@
 
 #include "swoole.h"
 #include "swAsyncIO.h"
+#include "swSignal.h"
+#include "swLog.h"
+#include "swGlobalVars.h"
 
 #ifdef HAVE_LINUX_AIO
 #include <sys/syscall.h>
