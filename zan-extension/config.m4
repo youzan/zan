@@ -3,7 +3,8 @@ dnl config.m4 for extension zan
 dnl  +----------------------------------------------------------------------+
 dnl  | Zan                                                                  |
 dnl  +----------------------------------------------------------------------+
-dnl  | Copyright (c) 2016-2017 Zan Group                                    |
+dnl  | Copyright (c) 2016-2017 Zan Group <https://github.com/youzan/zan>    |
+dnl  | Copyright (c) 2012-2016 Swoole Team <http://github.com/swoole>       |
 dnl  +----------------------------------------------------------------------+
 dnl  | This source file is subject to version 2.0 of the Apache license,    |
 dnl  | that is bundled with this package in the file LICENSE, and is        |

@@ -2,7 +2,8 @@
   +----------------------------------------------------------------------+
   | Zan                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2016-2017 Zan Group                                    |
+  | Copyright (c) 2016-2017 Zan Group <https://github.com/youzan/zan>    |
+  | Copyright (c) 2012-2016 Swoole Team <http://github.com/swoole>       |
   +----------------------------------------------------------------------+
   | This source file is subject to version 2.0 of the Apache license,    |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,7 +13,8 @@
   | to obtain it through the world-wide-web, please send a note to       |
   | zan@zanphp.io so we can mail you a copy immediately.                 |
   +----------------------------------------------------------------------+
-  | Author: Zan Group   <zan@zanphp.io>                                  |
+  | Author: Tianfeng Han  <mikan.tenny@gmail.com>                        |
+  |         Zan Group   <zan@zanphp.io>                                  |
   +----------------------------------------------------------------------+
 */
 
