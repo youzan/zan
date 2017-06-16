@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PWD=`pwd`
-cd swoole-extension 
+cd zan-extension 
 case $1 in
     build)
         phpize
