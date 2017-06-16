@@ -2,6 +2,8 @@
   +----------------------------------------------------------------------+
   | Zan                                                                  |
   +----------------------------------------------------------------------+
+  | Copyright (c) 2012-2016 Swoole Team <http://github.com/swoole>       |
+  +----------------------------------------------------------------------+
   | This source file is subject to version 2.0 of the Apache license,    |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
@@ -15,10 +17,11 @@
 */
 
 
-#ifdef HAVE_RWLOCK
+
 
 #include "swLock.h"
 
+#ifdef HAVE_RWLOCK
 static int swRWLock_lock_rd(swLock *lock);
 static int swRWLock_lock_rw(swLock *lock);
 static int swRWLock_unlock(swLock *lock);
@@ -39,6 +42,7 @@ int swRWLock_create(swLock *lock, int use_in_process)
         return SW_ERR;
     }
 
+    int ret = SW_OK;
     if ((ret = pthread_rwlock_init(&lock->object.rwlock._lock, &lock->object.rwlock.attr)) < 0)
     {
         return SW_ERR;

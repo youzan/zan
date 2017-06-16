@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | Zan                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2016-2017 Zan Group                                    |
+  | Copyright (c) 2016-2017 Zan Group <https://github.com/youzan/zan>    |
   +----------------------------------------------------------------------+
   | This source file is subject to version 2.0 of the Apache license,    |
   | that is bundled with this package in the file LICENSE, and is        |

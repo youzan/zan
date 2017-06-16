@@ -2,7 +2,8 @@
   +----------------------------------------------------------------------+
   | Zan                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2016-2017 Zan Group                                    |
+  | Copyright (c) 2016-2017 Zan Group <https://github.com/youzan/zan>    |
+  | Copyright (c) 2012-2016 Swoole Team <http://github.com/swoole>       |
   +----------------------------------------------------------------------+
   | This source file is subject to version 2.0 of the Apache license,    |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -541,8 +542,8 @@ PHP_MINFO_FUNCTION(zan)
     php_info_print_table_start();
     php_info_print_table_header(2, "zan support", "enabled");
     php_info_print_table_row(2, "Version", PHP_SWOOLE_VERSION);
-    php_info_print_table_row(2, "Author", "tianfeng.han[email: mikan.tenny@gmail.com]");
-    php_info_print_table_row(2, "      ", "Zan Group  <zan@zanphp.io>");
+    php_info_print_table_row(2, "Author", "Zan Group  <zan@zanphp.io>");
+    php_info_print_table_row(2, "      ", "tianfeng.han[email: mikan.tenny@gmail.com]");
 
 #ifdef HAVE_EPOLL
     php_info_print_table_row(2, "epoll", "enabled");
