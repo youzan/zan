@@ -16,12 +16,6 @@
   +----------------------------------------------------------------------+
 */
 
-/*
- * swBase.c
- *
- *  Created on: 2017年5月18日
- *      Author: xieshren
- */
 
 #include "swoole.h"
 #include "swSignal.h"
@@ -29,6 +23,7 @@
 #include "swAtomic.h"
 #include "swClient.h"
 #include "swBaseOperator.h"
+#include <sys/resource.h>
 
 void swoole_init(void)
 {
