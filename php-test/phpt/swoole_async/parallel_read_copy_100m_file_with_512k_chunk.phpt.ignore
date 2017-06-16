@@ -1,0 +1,24 @@
+--TEST--
+swoole_async: parallel_read_copy_100m_file_with_1m_chunk
+
+--SKIPIF--
+<?php require  __DIR__ . "/../inc/skipif.inc"; ?>
+--INI--
+assert.active=1
+assert.warning=1
+assert.bail=0
+assert.quiet_eval=0
+
+
+--FILE--
+<?php
+require_once __DIR__ . "/../inc/zan.inc";
+require_once __DIR__ . "/../../apitest/swoole_async/read_write.php";
+
+
+$chunk = 1024 * 512;
+parallel_read_copy(100);
+?>
+
+--EXPECT--
+SUCCESS

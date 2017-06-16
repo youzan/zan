@@ -1,0 +1,2 @@
+#!/bin/bash
+rm -rf build acinclude.m4 Makefile.global config.sub config.guess ltmain.sh run-tests.php test automake4te.cache modules config.h.in config.h acinclude.m4 aclocal.m4 config.guess config.sub configure.in install-sh ltmain.sh Makefile.global missing mkinstalldirs run-tests.php configure config.nice Makefile.fragments Makefile.objects .deps libtool Makefile config.log config.status autom4te.cache

@@ -1,0 +1,58 @@
+/*
+  +----------------------------------------------------------------------+
+  | Zan                                                                  |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2016-2017 Zan Group                                    |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 2.0 of the Apache license,    |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.apache.org/licenses/LICENSE-2.0.html                      |
+  | If you did not receive a copy of the Apache2.0 license and are unable|
+  | to obtain it through the world-wide-web, please send a note to       |
+  | zan@zanphp.io so we can mail you a copy immediately.                 |
+  +----------------------------------------------------------------------+
+  | Author: Zan Group   <zan@zanphp.io>                                  |
+  +----------------------------------------------------------------------+
+*/
+#ifndef SW_ATOMIC_H_
+#define SW_ATOMIC_H_
+
+#include <stdint.h>
+
+#if defined(__x86_64__)
+#define SW_ATOMIC_64_LEN                     (sizeof("-9223372036854775808") - 1)
+typedef volatile int64_t atomic_int64_t;
+typedef volatile uint64_t atomic_uint64_t;
+#endif
+
+#define SW_ATOMIC_32_LEN                      (sizeof("-2147483648") - 1)
+typedef volatile int32_t atomic_int32_t;
+typedef volatile uint32_t atomic_uint32_t;
+typedef atomic_uint32_t  sw_atomic_t;
+
+
+#define sw_atomic_fetch_add(value, add)   __sync_fetch_and_add(value, add)
+#define sw_atomic_fetch_sub(value, sub)   __sync_fetch_and_sub(value, sub)
+#define sw_atomic_add_fetch(value, add)	  __sync_add_and_fetch(value, add)
+#define sw_atomic_sub_fetch(value, sub)	  __sync_sub_and_fetch(value, sub)
+
+#define sw_atomic_memory_barrier()        __sync_synchronize()
+#define sw_atomic_set(ptr, value)         __sync_lock_test_and_set(ptr, value)
+#define sw_atomic_release(ptr)            __sync_lock_release(ptr)
+
+#define sw_atomic_cmp_set(lock, old, set) __sync_bool_compare_and_swap(lock, old, set)
+
+#ifdef __arm__
+#define sw_atomic_cpu_pause()             __asm__ __volatile__ ("NOP");
+#elif defined(__x86_64__)
+#define sw_atomic_cpu_pause()             __asm__ __volatile__ ("pause")
+#else
+#define sw_atomic_cpu_pause()
+#endif
+
+#define sw_spinlock_release(lock)         __sync_lock_release(lock)
+
+
+
+#endif

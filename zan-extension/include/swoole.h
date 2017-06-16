@@ -1,0 +1,241 @@
+/*
+  +----------------------------------------------------------------------+
+  | Zan                                                                  |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2016-2017 Zan Group                                    |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 2.0 of the Apache license,    |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.apache.org/licenses/LICENSE-2.0.html                      |
+  | If you did not receive a copy of the Apache2.0 license and are unable|
+  | to obtain it through the world-wide-web, please send a note to       |
+  | zan@zanphp.io so we can mail you a copy immediately.                 |
+  +----------------------------------------------------------------------+
+  | Author: Tianfeng Han  <mikan.tenny@gmail.com>                        |
+  |         Zan Group   <zan@zanphp.io>                                  |
+  +----------------------------------------------------------------------+
+*/
+
+
+#ifndef SWOOLE_H_
+#define SWOOLE_H_
+
+
+#if defined(HAVE_CONFIG_H) && !defined(COMPILE_DL_ZAN)
+#include "config.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include <stdint.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <ctype.h>
+#include <signal.h>
+#include <assert.h>
+#include <time.h>
+#include <pthread.h>
+#include <sched.h>
+#include <sys/socket.h>
+#include <sys/mman.h>
+#include <sys/ipc.h>
+#include <sys/wait.h>
+#include <sys/un.h>
+#include <sys/types.h>
+#include <sys/utsname.h>
+
+#ifdef SW_USE_OPENSSL
+#include <openssl/ssl.h>
+#endif
+
+/*----------------------------------------------------------------------------*/
+#ifndef ulong
+#define ulong unsigned long
+#endif
+
+typedef unsigned long ulong_t;
+
+#if defined(__GNUC__)
+#if __GNUC__ >= 3
+#define sw_inline inline __attribute__((always_inline))
+#else
+#define sw_inline inline
+#endif
+#elif defined(_MSC_VER)
+#define sw_inline __forceinline
+#else
+#define sw_inline inline
+#endif
+
+#if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
+#ifndef SOCK_NONBLOCK
+#define SOCK_NONBLOCK O_NONBLOCK
+#endif
+
+#ifndef CLOCK_REALTIME
+#define CLOCK_REALTIME 0
+#endif
+
+#if !defined(__GNUC__) || __GNUC__ < 3
+#define __builtin_expect(x, expected_value) (x)
+#endif
+#ifndef likely
+#define likely(x)        __builtin_expect(!!(x), 1)
+#endif
+#ifndef unlikely
+#define unlikely(x)      __builtin_expect(!!(x), 0)
+#endif
+
+#define SW_START_LINE  "-------------------------START----------------------------"
+#define SW_END_LINE    "-------------------------END------------------------------"
+#define SW_SPACE       ' '
+#define SW_CRLF        "\r\n"
+/*----------------------------------------------------------------------------*/
+
+#include "swoole_config.h"
+
+#define SW_TIMEO_SEC           0
+#define SW_TIMEO_USEC          3000000
+
+#define SW_MAX_UINT            4294967295
+#define SW_MAX_INT             2147483647
+
+#ifndef MAX
+#define MAX(a, b)              (a)>(b)?(a):(b);
+#endif
+#ifndef MIN
+#define MIN(a, b)              (a)<(b)?(a):(b);
+#endif
+
+#define SW_STRL(s)             s, sizeof(s)
+#define SW_START_SLEEP         usleep(100000)  //sleep 1s,wait fork and pthread_create
+
+#define METHOD_DEF(class,name,...)  class##_##name(class *object, ##__VA_ARGS__)
+#define METHOD(class,name,...)      class##_##name(object, ##__VA_ARGS__)
+
+//-------------------------------------------------------------------------------
+#define SW_ASYNCERR			   1
+#define SW_OK                  0
+#define SW_ERR                -1
+#define SW_AGAIN              -2
+#define SW_BUSY               -3
+#define SW_DONE               -4
+#define SW_DECLINED           -5
+#define SW_ABORT              -6
+
+//-------------------------------------------------------------------------------
+enum swReturnType
+{
+    SW_CONTINUE = 1,
+    SW_WAIT     = 2,
+    SW_CLOSE    = 3,
+    SW_ERROR    = 4,
+    SW_READY    = 5,
+};
+
+//-------------------------------------------------------------------------------
+enum swFd_type
+{
+    SW_FD_TCP             = 0, //tcp socket
+    SW_FD_LISTEN          = 1, //server socket
+    SW_FD_CLOSE           = 2, //socket closed
+    SW_FD_ERROR           = 3, //socket error
+    SW_FD_UDP             = 4, //udp socket
+    SW_FD_PIPE            = 5, //pipe
+    SW_FD_WRITE           = 7, //fd can write
+    SW_FD_TIMER           = 8, //timer fd
+    SW_FD_AIO             = 9, //linux native aio
+    SW_FD_SIGNAL          = 11, //signalfd
+    SW_FD_DNS_RESOLVER    = 12, //dns resolver
+    SW_FD_INOTIFY         = 13, //server socket
+    SW_FD_USER            = 15, //SW_FD_USER or SW_FD_USER+n: for custom event
+    SW_FD_STREAM_CLIENT   = 16, //swClient stream
+    SW_FD_DGRAM_CLIENT    = 17, //swClient dgram
+};
+
+enum swBool_type
+{
+    SW_TRUE = 1,
+    SW_FALSE = 0,
+};
+
+//-------------------------------------------------------------------------------
+enum swServer_mode
+{
+    SW_MODE_BASE          =  1,
+    SW_MODE_THREAD        =  2,
+    SW_MODE_PROCESS       =  3,
+    SW_MODE_SINGLE        =  4,
+};
+
+enum swCloseType
+{
+	SW_CLOSE_PASSIVE = 32, 			///被动关闭
+	SW_CLOSE_INITIATIVE,			///主动关闭
+};
+
+enum swClientTimeoutType
+{
+	SW_CLIENT_INVAILED_TIMEOUT = 0,
+	SW_CLIENT_CONNECT_TIMEOUT = 1,
+	SW_CLIENT_RECV_TIMEOUT = 2,
+};
+
+
+#define SW_MODE_PACKET		   0x10
+#define SW_SOCK_SSL            (1u << 9)
+#define SW_MAX_FDTYPE          32 //32 kinds of event
+
+#define swYield()              sched_yield() //or usleep(1)
+
+#ifndef uchar
+typedef unsigned char uchar;
+#endif
+
+typedef struct
+{
+    uint32_t id;
+    uint32_t fd :24;
+    uint32_t reactor_id :8;
+} swSession;
+
+typedef struct _swDataHead
+{
+    int fd;  //文件描述符
+    uint16_t len;  //长度
+    int16_t from_id;  //Reactor Id
+    uint8_t type;  //类型
+    uint8_t from_fd;
+    uint16_t worker_id;
+} swDataHead;
+
+typedef struct _swUdpFd
+{
+    struct sockaddr addr;
+    int sock;
+} swUdpFd;
+
+void swoole_init(void);
+void swoole_clean(void);
+void swoole_update_time(void);
+double swoole_microtime(void);
+
+
+#ifdef __cplusplus
+}
+#endif
+#endif /* SWOOLE_H_ */
