@@ -85,5 +85,6 @@ dkms.conf
 *.out
 *.app
 
-.gitignore
 .idea/
+
+!lib/*
