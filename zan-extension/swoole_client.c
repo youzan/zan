@@ -1640,6 +1640,7 @@ static PHP_METHOD(swoole_client, getSocket)
         RETURN_FALSE;
     }
 
+#ifdef SWOOLE_SOCKETS_SUPPORT
     php_socket *socket_object = swoole_convert_to_socket(cli->socket->fd);
     if (!socket_object)
     {
@@ -1651,6 +1652,9 @@ static PHP_METHOD(swoole_client, getSocket)
 	sw_zval_add_ref(&zsocket);
 	swoole_set_property(getThis(), swoole_property_socket, zsocket);
 	RETURN_ZVAL(return_value,1,NULL);
+#else
+	RETURN_FALSE;
+#endif
 }
 
 static PHP_METHOD(swoole_client, getpeername)

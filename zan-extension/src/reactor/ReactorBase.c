@@ -356,7 +356,7 @@ int swReactor_error(swReactor *reactor)
 
 static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
 {
-    int ret;
+    int ret = 0;
     swConnection *socket = swReactor_get(reactor, fd);
     swBuffer *buffer = socket->out_buffer;
 

@@ -264,9 +264,9 @@ static int swoole_convert_to_fd(zval *zfd)
     return socket_fd < 0? SW_ERR:socket_fd;
 }
 
+#ifdef SWOOLE_SOCKETS_SUPPORT
 php_socket* swoole_convert_to_socket(int sock)
 {
-#ifdef SWOOLE_SOCKETS_SUPPORT
 
     SWOOLE_FETCH_TSRMLS;
 
@@ -302,10 +302,8 @@ error:
     }
 
     return socket_object;
-#else
-    return NULL;
-#endif
 }
+#endif
 
 PHP_FUNCTION(swoole_event_add)
 {

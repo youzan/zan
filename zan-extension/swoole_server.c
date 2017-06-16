@@ -2697,6 +2697,7 @@ PHP_METHOD(swoole_server, getSocket)
 		RETURN_FALSE;
 	}
 
+#ifdef SWOOLE_SOCKETS_SUPPORT
     /// todo find socket.
     int sock = swServer_get_socket(serv, port);
     php_socket *socket_object = swoole_convert_to_socket(sock);
@@ -2708,6 +2709,9 @@ PHP_METHOD(swoole_server, getSocket)
     SW_ZEND_REGISTER_RESOURCE(return_value, (void *) socket_object, php_sockets_le_socket());
     zval *zsocket = sw_zval_dup(return_value);
     sw_zval_add_ref(&zsocket);
+#else
+    RETURN_FALSE;
+#endif
 }
 
 PHP_METHOD(swoole_server, getClientInfo)
