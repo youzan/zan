@@ -247,7 +247,7 @@ static void swoole_php_onInterval(swTimer *timer, swTimer_node *tnode)
         zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
     }
 
-    if (!retval)
+    if (retval)
     {
         sw_zval_ptr_dtor(&retval);
     }
