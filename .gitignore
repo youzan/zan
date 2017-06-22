@@ -1,0 +1,10 @@
+/.cproject
+.idea/
+.project
+*.o
+*.lo
+*~
+*.so
+*.loT
+*.pid
+modules/*
