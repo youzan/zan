@@ -1,16 +1,20 @@
-language: php 
-sudo: required
+language: php
 
 php:
   - 5.6
+  - 7.0
   - 7.1
 
 env:
   - REPORT_EXIT_STATUS=1 NO_INTERACTION=1
 
-#Compile
 before_script:
-    - sudo ./build.sh
+    - cd zan-extension
+    - phpize
+    - ./configure --enable-sockets --enable-async-redis --enable-openssl
+    - make clean
+    - make
+    - make install
 
 script:
     - exit 0
