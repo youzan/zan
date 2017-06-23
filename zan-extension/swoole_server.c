@@ -281,7 +281,7 @@ static void php_swoole_onManagerStop(swServer *serv);
 static zval* php_swoole_server_add_port(swListenPort *port TSRMLS_DC);
 static zval* php_swoole_get_task_result(swEventData *task_result TSRMLS_DC);
 static int php_swoole_task_finish(swServer *serv, zval *data TSRMLS_DC);
-static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_CC);
+static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_DC);
 
 void swoole_server_init(int module_number TSRMLS_DC)
 {
@@ -1190,7 +1190,7 @@ static int php_swoole_task_finish(swServer *serv, zval *data TSRMLS_DC)
     return ret;
 }
 
-static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_CC)
+static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_DC)
 {
 	buf->info.type = SW_EVENT_TASK;
 	//task_id

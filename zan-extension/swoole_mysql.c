@@ -164,6 +164,7 @@ void swoole_mysql_init(int module_number TSRMLS_DC)
 
 static void mysql_Client_timeout(swTimer* timer,swTimer_node* node)
 {
+    SWOOLE_FETCH_TSRMLS;
 	mysql_client *client = node? node->data:NULL;
 	uint8_t timer_type = client && client->cli? client->cli->timeout_type:SW_CLIENT_INVAILED_TIMEOUT;
 	if (timer_type == SW_CLIENT_CONNECT_TIMEOUT || timer_type == SW_CLIENT_RECV_TIMEOUT)
@@ -270,6 +271,7 @@ static void debug_mysql_column_info(mysql_field *field)
 
 static void mysql_close(mysql_client *client)
 {
+    SWOOLE_FETCH_TSRMLS;
 	if (!client)
 	{
 		return;
@@ -891,7 +893,7 @@ static PHP_METHOD(swoole_mysql, safe_query)
 #endif
 	char *nsql = NULL;
 	size_t nsql_len = 0;
-	int ret = mysql_parse_params(stmt, sql.str, sql.length, &nsql, &nsql_len);
+	int ret = mysql_parse_params(stmt, sql.str, sql.length, &nsql, &nsql_len TSRMLS_CC);
 	if (ret == 1) {
 		sql.str = nsql;
 		sql.length = nsql_len;
@@ -929,7 +931,7 @@ static PHP_METHOD(swoole_mysql, begin)
     }
     if(client->in_txn)
     {
-        zend_throw_exception(zend_exception_get_default(), "There is already an active transaction", 0 TSRMLS_CC);
+        zend_throw_exception(zend_exception_get_default(TSRMLS_C), "There is already an active transaction", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
     if (swoole_check_callable(callback TSRMLS_CC) < 0)
@@ -986,7 +988,7 @@ static PHP_METHOD(swoole_mysql, commit)
 
     if(!client->in_txn)
     {
-        zend_throw_exception(zend_exception_get_default(), "There is no active transaction", 0 TSRMLS_CC);
+        zend_throw_exception(zend_exception_get_default(TSRMLS_C), "There is no active transaction", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 
@@ -1042,7 +1044,7 @@ static PHP_METHOD(swoole_mysql, rollback)
     }
     if(!client->in_txn)
     {
-        zend_throw_exception(zend_exception_get_default(), "There is no active transaction", 0 TSRMLS_CC);
+        zend_throw_exception(zend_exception_get_default(TSRMLS_C), "There is no active transaction", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
     if (swoole_check_callable(callback TSRMLS_CC) < 0)
@@ -1555,6 +1557,7 @@ static int swoole_mysql_onQuery(mysql_client *client TSRMLS_DC)
 
 static int query_handler(mysql_client *client,zval* zobject,swString* sql)
 {
+    SWOOLE_FETCH_TSRMLS;
     swString_clear(mysql_request_buffer);
     if (mysql_request(sql, mysql_request_buffer) < 0)
     {

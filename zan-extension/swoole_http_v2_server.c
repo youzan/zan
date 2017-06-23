@@ -459,7 +459,7 @@ int swoole_http2_onFrame(swoole_http_client *client, swEventData *req)
 
     zval *zdata;
     SW_MAKE_STD_ZVAL(zdata);
-    php_swoole_get_recv_data(zdata, req, NULL, 0);
+    php_swoole_get_recv_data(zdata, req, NULL, 0 TSRMLS_CC);
 
     char *buf = Z_STRVAL_P(zdata);
 

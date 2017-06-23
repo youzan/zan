@@ -172,14 +172,14 @@ static int map_push_node(connpoolMap* map,uint64_t id,void* data);
 
 
 static int initConnpool(int type, connpool* pool);
-static void onDefer_handler(void* args);
+static void onDefer_handler(void* args TSRMLS_DC);
 static int createConnobj(connpool* pool,connpool_property* proptr,connobj* con_obj);
 static void defer_create_connobj(connpool* pool,connpool_property* proptr,int connTimes);
-static void callback_connobj(connobj_arg* cbArgs);
+static void callback_connobj(connobj_arg* cbArgs TSRMLS_DC);
 static long getConnobjFromPool(connpool* pool,long timeout,zval* callback);
-static void connpool_onTimeout(swTimer* timer,swTimer_node* node);
+static void connpool_onTimeout(swTimer* timer,swTimer_node* node TSRMLS_DC);
 static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj* connClient);
-static int client_close(int type,connobj* connClient);
+static int client_close(int type,connobj* connClient TSRMLS_DC);
 static void close_handler(zval* client);
 static void connpool_onHBSend(swTimer* timer,swTimer_node* node);
 static void destroy_resource(connpool* pool,connpool_property* proptr);
@@ -319,7 +319,7 @@ static void connpool_onHBSend(swTimer* timer,swTimer_node* node)
 	}
 }
 
-static sw_inline void connpool_onGetObj(swTimer* timer,swTimer_node* node)
+static sw_inline void connpool_onGetObj(swTimer* timer,swTimer_node* node TSRMLS_DC)
 {
 	connobj_arg* args = (connobj_arg*)(node->data);
 	connpool* pool = (connpool*)args->pool;
@@ -327,7 +327,7 @@ static sw_inline void connpool_onGetObj(swTimer* timer,swTimer_node* node)
 	args->obj = NULL;
 	args->tmpId = 0;
 
-	callback_connobj(args);
+	callback_connobj(args TSRMLS_CC);
 	return;
 }
 
@@ -392,7 +392,7 @@ void swoole_connpool_init(int module_number TSRMLS_DC)
 	zend_declare_class_constant_long(swoole_connpool_class_entry_ptr, SW_STRL("SWOOLE_CONNNECT_ERR")-1,SW_CONNOBJ_ERR TSRMLS_CC);
 }
 
-static sw_inline int tcpclient_args_check(zval* args,int type)
+static sw_inline int tcpclient_args_check(zval* args,int type TSRMLS_DC)
 {
 	if (!args)
 	{
@@ -438,7 +438,7 @@ static sw_inline int tcpclient_args_check(zval* args,int type)
 	return SW_OK;
 }
 
-static sw_inline int tcpclient_create(connpool_property* poolproper,connobj* connClient)
+static sw_inline int tcpclient_create(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	if (connClient->client)
 	{
@@ -519,7 +519,7 @@ static sw_inline int tcpclient_create(connpool_property* poolproper,connobj* con
 	return SW_OK;
 }
 
-static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* connClient)
+static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	zval* client = connClient->client;
 	zval* connection_cfg = poolproper->cfg;
@@ -598,7 +598,7 @@ static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* co
 	return ret;
 }
 
-static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connClient)
+static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	if (!poolproper || !poolproper->onHBMsgConstruct || !connClient || !connClient->client){
 		return SW_ERR;
@@ -678,7 +678,7 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 	return ret;
 }
 
-static sw_inline int redisclient_args_check(zval* args,int type)
+static sw_inline int redisclient_args_check(zval* args,int type TSRMLS_DC)
 {
 	if (!args)
 	{
@@ -724,7 +724,7 @@ static sw_inline int redisclient_args_check(zval* args,int type)
 	return SW_OK;
 }
 
-static sw_inline int redisclient_create(connpool_property* poolproper,connobj* connClient)
+static sw_inline int redisclient_create(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	if (connClient->client)
 	{
@@ -763,7 +763,7 @@ static sw_inline int redisclient_create(connpool_property* poolproper,connobj* c
 	return SW_OK;
 }
 
-static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* connClient)
+static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	zval* connection_cfg = poolproper->cfg;
 //	php_swoole_array_separate(connection_cfg);
@@ -840,7 +840,7 @@ static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* 
 	return ret;
 }
 
-static sw_inline int redisclient_send(connpool_property* poolproper,connobj* connClient)
+static sw_inline int redisclient_send(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	if (!poolproper || !poolproper->onHBMsgConstruct || !connClient || !connClient->client){
 		return SW_ERR;
@@ -919,7 +919,7 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 	return ret;
 }
 
-static sw_inline int mysqlclient_args_check(zval* args,int type)
+static sw_inline int mysqlclient_args_check(zval* args,int type TSRMLS_DC)
 {
 	if (!args)
 	{
@@ -970,7 +970,7 @@ static sw_inline int mysqlclient_args_check(zval* args,int type)
 	return SW_OK;
 }
 
-static sw_inline int mysqlclient_create(connpool_property* poolproper,connobj* connClient)
+static sw_inline int mysqlclient_create(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	if (connClient->client)
 	{
@@ -1008,7 +1008,7 @@ static sw_inline int mysqlclient_create(connpool_property* poolproper,connobj* c
 	return SW_OK;
 }
 
-static sw_inline int mysqlclient_connect(connpool_property* poolproper,connobj* connClient)
+static sw_inline int mysqlclient_connect(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	zval* connection_cfg = poolproper->cfg;
 
@@ -1067,7 +1067,7 @@ static sw_inline int mysqlclient_connect(connpool_property* poolproper,connobj* 
 	return ret;
 }
 
-static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* connClient)
+static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	if (!poolproper || !poolproper->onHBMsgConstruct || !connClient || !connClient->client){
 		return SW_ERR;
@@ -1150,22 +1150,22 @@ static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* con
 	return ret;
 }
 
-static sw_inline int tcpclient_close(connobj* connClient)
+static sw_inline int tcpclient_close(connobj* connClient TSRMLS_DC)
 {
-	return client_close(SW_CONNPOOL_TCP,connClient);
+	return client_close(SW_CONNPOOL_TCP,connClient TSRMLS_CC);
 }
 
-static sw_inline int redisclient_close(connobj* connClient)
+static sw_inline int redisclient_close(connobj* connClient TSRMLS_DC)
 {
-	return client_close(SW_CONNPOOL_REDIS,connClient);
+	return client_close(SW_CONNPOOL_REDIS,connClient TSRMLS_CC);
 }
 
-static sw_inline int mysqlclient_close(connobj* connClient)
+static sw_inline int mysqlclient_close(connobj* connClient TSRMLS_DC)
 {
-	return client_close(SW_CONNPOOL_MYSQL,connClient);
+	return client_close(SW_CONNPOOL_MYSQL,connClient TSRMLS_CC);
 }
 
-static int client_close(int type,connobj* connClient)
+static int client_close(int type,connobj* connClient TSRMLS_DC)
 {
 	if (!connClient){
 		return SW_ERR;
@@ -1243,7 +1243,7 @@ ZEND_METHOD(swoole_connpool,__construct)
 
 	if (connpoolType <= SW_CONNPOOL_TYPE_INVAIL || connpoolType >= SW_CONNPOOL_TYPE_NUM)
 	{
-		zend_throw_exception(zend_exception_get_default(), "construct swoole_connpool type invailed", 0 TSRMLS_CC);
+		zend_throw_exception(zend_exception_get_default(TSRMLS_C), "construct swoole_connpool type invailed", 0 TSRMLS_CC);
 		return;
 	}
 
@@ -1902,7 +1902,7 @@ static int initConnpool(int type, connpool* pool)
 	return SW_OK;
 }
 
-static void onDefer_handler(void* data)
+static void onDefer_handler(void* data TSRMLS_DC)
 {
 	if (!data) {
 		return ;
@@ -1926,7 +1926,7 @@ static void onDefer_handler(void* data)
 
 	if (!pool || pool->connpoolStatus != SW_CONNPOOL_RELEASED)
 	{
-		callback_connobj(cbArgs);
+		callback_connobj(cbArgs TSRMLS_CC);
 	}
 
 	if (pool && pool->connObjMap)
@@ -1944,7 +1944,7 @@ static void onDefer_handler(void* data)
 	free_data(cbArgs);
 }
 
-static void callback_connobj(connobj_arg* cbArgs)
+static void callback_connobj(connobj_arg* cbArgs TSRMLS_DC)
 {
 	zval *retval = NULL;
 	zval* client = (!cbArgs->obj || !cbArgs->obj->client)? NULL:cbArgs->obj->client;
@@ -2079,7 +2079,7 @@ static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj*
 	return SW_OK;
 }
 
-static void connpool_onTimeout(swTimer* timer,swTimer_node* node)
+static void connpool_onTimeout(swTimer* timer,swTimer_node* node TSRMLS_DC)
 {
 	if (!node || !node->data) {
 		return ;
@@ -2088,7 +2088,7 @@ static void connpool_onTimeout(swTimer* timer,swTimer_node* node)
 	connobj_arg* cbArgs = (connobj_arg*)(node->data);
 	switch (cbArgs->type){
 		case  SW_PHP_USER_CALL:
-			connpool_onGetObj(timer,node);
+			connpool_onGetObj(timer,node TSRMLS_CC);
 			break;
 		case SW_CONNINTERVAL_CALL:
 			connpool_onConnInter(timer,node);

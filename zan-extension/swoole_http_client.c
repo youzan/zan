@@ -1159,7 +1159,7 @@ static http_client* http_client_create(zval *object TSRMLS_DC)
 			cli->object = NULL;
 		}
 
-    	php_swoole_client_free(object,cli TSRMLS_DC);
+    	php_swoole_client_free(object,cli TSRMLS_CC);
     }
 
 	swoole_set_object(object, http);
@@ -1189,7 +1189,7 @@ static PHP_METHOD(swoole_http_client, __construct)
     
     if (!host || host_len <= 0)
     {
-        zend_throw_exception(zend_exception_get_default(), "construct swoole_http_client host is empty", 0 TSRMLS_CC);
+        zend_throw_exception(zend_exception_get_default(TSRMLS_C), "construct swoole_http_client host is empty", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 

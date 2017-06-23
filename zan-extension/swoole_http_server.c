@@ -973,7 +973,7 @@ static int http_onReceive(swServer *serv, swEventData *req)
 
     zval *zdata = NULL;
     SW_MAKE_STD_ZVAL(zdata);
-    php_swoole_get_recv_data(zdata, req, NULL, 0);
+    php_swoole_get_recv_data(zdata, req, NULL, 0 TSRMLS_CC);
     ctx->request.zdata = zdata;
     sw_copy_to_stack(ctx->request.zdata,ctx->request._zdata);
 

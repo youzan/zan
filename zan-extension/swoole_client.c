@@ -55,7 +55,7 @@ static int 				swoole_client_ce_inited = 0;
 static zend_class_entry swoole_client_ce;
 zend_class_entry *swoole_client_class_entry_ptr = NULL;
 
-static void tcpClient_timeout(swTimer* timer,swTimer_node* node);
+static void tcpClient_timeout(swTimer* timer,swTimer_node* node TSRMLS_DC);
 static void client_execute_callback(swClient *cli, enum client_callback_type type);
 static void client_onConnect(swClient *cli);
 static void client_onReceive(swClient *cli, char *data, uint32_t length);
@@ -229,7 +229,7 @@ static void client_execute_callback(swClient *cli, enum client_callback_type typ
     }
 }
 
-static void tcpClient_timeout(swTimer* timer,swTimer_node* node)
+static void tcpClient_timeout(swTimer* timer,swTimer_node* node TSRMLS_DC)
 {
 	swClient* cli = node? node->data:NULL;
 	uint8_t timer_type = cli? cli->timeout_type:SW_CLIENT_INVAILED_TIMEOUT;

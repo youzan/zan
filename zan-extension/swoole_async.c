@@ -61,9 +61,9 @@ static void php_swoole_check_aio();
 static void php_swoole_aio_onComplete(swAio_event *event);
 static void php_swoole_file_request_free(void *data);
 
-static int swoole_gethost_from_cache(zval* domain,zval* callback);
-static void swoole_aio_dns_complete(swAio_event *event);
-static void swoole_aio_file_complete(swAio_event *event);
+static int swoole_gethost_from_cache(zval* domain,zval* callback TSRMLS_DC);
+static void swoole_aio_dns_complete(swAio_event *event TSRMLS_DC);
+static void swoole_aio_file_complete(swAio_event *event TSRMLS_DC);
 
 static sw_inline void swoole_aio_free(void *ptr)
 {
@@ -98,7 +98,7 @@ static sw_inline void* swoole_aio_malloc(size_t __size)
     }
 }
 
-static int swoole_gethost_from_cache(zval* domain,zval* callback)
+static int swoole_gethost_from_cache(zval* domain,zval* callback TSRMLS_DC)
 {
 	if (SwooleG.disable_dns_cache)
 	{
@@ -183,11 +183,11 @@ static void php_swoole_aio_onComplete(swAio_event *event)
 
     if (event->type == SW_AIO_DNS_LOOKUP)
     {
-    	swoole_aio_dns_complete(event);
+    	swoole_aio_dns_complete(event TSRMLS_CC);
     }
     else if (event->type == SW_AIO_READ || event->type == SW_AIO_WRITE)
     {
-    	swoole_aio_file_complete(event);
+    	swoole_aio_file_complete(event TSRMLS_CC);
     }
     else
 	{
@@ -196,7 +196,7 @@ static void php_swoole_aio_onComplete(swAio_event *event)
 	}
 }
 
-static void swoole_aio_dns_complete(swAio_event *event)
+static void swoole_aio_dns_complete(swAio_event *event TSRMLS_DC)
 {
 	dns_request *dns_req = (dns_request *) event->req;
 	if (!dns_req || !dns_req->callback)
@@ -260,7 +260,7 @@ static void swoole_aio_dns_complete(swAio_event *event)
 	}
 }
 
-static void swoole_aio_file_complete(swAio_event *event)
+static void swoole_aio_file_complete(swAio_event *event TSRMLS_DC)
 {
 	file_request *file_req = swHashMap_find_int(php_swoole_aio_request, event->task_id);
 	if (!file_req || (!file_req->callback && file_req->type == SW_AIO_READ))
@@ -567,7 +567,7 @@ PHP_FUNCTION(swoole_async_write)
 	sw_zval_add_ref(&filename);
 	sw_copy_to_stack(req->filename, req->_filename);
 
-	if (swoole_check_callable(callback) >= 0)
+	if (swoole_check_callable(callback TSRMLS_CC) >= 0)
 	{
 		req->callback = callback;
 		sw_zval_add_ref(&callback);
@@ -683,7 +683,7 @@ PHP_FUNCTION(swoole_async_dns_lookup)
     }
 
     /// 从缓存中获取到，立即返回
-    if (swoole_gethost_from_cache(domain,callback) == SW_OK)
+    if (swoole_gethost_from_cache(domain,callback TSRMLS_CC) == SW_OK)
     {
         return ;
     }

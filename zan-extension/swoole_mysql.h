@@ -1041,7 +1041,7 @@ int mysql_handle_quoter(const char *unquoted, size_t unquotedlen, char **quoted,
 }
 
 static int mysql_parse_params(struct mysql_bound_param_stmt stmt, char *inquery, size_t inquery_len,
-												char **outquery, size_t *outquery_len)
+												char **outquery, size_t *outquery_len TSRMLS_DC)
 {
 	swScanner s;
 	char *ptr = NULL, *newbuffer = NULL;

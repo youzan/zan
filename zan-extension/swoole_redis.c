@@ -138,6 +138,7 @@ static const zend_function_entry swoole_redis_methods[] =
 
 static void redis_Client_timeout(swTimer* timer,swTimer_node* node)
 {
+    SWOOLE_FETCH_TSRMLS;
 	swRedisClient *redis = node? node->data:NULL;
 	uint8_t timeout_type = redis?redis->timeout_type:SW_CLIENT_INVAILED_TIMEOUT;
 	if (timeout_type == SW_CLIENT_CONNECT_TIMEOUT || timeout_type == SW_CLIENT_RECV_TIMEOUT)
