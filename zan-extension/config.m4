@@ -127,7 +127,9 @@ AC_COMPILE_IFELSE([
 AC_MSG_RESULT([$CLANG])
 
 if test "$CLANG" = "yes"; then
-    CFLAGS="$CFLAGS -std=gnu89"
+    CFLAGS="$CFLAGS -std=gnu89 -fsanitize=bounds -fsanitize-undefined-trap-on-error"
+else
+    CFLAGS="$CFLAGS -fbounds-check"
 fi
 
 if test "$PHP_ZAN" != "no"; then
@@ -160,7 +162,7 @@ if test "$PHP_ZAN" != "no"; then
     AC_ZAN_CPU_AFFINITY
     AC_ZAN_HAVE_REUSEPORT
 
-    CFLAGS="-std=gnu99 -Wall -pthread $CFLAGS -fstack-check  -fbounds-check  -fstack-protector -fstack-protector-all -fno-strict-aliasing"
+    CFLAGS="-std=gnu99 -Wall -pthread $CFLAGS -fstack-check -fstack-protector -fstack-protector-all -fno-strict-aliasing"
     LDFLAGS="$LDFLAGS -lpthread"
 
     if test "$PHP_MYSQLND" = "yes"; then
