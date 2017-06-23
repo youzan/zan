@@ -10,6 +10,8 @@
 <p align="center">在此特别鸣谢Swoole开发组为PHP开源社区付出的努力和汗水。</p>
 
 [![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
+[![Build Status](https://api.travis-ci.org/youzan/zan.svg)](https://travis-ci.org/youzan/zan.svg)
+
 
 ## Zan做了哪些事儿
 1.  大量模块解耦拆分
