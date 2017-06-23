@@ -428,7 +428,7 @@ static sw_inline void php_swoole_sha1(const char *str, int _len, unsigned char *
     PHP_SHA1Final(digest, &context);
 }
 
-static sw_inline int swoole_check_callable(zval *callback TSRMLS_CC)
+static sw_inline int swoole_check_callable(zval *callback TSRMLS_DC)
 {
 	if (!callback || ZVAL_IS_NULL(callback))
 	{
