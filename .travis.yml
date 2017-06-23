@@ -6,25 +6,25 @@ compiler:
 
 os:
   - linux
-#  - osx
+  - osx
 
 php:
-  - 5.3
-  - 5.4
-  - 5.5
-  - 7.0
+  - 5.6
+  - 7.1
 
 notifications:
-  email: team@swoole.com
-   
+  email: zan@zanphp.io
+
 env:
-  - REPORT_EXIT_STATUS=1 NO_INTERACTION=1
+  global:
+    - secure: "Mqg9ifSV0BLv2TIBw/x64aEuB8Y5aPXwXg7xAOq08oPlHBYSBgSYxroJL5PXs0fe7PszZF20bUBinwmEXYQzqgP/40Y1kmq/kfTsDXwTOc9qbAbA1pWvH+Sk1kDP5MLJRPWBCkqctyFd0I0u0SdzT1fgSqirqEz2bMnbAUVpSvo="
+
+before_install:
+  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 
 #Compile
 before_script:
-    - ./travis/compile.sh
+    - ./build.sh
 
 script:
     - exit 0
-
-
