@@ -1,26 +1,15 @@
 language: php 
 
-compiler:
-  - gcc
-  - clang
-
-os:
-  - linux
-  - osx
-
 php:
   - 5.6
   - 7.1
 
-notifications:
-  email: zan@zanphp.io
-
-before_install:
-  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+env:
+  - REPORT_EXIT_STATUS=1 NO_INTERACTION=1
 
 #Compile
 before_script:
-    - ./build.sh
+    - sudo ./build.sh
 
 script:
     - exit 0
