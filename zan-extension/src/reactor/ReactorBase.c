@@ -239,7 +239,7 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
     }
 
     //client
-    if (SwooleG.serv == NULL && SwooleG.timer.num <= 0)
+    if (SwooleG.serv == NULL && SwooleG.timer.num <= 0 && !reactor->defer_callback_list)
     {
         if (SwooleAIO.init && reactor->event_num == 1 && SwooleAIO.task_num == 0)
         {
@@ -257,8 +257,6 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
 
 static void swReactor_onTimeout(swReactor *reactor)
 {
-//    swReactor_onTimeout_and_Finish(reactor);
-
     if (reactor->disable_accept)
     {
         reactor->enable_accept(reactor);
@@ -276,7 +274,6 @@ static void swReactor_onFinish(swReactor *reactor)
     }
 
     swReactor_onTimeout_and_Finish(reactor);
-
     //defer callback
     handle_defer_call(reactor);
 }
@@ -288,10 +285,6 @@ static void handle_defer_call(swReactor* reactor)
 
 	swDefer_callback *cb = NULL;
 	swDefer_callback *tmp = NULL;
-//	LL_FOREACH(reactor->defer_list_backup, cb)
-//	{
-//		cb->callback(cb->data);
-//	}
 
 	LL_FOREACH_SAFE(reactor->defer_list_backup, cb, tmp)
 	{

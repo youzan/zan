@@ -250,7 +250,6 @@ static int swReactorEpoll_wait(swReactor *reactor, struct timeval *timeo)
             {
                 reactor->onTimeout(reactor);
             }
-//            continue;
         }
 
         for (i = 0; i < n; i++)

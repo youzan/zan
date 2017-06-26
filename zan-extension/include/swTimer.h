@@ -67,6 +67,7 @@ struct _swTimer
     long _next_id;
     long _current_id;
     int64_t _next_msec;
+    int64_t _cur_exec_msec;
     swPipe pipe;
     /*-----------------for EventTimer-------------------*/
     struct timeval basetime;

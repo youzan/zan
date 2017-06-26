@@ -137,6 +137,7 @@ int swTimer_init(swTimer* timer,long msec)
 
     timer->_current_id = -1;
     timer->_next_msec = msec;
+    timer->_cur_exec_msec = 0;
     timer->_next_id = 1;
     timer->num = 0;
     timer->onAfter = timer_onTimeout;
@@ -510,6 +511,11 @@ static void timer_onInterval(swTimer *timer, swTimer_node *tnode)
 
 long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_type)
 {
+	if (_msec <= 0)
+	{
+		return SW_ERR;
+	}
+
 	if (!timer->fd)
 	{
 		swTimer_init(timer,_msec);
@@ -519,11 +525,11 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 	if (!tnode)
 	{
 		swSysError("malloc(%ld) failed.", sizeof(swTimer_node));
-		return -1;
+		return SW_ERR;
 	}
 
 	memset(tnode,0x00,sizeof(swTimer_node));
-	tnode->interval = interval ? _msec : 0;
+	tnode->interval = interval ? _msec: 0;
 	tnode->remove = 0;
 	tnode->used_type = used_type;
 
@@ -537,8 +543,11 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 		}
 	}
 	else {
+		/// 在定时器回调中添加新的定时器，使用当前定时器执行时间为
+		/// 基准校验新增定时器执行时间，避免极端情况下一直在定时器回调中
 		int64_t now_msec = swTimer_get_relative_msec();
-		if (now_msec < 0)
+		now_msec = (timer->_current_id > 0 && now_msec < timer->_cur_exec_msec)? timer->_cur_exec_msec:now_msec;
+		if (now_msec <= 0)
 		{
 			sw_free(tnode);
 			return SW_ERR;
@@ -627,6 +636,7 @@ int swTimer_select(swTimer *timer)
 
     swTimer_node *tnode = NULL;
     swHeap_node *tmp = NULL;
+    timer->_cur_exec_msec = now_msec;
     while ((tmp = swHeap_top(timer->heap)))
     {
         tnode = tmp->data;
@@ -664,6 +674,7 @@ int swTimer_select(swTimer *timer)
 
     int64_t subMsec = (!tnode)? -1:tnode->exec_msec - now_msec;
     timer->_next_msec = subMsec;
+    timer->_cur_exec_msec = 0;
     timer->set(timer,subMsec);
     return SW_OK;
 }
