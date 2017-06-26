@@ -192,7 +192,7 @@ swString* swConnection_get_string_buffer(swConnection *conn)
 int swConnection_get_ip(swConnection *conn,char* addip,int len)
 {
     if (len < SW_IP_MAX_LENGTH || !addip){
-        swWarn("swConnnection get ip cache len must more than %d\n",SW_IP_MAX_LENGTH);
+        swWarn("swConnnection get ip cache len %d must more than %d\n",len,SW_IP_MAX_LENGTH);
         return SW_ERR;
     }
 
