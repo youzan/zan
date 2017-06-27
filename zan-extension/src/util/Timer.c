@@ -547,7 +547,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 		/// 基准校验新增定时器执行时间，避免极端情况下一直在定时器回调中
 		int64_t now_msec = swTimer_get_relative_msec();
 		now_msec = (timer->_current_id > 0 && now_msec < timer->_cur_exec_msec)? timer->_cur_exec_msec:now_msec;
-		if (now_msec <= 0)
+		if (now_msec < 0)
 		{
 			sw_free(tnode);
 			return SW_ERR;
