@@ -81,8 +81,8 @@ typedef struct
     char* uri;
     zend_size_t uri_len;
     
-    char *tmp_header_field_name;    //header field string
-    zend_size_t tmp_header_field_name_len;
+    swString *tmp_header_field_buf;
+    swString *tmp_header_value_buf;
 
     php_http_parser parser;
 
@@ -329,13 +329,16 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
     {
     	http->timeout = timeout;
     }
+    http->tmp_header_field_buf = (!http->tmp_header_field_buf)? swString_new(SW_HTTP_RESPONSE_INIT_SIZE) : http->tmp_header_field_buf;
+    http->tmp_header_value_buf = (!http->tmp_header_value_buf)? swString_new(SW_HTTP_RESPONSE_INIT_SIZE) : http->tmp_header_value_buf;
     http->body = (!http->body)? swString_new(SW_HTTP_RESPONSE_INIT_SIZE) : http->body;
-    if (!http->body)
+    if (!http->tmp_header_field_buf || !http->tmp_header_value_buf || !http->body)
     {
 		swoole_php_fatal_error(E_ERROR, "[1] swString_new(%d) failed.", SW_HTTP_RESPONSE_INIT_SIZE);
 		return SW_ERR;
     }
-
+    swString_clear(http->tmp_header_field_buf);
+    swString_clear(http->tmp_header_value_buf);
     swString_clear(http->body);
     http->upgrade = 0;
 
@@ -1054,6 +1057,16 @@ static void http_client_free(zval *object TSRMLS_DC)
 
     swoole_efree(http->uri);
 
+    if (http->tmp_header_field_buf)
+	{
+		swString_free(http->tmp_header_field_buf);
+		http->tmp_header_field_buf = NULL;
+	}
+    if (http->tmp_header_value_buf)
+	{
+		swString_free(http->tmp_header_value_buf);
+		http->tmp_header_value_buf = NULL;
+	}
 	if (http->body)
 	{
 		swString_free(http->body);
@@ -1470,6 +1483,14 @@ static PHP_METHOD(swoole_http_client, on)
     RETURN_TRUE;
 }
 
+enum state
+{
+    s_start_res = 4,
+    s_header_field_start = 40,
+    s_header_field,
+    s_header_value_start,
+    s_header_value
+};
 static int http_client_parser_on_header_field(php_http_parser *parser, const char *at, size_t length)
 {
     SWOOLE_FETCH_TSRMLS;
@@ -1480,9 +1501,17 @@ static int http_client_parser_on_header_field(php_http_parser *parser, const cha
         swWarn("http_client_parser_on_header_field, http is NULL");
         return SW_ERR;
     }
+    enum state state = (enum state) parser->state;
+    if(state == s_header_field_start || state == s_start_res)
+    {
+      swString_clear(http->tmp_header_field_buf);
+    }
 
-    http->tmp_header_field_name = (char *)at;
-    http->tmp_header_field_name_len = length;
+    if (swString_append_ptr(http->tmp_header_field_buf, (char *) at, length) < 0)
+    {
+    	swWarn("append string to http header_field failed");
+        return SW_ERR;
+    }
     return SW_OK;
 }
 
@@ -1503,13 +1532,24 @@ static int http_client_parser_on_header_value(php_http_parser *parser, const cha
         swWarn("http_client_parser_on_header_value http->cli->obejct is NULL");
         return SW_ERR;
     }
+     enum state state = (enum state) parser->state;
 
     zval *headers = sw_zend_read_property(swoole_http_client_class_entry_ptr, zobject,
     																	ZEND_STRL("headers"), 0 TSRMLS_CC);
 
+    if(state == s_header_value_start || state == s_start_res)
+    {
+      swString_clear(http->tmp_header_value_buf);
+    }
+    if (swString_append_ptr(http->tmp_header_value_buf, (char *) at, length) < 0)
+    {
+    	swWarn("append string to http header_value failed");
+        return SW_ERR;
+    }                                                                    
     /// zend_str_tolower_dup,会emalloc 并返回给header_name,需要外部来进行释放
-    char *header_name = zend_str_tolower_dup(http->tmp_header_field_name, http->tmp_header_field_name_len);
-    sw_add_assoc_stringl_ex(headers, header_name, http->tmp_header_field_name_len + 1, (char *) at, length, 1);
+    char *header_name = zend_str_tolower_dup(http->tmp_header_field_buf->str, http->tmp_header_field_buf->length);
+    zend_str_tolower(http->tmp_header_value_buf->str, http->tmp_header_value_buf->length);
+    sw_add_assoc_stringl_ex(headers, header_name, http->tmp_header_field_buf->length + 1, http->tmp_header_value_buf->str, http->tmp_header_value_buf->length, 1);    
 
     //websocket client
     if (strncasecmp(header_name, "Upgrade",strlen("Upgrade")) == 0 &&
