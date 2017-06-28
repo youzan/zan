@@ -162,6 +162,7 @@ swLinkedList* swLinkedList_create(uint8_t type, swDestructor dtor);
 swLinkedList_node* swLinkedList_append(swLinkedList *ll, void *data,uint64_t priority);
 void swLinkedList_remove_node(swLinkedList *ll, swLinkedList_node *remove_node);
 swLinkedList_node* swLinkedList_get_tail_node(swLinkedList* ll);
+swLinkedList_node* swLinkedList_get_head_node(swLinkedList* ll);
 int swLinkedList_prepend(swLinkedList *ll, void *data);
 int swLinkedList_empty(swLinkedList *ll);
 void* swLinkedList_pop(swLinkedList *ll);

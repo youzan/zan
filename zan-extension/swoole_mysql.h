@@ -338,15 +338,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->catalog_length = size;
@@ -361,15 +359,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->db_length = size;
@@ -384,15 +380,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->table_length = size;
@@ -407,15 +401,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->org_table_length = size;
@@ -430,15 +422,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->name_length = size;
@@ -453,15 +443,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->org_name_length = size;
@@ -475,8 +463,7 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     /* check len */
     if (i + 13 > len)
     {
-    	swoole_efree(_buffer);
-    	col->buffer = NULL;
+    		swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
 
@@ -512,15 +499,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
         tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
         if (tmp_len == -1)
         {
-        	swoole_efree(_buffer);
-        	col->buffer = NULL;
+        		swoole_efree(col->buffer);
             return -SW_MYSQL_ERR_BAD_LCB;
         }
         i += tmp_len;
         if (i + size > len)
         {
-        	swoole_efree(_buffer);
-        	col->buffer = NULL;
+        		swoole_efree(col->buffer);
             return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
         }
         col->def_length = size;

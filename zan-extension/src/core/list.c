@@ -133,6 +133,16 @@ swLinkedList_node* swLinkedList_get_tail_node(swLinkedList* ll)
 	return node;
 }
 
+swLinkedList_node* swLinkedList_get_head_node(swLinkedList* ll)
+{
+	if (ll->head == NULL)
+	{
+		return NULL;
+	}
+
+	swLinkedList_node* node = ll->head;
+	return node;
+}
 
 void swLinkedList_remove_node(swLinkedList *ll, swLinkedList_node *remove_node)
 {

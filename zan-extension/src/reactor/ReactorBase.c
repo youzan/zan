@@ -226,6 +226,10 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
     {
         swoole_update_time();
     }
+
+    //defer callback
+	handle_defer_call(reactor);
+
     //server worker
     swWorker *worker = SwooleWG.worker;
     if (worker != NULL && SwooleWG.reload)
@@ -274,8 +278,6 @@ static void swReactor_onFinish(swReactor *reactor)
     }
 
     swReactor_onTimeout_and_Finish(reactor);
-    //defer callback
-    handle_defer_call(reactor);
 }
 
 static void handle_defer_call(swReactor* reactor)

@@ -289,7 +289,7 @@ static void php_swoole_onSignal(int signo)
 
     zval **args[1];
     args[0] = &zsigno;
-    zval *retval;
+    zval *retval = NULL;
     if (sw_call_user_function_ex(EG(function_table), NULL, callback, &retval, 1, args, 0, NULL TSRMLS_CC) == FAILURE)
     {
         swWarn("user_signal handler error");

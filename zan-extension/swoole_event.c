@@ -79,7 +79,6 @@ static int php_swoole_event_onRead(swReactor *reactor, swEvent *event)
     {
         swWarn("swoole_event: onRead handler error.");
         SwooleG.main_reactor->del(SwooleG.main_reactor, event->fd);
-        return SW_ERR;
     }
 
     if (EG(exception))
@@ -113,7 +112,6 @@ static int php_swoole_event_onWrite(swReactor *reactor, swEvent *event)
     {
         swWarn("swoole_event: onWrite handler error");
         SwooleG.main_reactor->del(SwooleG.main_reactor, event->fd);
-        return SW_ERR;
     }
 
     if (EG(exception))
