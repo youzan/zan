@@ -60,7 +60,7 @@ static int getServiceIp(char** ppIp)
     }
 
     for(ifa=lsif; ifa != NULL; ifa=ifa->ifa_next) {
-        if(ifa->ifa_addr->sa_family != AF_INET)
+        if(ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET)
         {
         	continue;
         }
