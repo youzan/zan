@@ -1,21 +1,36 @@
 ##  Zan扩展配置项
  --enable-zan-debug     开启Zan扩展调试功能(开启SW_DEBUG宏)
- --enable-sockets       使用sockets扩展。
-                        注意需要安装PHP sockets扩展，否则虽定义宏SW_SOCKETS会而找不到sockets扩展报编译错误。
+
+ --enable-sockets       使用sockets扩展
+                        注意需要安装PHP sockets扩展，否则虽定义宏SW_SOCKETS会而找不到sockets扩展报编译错误
+
 --enable-ringbuffer     使用ringbuffer内存池(宏SW_USE_RINGBUFFER）
+
 --enable-async-redis    使用异步hiredis客户端
+
 --enable-openssl        使用ssl功能
+
 --enable-http2          使用http2.0功能，依赖nghttp2库
+
 --enable-jemalloc       使用jemalloc内存管理器(较glibc malloc高效)，需安装jemalloc
+
 --enable-tcmalloc       使用tcmalloc内存管理器
+
 --with-zan              默认开启，扩展以动态共享库的形式
+
 --enable-zan            同上
+
 --with-openssl-dir=DIR  指定OpenSSL的路径，版本不低于0.9.6
---enable-mysqlnd        使用mysqlnd，依赖PHP的mysqlnd扩展。仅swoole_mysql_escape接口需要使用该配置项。
+
+--enable-mysqlnd        使用mysqlnd，依赖PHP的mysqlnd扩展。仅swoole_mysql_escape接口需要使用该配置项
+
 
 依据系统定义属性宏
+
 HAVE_CPU_AFFINITY       CPU亲和性
+
 HAVE_REUSEPORT          socket端口复用
+
 AC_COMPILE              检查系统编译器，如果clang，添加编译选项-std=gnu89
 
 建议默认开启--enable-sockets --enable-async-redis  --enable-openssl这三个配置项。
@@ -33,23 +48,37 @@ AC_COMPILE              检查系统编译器，如果clang，添加编译选项
 *  5.  检查nghttp2库的函数nghttp2_hd_inflate_new  需要使用nghttp2时生效。
 *  6.  检查z库的函数gzgets，若有将该库链接到Zan扩展。
 *  7.  系统平台相关的库使用
+
        mac:检查c标准库的clock_gettime／aio_read
            使用OPENSSL_DIR绝对路径，则分别添加该路径下的/lib到PHP库路径与/include到PHP头文件路径。
-                                  同时添加crypto库。
+
+           同时添加crypto库。
+
            仅开启支持openssl,则添加默认的ssl库到zan扩展，同时也包含头文件及crypto库。
+
        非mac: 检查rt运行库的clock_gettime／aio_read，并将其添加到zan扩展中。
+
              使用OPENSSL_DIR绝对路径，则分别添加该路径下的/lib到PHP库环境变量与/include到PHP头文件路径。
-                                  同时添加crypt/crypto库。
-           仅开启支持openssl,则添加默认的ssl库到zan扩展，同时也包含头文件及crypto库。
+
+             同时添加crypt/crypto库。
+
+             仅开启支持openssl,则添加默认的ssl库到zan扩展，同时也包含头文件及crypto库。
 *  8.  检查curl库及头文件，并将起加入到zan扩展。若按规则未找到正确的libcurl库，则config报错libcurl not installed
+
        找库顺序/usr /usr/local /usr/local/Cellar/curl/7.47.1，找头文件路径上三个路径下的include/curl/curl.h
+
        (注意，链接器约定会在lib下找库文件，去include下找头文件,且库文件命名必须为libXXX.so或libXXX.dylib
        如/usr/lib/libXXX.so，/usr/include/XXX.h)
 *  9.  将pthread库加入到zan扩展
+
        若打开ASYNC_REDIS，对于linux将zan源码下已经编译好的hiredis_linux.a静态库链接到zan。
+
                          对于mac将zan源码下已经编译好的hiredis_mac.a静态库连链接到zan。
+
        若开HTTP2，添加库nghttp2到zan
+
        若开JEMALLOC，添加库jemalloc到zan
+
        若开TCMALLOC，添加库tcmalloc到zan
 
 
