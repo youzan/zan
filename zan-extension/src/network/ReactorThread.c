@@ -865,6 +865,7 @@ int swReactorThread_close(swReactor *reactor, int fd)
 
     if (!conn->removed && reactor->del(reactor, fd) < 0)
     {
+        close(fd);
         return SW_ERR;
     }
 
