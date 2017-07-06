@@ -174,7 +174,7 @@ static int swDNSResolver_onReceive(swReactor *reactor, swEvent *event)
     steps = steps + (strlen(_domain_name) + 2);
 
     qflags = (swDNSQ_FLAGS *) &packet[steps];
-    steps = steps + sizeof(swDNSQ_FLAGS);
+    steps = steps + sizeof(*qflags);
 
     //printf("ancount=%d, nscount=%d, qdcount=%d, arcount=%d\n", ntohs(header->ancount), ntohs(header->nscount), ntohs(header->qdcount), ntohs(header->arcount));
 
@@ -555,7 +555,7 @@ static int get_host_by_syscall(int af,char* name,swDNS_cache* cache)
 	hints.ai_protocol = IPPROTO_TCP;
 
 	if (getaddrinfo(name,NULL,&hints,&result) != 0 || !result){
-		swWarn("get address result(%d) info error.%s",result? (int)result:0,gai_strerror(errno));
+		swWarn("get address result(%ld) info error.%s",result? (intptr_t)result:0,gai_strerror(errno));
 		if (result) freeaddrinfo(result);
 		return SW_ERR;
 	}

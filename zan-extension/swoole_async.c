@@ -306,15 +306,18 @@ static void swoole_aio_file_complete(swAio_event *event TSRMLS_DC)
 	{
 		memset(event->buf + ret, 0, 1);
 		SW_ZVAL_STRINGL(zcontent, event->buf, ret, 1);
-		args[0] = &file_req->filename;
-		args[1] = &zcontent;
+		//args[0] = &file_req->filename;
+		//args[1] = &zcontent;
 	}
 	else if (event->type == SW_AIO_WRITE)
 	{
 		ZVAL_LONG(zcontent, ret);
-		args[0] = &file_req->filename;
-		args[1] = &zcontent;
+		//args[0] = &file_req->filename;
+		//args[1] = &zcontent;
 	}
+
+        args[0] = &file_req->filename;
+        args[1] = &zcontent;
 
 	zval *zcallback = file_req->callback;
 	zval *retval = NULL;

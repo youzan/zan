@@ -542,8 +542,7 @@ PHP_MINFO_FUNCTION(zan)
     php_info_print_table_start();
     php_info_print_table_header(2, "zan support", "enabled");
     php_info_print_table_row(2, "Version", PHP_SWOOLE_VERSION);
-    php_info_print_table_row(2, "Author", "Zan Group  <zan@zanphp.io>");
-    php_info_print_table_row(2, "      ", "tianfeng.han[email: mikan.tenny@gmail.com]");
+    php_info_print_table_row(2, "Author", "Zan Group <zan@zanphp.io>");
 
 #ifdef HAVE_EPOLL
     php_info_print_table_row(2, "epoll", "enabled");
