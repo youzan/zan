@@ -17,6 +17,7 @@
  */
 
 
+#include <inttypes.h>
 #include "swBaseData.h"
 #include "swMemory/memoryPool.h"
 
@@ -220,6 +221,6 @@ void swHeap_print(swHeap *heap)
     int i;
     for(i = 1; i < heap->num; i++)
     {
-        printf("#%d\tpriority=%llu, data=%p\n", i, heap->nodes[i]->priority, heap->nodes[i]->data);
+        printf("#%d\tpriority=%"PRIu64", data=%p\n", i, heap->nodes[i]->priority, heap->nodes[i]->data);
     }
 }
