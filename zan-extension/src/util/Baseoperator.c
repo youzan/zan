@@ -16,6 +16,11 @@
  +----------------------------------------------------------------------+
  */
 
+#if __APPLE__
+// Fix warning: 'daemon' is deprecated: first deprecated in macOS 10.5 - Use posix_spawn APIs instead. [-Wdeprecated-declarations]
+#define daemon yes_we_know_that_daemon_is_deprecated_in_os_x_10_5_thankyou
+#endif
+
 #include "swoole.h"
 #include "swSignal.h"
 #include "swError.h"
@@ -31,6 +36,11 @@
 
 #ifdef HAVE_EXECINFO
 #include <execinfo.h>
+#endif
+
+#if __APPLE__
+#undef daemon
+extern int daemon(int, int);
 #endif
 
 static uint64_t current_seq_no = 0;

@@ -127,7 +127,7 @@ AC_COMPILE_IFELSE([
 AC_MSG_RESULT([$CLANG])
 
 if test "$CLANG" = "yes"; then
-    CFLAGS="$CFLAGS -std=gnu89 -fsanitize=bounds -fsanitize-undefined-trap-on-error -Wno-deprecated-declarations"
+    CFLAGS="$CFLAGS -std=gnu89 -fsanitize=bounds -fsanitize-undefined-trap-on-error"
 else
     CFLAGS="$CFLAGS -fbounds-check -pthread"
 fi
