@@ -581,7 +581,7 @@ PHP_MINFO_FUNCTION(zan)
 
     php_info_print_table_row(2, "async http/websocket client", "enabled");
 
-#ifdef SW_SOCKETS
+#ifdef SW_USE_SOCKETS
     php_info_print_table_row(2, "sockets", "enabled");
 #endif
 #ifdef SW_USE_OPENSSL

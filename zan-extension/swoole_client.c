@@ -1009,7 +1009,7 @@ static PHP_METHOD(swoole_client, __destruct)
 
     releaseConnobj(getThis());
 
-#ifdef SWOOLE_SOCKETS_SUPPORT
+#ifdef SW_USE_SOCKETS
     zval *zsocket = swoole_get_property(getThis(), swoole_property_socket);
     if (zsocket)
     {
@@ -1640,7 +1640,7 @@ static PHP_METHOD(swoole_client, getSocket)
         RETURN_FALSE;
     }
 
-#ifdef SWOOLE_SOCKETS_SUPPORT
+#ifdef SW_USE_SOCKETS
     php_socket *socket_object = swoole_convert_to_socket(cli->socket->fd);
     if (!socket_object)
     {

@@ -44,11 +44,10 @@ make install
     1. 如库名称与路径/usr/lib/libcurl.so(通常带版本号的libxxx.so.xxx会软连接到libXXX.so供链接器识别)，对应头文件路径则为/usr/include/curl。
     2. 确认curl库正确安装后，请务必重新phpize && configure以保证新的配置生效。
     3. 若按1)、2)操作后仍然报错，则可修改config.m4中PHP_CURL的配置路径为你安装curl的路径。
-4.  若执行make编译时报错Enable sockets support, require sockets extension，请确认PHP版本及sockets扩展正确安装。
+4.  若执行configure时报错Enable sockets support, sockets extension installed incorrectly，请确认PHP版本及sockets扩展正确安装。
     1. 保证PHP版本在5.6以上版本。
-    2. sockets扩展被正确安装(HAVE_SOCKETS这个宏定义)，如果没有请重新安装。
-    3. 若仍然报错，请按编译扩展的步骤安装sockets,即phpize && ./configure XXX && make && make install。
-    4. 请保证sockets扩展的加载在zan加载之前(php.ini中的引入加载顺序)。
+    2. sockets扩展路径ext/sockets下应包含头文件php_sockets.h。
+    3. 请保证sockets扩展的加载在zan加载之前(php.ini中的引入加载顺序)。
 5.  若执行configure时报错Enable openssl support, require openssl library，请重新安装openssl库并保证能链接正确。
     1. 重新安装openssl库。
     2. 添加openssl库路径供链接器找lib，如将```-L/usr/local/opt/openssl/lib```补充到config.m4中的LDFLAGS。

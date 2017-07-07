@@ -148,8 +148,10 @@ if test "$PHP_ZAN" != "no"; then
     fi
 
     if test "$PHP_SOCKETS" = "yes"; then
-		AC_DEFINE(SW_SOCKETS, 1, [enable sockets support])
-    fi
+       AC_CHECK_HEADER([${phpincludedir}/ext/sockets/php_sockets.h],,
+         [AC_MSG_ERROR([enable sockets support, sockets extension installed incorrectly])])
+       AC_DEFINE(SW_USE_SOCKETS, 1, [enable sockets support])
+    fi   
 
     if test "$PHP_RINGBUFFER" = "yes"; then
 		AC_DEFINE(SW_USE_RINGBUFFER, 1, [enable ringbuffer support])

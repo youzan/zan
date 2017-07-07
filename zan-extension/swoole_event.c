@@ -236,7 +236,7 @@ static int swoole_convert_to_fd(zval *zfd)
         }
         else
         {
-#ifdef SWOOLE_SOCKETS_SUPPORT
+#ifdef SW_USE_SOCKETS
         	php_socket *php_sock = NULL;
             if (SW_ZEND_FETCH_RESOURCE_NO_RETURN(php_sock, php_socket*, &zfd, -1, NULL, php_sockets_le_socket()))
             {
@@ -262,7 +262,7 @@ static int swoole_convert_to_fd(zval *zfd)
     return socket_fd < 0? SW_ERR:socket_fd;
 }
 
-#ifdef SWOOLE_SOCKETS_SUPPORT
+#ifdef SW_USE_SOCKETS
 php_socket* swoole_convert_to_socket(int sock)
 {
 
