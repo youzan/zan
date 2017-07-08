@@ -129,7 +129,7 @@ AC_MSG_RESULT([$CLANG])
 if test "$CLANG" = "yes"; then
     CFLAGS="$CFLAGS -std=gnu89 -fsanitize=bounds -fsanitize-undefined-trap-on-error"
 else
-    CFLAGS="$CFLAGS -fbounds-check"
+    CFLAGS="$CFLAGS -std=gnu99 -fbounds-check"
 fi
 
 if test "$PHP_ZAN" != "no"; then
@@ -148,9 +148,10 @@ if test "$PHP_ZAN" != "no"; then
     fi
 
     if test "$PHP_SOCKETS" = "yes"; then
-       AC_CHECK_HEADER([${phpincludedir}/ext/sockets/php_sockets.h],,
-         [AC_MSG_ERROR([enable sockets support, sockets extension installed incorrectly])])
-       AC_DEFINE(SW_USE_SOCKETS, 1, [enable sockets support])
+        AC_CHECK_HEADER([${phpincludedir}/ext/sockets/php_sockets.h],
+            [AC_DEFINE([HAVE_SOCKETS], 1, [ ])],
+            [AC_MSG_ERROR([enable sockets support, sockets extension installed incorrectly])])
+        AC_DEFINE(SW_USE_SOCKETS, 1, [enable sockets support])
     fi   
 
     if test "$PHP_RINGBUFFER" = "yes"; then
@@ -164,7 +165,7 @@ if test "$PHP_ZAN" != "no"; then
     AC_ZAN_CPU_AFFINITY
     AC_ZAN_HAVE_REUSEPORT
 
-    CFLAGS="-std=gnu99 -Wall -pthread $CFLAGS -fstack-check -fstack-protector -fstack-protector-all -fno-strict-aliasing"
+    CFLAGS="-Wall -pthread $CFLAGS -fstack-check -fstack-protector -fstack-protector-all -fno-strict-aliasing"
     LDFLAGS="$LDFLAGS -lpthread"
 
     if test "$PHP_MYSQLND" = "yes"; then
