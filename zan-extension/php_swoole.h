@@ -132,13 +132,8 @@ extern swoole_object_array swoole_objects;
 #endif
 #endif
 
-#ifdef SW_SOCKETS
-#if PHP_VERSION_ID >= 50301 && (HAVE_SOCKETS || defined(COMPILE_DL_SOCKETS))
+#if SW_USE_SOCKETS && PHP_VERSION_ID >= 50301
 #include "ext/sockets/php_sockets.h"
-#define SWOOLE_SOCKETS_SUPPORT
-#else
-#error "Enable sockets support, require sockets extension."
-#endif
 #endif
 
 #ifdef SW_USE_HTTP2
@@ -453,7 +448,7 @@ void swoole_set_property(zval *object, int property_id, void *ptr);
 void* swoole_get_object(zval *object);
 void* swoole_get_property(zval *object, int property_id);
 
-#ifdef SWOOLE_SOCKETS_SUPPORT
+#ifdef SW_USE_SOCKETS
 php_socket *swoole_convert_to_socket(int sock);
 #endif
 

@@ -2697,7 +2697,7 @@ PHP_METHOD(swoole_server, getSocket)
 		RETURN_FALSE;
 	}
 
-#ifdef SWOOLE_SOCKETS_SUPPORT
+#ifdef SW_USE_SOCKETS
     /// todo find socket.
     int sock = swServer_get_socket(serv, port);
     php_socket *socket_object = swoole_convert_to_socket(sock);

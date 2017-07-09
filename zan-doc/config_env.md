@@ -2,7 +2,7 @@
  --enable-zan-debug     开启Zan扩展调试功能(开启SW_DEBUG宏)
 
  --enable-sockets       使用sockets扩展
-                        注意需要安装PHP sockets扩展，否则虽定义宏SW_SOCKETS会而找不到sockets扩展报编译错误
+                        注意需要安装PHP sockets扩展，否则configure时检查头文件php_sockets.h会出错
 
 --enable-ringbuffer     使用ringbuffer内存池(宏SW_USE_RINGBUFFER）
 
@@ -116,11 +116,10 @@ Zan编译安装常见问题：
         对应头文件路径则为/usr/include/curl。
     2.  确认curl库正确安装后，请务必重新phpize && configure以保证新的配置生效。
     3.  若按1)、2)操作后仍然报错，则可修改config.m4中PHP_CURL的配置路径为你安装curl的路径。
-4.  若执行make编译时报错Enable sockets support, require sockets extension，请确认PHP版本及sockets扩展正确安装。
-    1.  保证PHP版本在5.6以上版本。
-    2.  sockets扩展被正确安装(HAVE_SOCKETS这个宏定义)，如果没有请重新安装。
-    3.  注意PHP加载扩展顺序，确保sockets扩展需在zan前被加载，否则zan不能正确引用到sockets中的符号表信息。
-    4.  若仍然报错，请按编译扩展的步骤安装sockets,即phpize && ./configure XXX && make && make install。
+4.  若执行configure时报错enable sockets support, sockets extension installed incorrectly，请确认PHP版本及sockets扩展正确安装。
+    1. PHP版本需要在5.6以上版本。
+    2. 在PHP的include路径下应该包含头文件ext/sockets/php_sockets.h。
+    3. sockets扩展在zan之前加载(php.ini中的引入加载顺序)，以确保能引用符号表信息。
 5.  若执行configure时报错Enable openssl support, require openssl library，请重新安装openssl库并保证能链接正确。
     1.  重新安装openssl库。
     2.  添加openssl库路径供链接器找lib，如将-L/usr/local/opt/openssl/lib补充到config.m4中的LDFLAGS。
