@@ -129,7 +129,8 @@ AC_MSG_RESULT([$CLANG])
 if test "$CLANG" = "yes"; then
     CFLAGS="$CFLAGS -std=gnu89 -fsanitize=bounds -fsanitize-undefined-trap-on-error"
 else
-    CFLAGS="$CFLAGS -std=gnu99 -fbounds-check"
+    CFLAGS="$CFLAGS -std=gnu99 -fbounds-check -pthread"
+    LDFLAGS="$LDFLAGS -lpthread"
 fi
 
 if test "$PHP_ZAN" != "no"; then
@@ -165,8 +166,7 @@ if test "$PHP_ZAN" != "no"; then
     AC_ZAN_CPU_AFFINITY
     AC_ZAN_HAVE_REUSEPORT
 
-    CFLAGS="-Wall -pthread $CFLAGS -fstack-check -fstack-protector -fstack-protector-all -fno-strict-aliasing"
-    LDFLAGS="$LDFLAGS -lpthread"
+    CFLAGS="-Wall $CFLAGS -fstack-check -fstack-protector -fstack-protector-all -fno-strict-aliasing"
 
     if test "$PHP_MYSQLND" = "yes"; then
         PHP_ADD_EXTENSION_DEP(mysqli, mysqlnd)

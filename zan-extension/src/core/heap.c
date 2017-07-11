@@ -220,6 +220,6 @@ void swHeap_print(swHeap *heap)
     int i;
     for(i = 1; i < heap->num; i++)
     {
-        printf("#%d\tpriority=%llu, data=%p\n", i, heap->nodes[i]->priority, heap->nodes[i]->data);
+        printf("#%d\tpriority=%llu, data=%p\n", i, (long long unsigned)heap->nodes[i]->priority, heap->nodes[i]->data);
     }
 }
