@@ -144,7 +144,7 @@ void *swShareMemory_sysv_create(swShareMemory *object, int size, int key)
     }
 
     void *mem = shmat(shmid, NULL, 0);
-    if (mem < (void *) 0)
+    if ((long)mem < 0)
     {
         swWarn("shmat() failed. Error: %s[%d]", strerror(errno), errno);
         return NULL;

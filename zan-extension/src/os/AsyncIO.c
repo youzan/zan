@@ -19,7 +19,6 @@
 */
 
 
-#include <inttypes.h>
 #include "swLog.h"
 #include "swDNS.h"
 #include "swReactor.h"
@@ -97,8 +96,8 @@ void swAio_free(void)
 void swAio_callback_test(swAio_event *aio_event)
 {
     printf("content=%s\n", (char *)aio_event->buf);
-    printf("fd: %d, request_type: %s, offset: %"PRId64", length: %"PRIu64"\n", aio_event->fd,
-            (aio_event == SW_AIO_READ) ? "READ" : "WRITE", aio_event->offset, (uint64_t) aio_event->nbytes);
+    printf("fd: %d, request_type: %s, offset: %lld, length: %llu\n", aio_event->fd,
+            (aio_event == SW_AIO_READ) ? "READ" : "WRITE", (long long int)aio_event->offset, (long long unsigned) aio_event->nbytes);
     SwooleG.running = 0;
 }
 

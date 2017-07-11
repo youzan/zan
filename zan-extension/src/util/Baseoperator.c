@@ -17,8 +17,9 @@
  */
 
 #if __APPLE__
-// Fix warning: 'daemon' is deprecated: first deprecated in macOS 10.5 - Use posix_spawn APIs instead. [-Wdeprecated-declarations]
-#define daemon yes_we_know_that_daemon_is_deprecated_in_os_x_10_5_thankyou
+// Fix warning: 'daemon' is deprecated: first deprecated in macOS 10.5
+// - Use posix_spawn APIs instead. [-Wdeprecated-declarations]
+#define daemon daemon_is_deprecated_in_os_x_10_5
 #endif
 
 #include "swoole.h"
