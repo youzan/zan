@@ -1232,7 +1232,6 @@ static PHP_METHOD(swoole_http_client, __construct)
 
 static PHP_METHOD(swoole_http_client, __destruct)
 {
-//	swWarn("destruct http client.");
 	http_client_free(getThis() TSRMLS_CC);
 
 	http_client_free_cb(getThis());
@@ -1408,7 +1407,6 @@ static PHP_METHOD(swoole_http_client, close)
 		cli->object = obj;
 		cli->released = 1;
 		SwooleG.main_reactor->defer(SwooleG.main_reactor,defer_close,cli);
-//		http_client_onClose(cli);
 	}
 
     SW_CHECK_RETURN(ret);
@@ -1439,10 +1437,7 @@ static PHP_METHOD(swoole_http_client, on)
 
     if (cb_name_len == strlen("error") && strncasecmp("error", cb_name, cb_name_len) == 0)
     {
-		if (hcc->onError)
-		{
-			RETURN_FALSE;
-		}
+		if (hcc->onError) sw_zval_ptr_dtor(&hcc->onError);
 
 		hcc->onError = zcallback;
         sw_copy_to_stack(hcc->onError ,hcc->_onError);
@@ -1454,31 +1449,20 @@ static PHP_METHOD(swoole_http_client, on)
     }
     else if (cb_name_len == strlen("connect") && strncasecmp("connect", cb_name, cb_name_len) == 0)
     {
-		if (hcc->onConnect)
-		{
-			RETURN_FALSE;
-		}
+		if (hcc->onConnect) sw_zval_ptr_dtor(&hcc->onConnect);
 
         hcc->onConnect = zcallback;
         sw_copy_to_stack(hcc->onConnect,hcc->_onConnect);
     }
     else if (cb_name_len == strlen("close") && strncasecmp("close", cb_name, cb_name_len) == 0)
     {
-        if (hcc->onClose)
-        {
-        		RETURN_FALSE;
-        }
-
+        if (hcc->onClose)  sw_zval_ptr_dtor(&hcc->onClose);
         hcc->onClose = zcallback;
         sw_copy_to_stack(hcc->onClose,hcc->_onClose);
     }
     else if (cb_name_len == strlen("message") && strncasecmp("message", cb_name, cb_name_len) == 0)
     {    
-        if (hcc->onMessage)
-        {
-        		RETURN_FALSE;
-        }
-
+        if (hcc->onMessage) sw_zval_ptr_dtor(&hcc->onMessage);
         hcc->onMessage = zcallback;
         sw_copy_to_stack(hcc->onMessage,hcc->_onMessage);
     }

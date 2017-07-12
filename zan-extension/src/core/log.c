@@ -127,7 +127,10 @@ void swLog_put(int level, char *cnt)
 
     int n = snprintf(log_str, SW_LOG_BUFFER_SIZE,
     		"[%s %c%d.%d]\t%s\t%s\n", date_str, process_flag, SwooleG.pid, process_id, level_str, cnt);
-    write(SwooleG.log_fd, log_str, n);
+    if (write(SwooleG.log_fd, log_str, n) < 0)
+    {
+    		return;
+    }
 }
 
 void swPrintf_dump_ascii(char *data, int size)
