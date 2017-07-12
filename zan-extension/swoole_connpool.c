@@ -145,11 +145,11 @@ struct _tag_connpool{
 	connpoolMap* waitConnobjPool;
 	connpoolMap* idlePool;
 	connpoolMap* connObjMap;
-	int 		 (*create)(connpool_property* poolpro,connobj* connobj);
-	int			 (*argsCheck)(zval* value,int type);
-	int 		 (*connect)(connpool_property* poolpro,connobj* connobj);
-	int 		 (*send)(connpool_property* poolpro,connobj* connobj);
-	int 		 (*close)(connobj* connobj);
+	int 		 (*create)(connpool_property* poolpro,connobj* connobj TSRMLS_DC);
+	int			 (*argsCheck)(zval* value,int type TSRMLS_DC);
+	int 		 (*connect)(connpool_property* poolpro,connobj* connobj TSRMLS_DC);
+	int 		 (*send)(connpool_property* poolpro,connobj* connobj TSRMLS_DC);
+	int 		 (*close)(connobj* connobj TSRMLS_DC);
 	zval*   	 zobject;
 #if PHP_MAJOR_VERSION >= 7
 	zval		 _zobject;
@@ -178,12 +178,12 @@ static int map_push_node(connpoolMap* map,uint64_t id,void* data);
 
 
 static int initConnpool(int type, connpool* pool);
-static void onDefer_handler(void* args TSRMLS_DC);
+static void onDefer_handler(void* args);
 static int createConnobj(connpool* pool,connpool_property* proptr,connobj* con_obj);
 static void defer_create_connobj(connpool* pool,connpool_property* proptr,int connTimes);
 static void callback_connobj(connobj_arg* cbArgs TSRMLS_DC);
 static long getConnobjFromPool(connpool* pool,long timeout,zval* callback);
-static void connpool_onTimeout(swTimer* timer,swTimer_node* node TSRMLS_DC);
+static void connpool_onTimeout(swTimer* timer,swTimer_node* node);
 static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj* connClient);
 static int client_close(int type,connobj* connClient TSRMLS_DC);
 static void close_handler(zval* client);
@@ -1916,12 +1916,13 @@ static int initConnpool(int type, connpool* pool)
 	return SW_OK;
 }
 
-static void onDefer_handler(void* data TSRMLS_DC)
+static void onDefer_handler(void* data)
 {
 	if (!data) {
 		return ;
 	}
 
+	SWOOLE_FETCH_TSRMLS;
 	connobj_arg* cbArgs = (connobj_arg*)data;
 	connpool* pool = (connpool*)cbArgs->pool;
 	if (cbArgs->obj)
@@ -1951,7 +1952,7 @@ static void onDefer_handler(void* data TSRMLS_DC)
 		}
 	}
 
-	callback_connobj(cbArgs);
+	callback_connobj(cbArgs TSRMLS_CC);
 
 free_args:
 	if (pool && 1 == pool->refCount--)
@@ -2098,12 +2099,13 @@ static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj*
 	return SW_OK;
 }
 
-static void connpool_onTimeout(swTimer* timer,swTimer_node* node TSRMLS_DC)
+static void connpool_onTimeout(swTimer* timer,swTimer_node* node)
 {
 	if (!node || !node->data) {
 		return ;
 	}
 
+	SWOOLE_FETCH_TSRMLS;
 	connobj_arg* cbArgs = (connobj_arg*)(node->data);
 	switch (cbArgs->type){
 		case  SW_PHP_USER_CALL:
