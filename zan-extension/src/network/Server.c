@@ -490,8 +490,8 @@ int swServer_start(swServer *serv)
 #ifdef SW_USE_RINGBUFFER
     for (index = 0; index < serv->reactor_num; index++)
     {
-        serv->reactor_threads[i].buffer_input = swRingBuffer_new(SwooleG.serv->buffer_input_size, 1);
-        if (!serv->reactor_threads[i].buffer_input)
+        serv->reactor_threads[index].buffer_input = swRingBuffer_new(SwooleG.serv->buffer_input_size, 1);
+        if (!serv->reactor_threads[index].buffer_input)
         {
             return SW_ERR;
         }
