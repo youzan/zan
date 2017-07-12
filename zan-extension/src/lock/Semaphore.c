@@ -39,7 +39,7 @@ int swSem_create(swLock *lock, key_t key)
 
     if (semctl(ret, 0, SETVAL, 1) < 0)
     {
-        swWarn("semctl(SETVAL) failed");
+        swSysError("semctl(SETVAL) failed");
         return SW_ERR;
     }
 

@@ -53,7 +53,7 @@ static void swTable_compress_list(swTable *table)
     swTableRow **tmp = sw_malloc(sizeof(swTableRow *) * table->size);
     if (!tmp)
     {
-        swWarn("malloc() failed, cannot compress the jump table.");
+        swFatalError("malloc() failed, cannot compress the jump table.");
         goto unlock;
     }
 
@@ -95,6 +95,7 @@ swTable* swTable_new(uint32_t rows_size)
     swTable *table = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swTable));
     if (table == NULL)
     {
+    	swFatalError("malloc failed.");
         return NULL;
     }
 
@@ -110,7 +111,7 @@ swTable* swTable_new(uint32_t rows_size)
     {
     	table->lock.free(&table->lock);
     	SwooleG.memory_pool->free(SwooleG.memory_pool,table);
-        swWarn("malloc failed.");
+        swFatalError("malloc failed.");
         return NULL;
     }
 
@@ -179,7 +180,7 @@ int swTableColumn_add(swTable *table, char *name, int len, int type, int size)
         col->type = SW_TABLE_STRING;
         break;
     default:
-        swWarn("unkown column type.");
+        swError("unkown column type.");
         return SW_ERR;
     }
 

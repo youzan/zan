@@ -95,9 +95,10 @@ void swoole_websocket_onOpen(http_context *ctx)
     swConnection *conn = swWorker_get_connection(SwooleG.serv, fd);
     if (!conn)
     {
-        swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_CLOSED, "session[%d] is closed.", fd);
+        swNotice("session[%d] is closed.", fd);
         return;
     }
+
     conn->websocket_status = WEBSOCKET_STATUS_ACTIVE;
 
     zval *zcallback = php_swoole_server_get_callback(SwooleG.serv, conn->from_fd, SW_SERVER_CB_onOpen);

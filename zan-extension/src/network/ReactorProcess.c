@@ -87,7 +87,7 @@ int swReactorProcess_start(swServer *serv)
 
         if (swProcessPool_create(&SwooleGS->task_workers, SwooleG.task_worker_num, SwooleG.task_max_request, key, create_pipe) < 0)
         {
-            swWarn("[Master] create task_workers failed.");
+            swError("[Master] create task_workers error.");
             return SW_ERR;
         }
 

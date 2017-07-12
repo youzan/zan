@@ -24,52 +24,58 @@ static zend_class_entry swoole_connpool_ce;
 zend_class_entry *swoole_connpool_class_entry_ptr = NULL;
 
 enum timeout_cb_type{
-	SW_PHP_USER_CALL = 0,		/// php 调用超时,特指调用get 方法超时
-	SW_CONNINTERVAL_CALL = 1,   /// 内部调用连接方法的间隔
-	SW_HBINTERVAL_CALL = 2,		/// 心跳间隔
+	SW_PHP_USER_CALL = 0,		 /// php 调用超时,特指调用get 方法超时
+	SW_CONNINTERVAL_CALL = 1,    /// 内部调用连接方法的时间间隔
+	SW_HBINTERVAL_CALL = 2,		/// 心跳间隔超时
 };
 
 enum connpool_type{
-	SW_CONNPOOL_TYPE_INVAIL = 0,
-	SW_CONNPOOL_TCP = 1,
-	SW_CONNPOOL_REDIS,
-	SW_CONNPOOL_MYSQL,
-	SW_CONNPOOL_HTTP,
-	SW_CONNPOOL_TYPE_NUM
+	SW_CONNPOOL_TYPE_INVAIL = 0,    /// 无效类型的连接池
+	SW_CONNPOOL_TCP = 1,			   /// async tcp client 连接池
+#ifdef SW_USE_REDIS
+	SW_CONNPOOL_REDIS,			   /// redis client 连接池
+#endif
+	SW_CONNPOOL_MYSQL, 			   /// mysql连接池
+	SW_CONNPOOL_TYPE_NUM,		   /// 连接池类型总数
+	SW_CONNPOOL_HTTP,			   /// http 连接池，预留，当前没有做
 };
 
+/// 参数校验类型
 enum args_check_type{
-	OBJ_IS_INSTANCE = 1,
-	ARGS_IS_VAILED = 1 << 1 ,
-	ARGC_IS_CONNECTED = (1 << 2 | OBJ_IS_INSTANCE)
+	OBJ_IS_INSTANCE = 1,			   /// 校验参数是否是对应对象
+	ARGS_IS_VAILED = 1 << 1 ,	   /// 参数字段校验
+	ARGC_IS_CONNECTED = (1 << 2 | OBJ_IS_INSTANCE)	/// 对象是否处于连接状态，需要先判断是否是指定类型
 };
 
 enum connection_status{
-	SW_CONNOBJ_INITED = 0,
-	SW_CONNOBJ_CONNING,
-	SW_CONNOBJ_OK,
-	SW_CONNOBJ_ERR,
+	SW_CONNOBJ_INITED = 0,				///连接初始状态
+	SW_CONNOBJ_CONNING,					///连接过程中
+	SW_CONNOBJ_OK,						///连接成功
+	SW_CONNOBJ_ERR,						///连接错误
+	SW_CONNOBJ_CLOSED,					///连接关闭
 };
 
 enum connpool_status{
-	SW_CONNPOOL_INIT	= 0,
-	SW_CONNPOOL_INITED  = 1,
-	SW_CONNPOOL_RELEASED = 2,
-	SW_CONNPOOLOBJ      = 10,
-	SW_CONNPOOLOBJ_DEFER_CONNECT = 11,
-	SW_CONNPOOLOBJ_WAIT_CONNECT = 12,
-	SW_CONNPOOLOBJ_WAIT_HB = 13,
-	SW_CONNPOOLOBJ_HB = 14,
-	SW_CONNPOOLOBJ_CONNECTED = 15,
-	SW_CONNPOOLOBJ_WAIT_CB = 16,
-	SW_CONNPOOLOBJ_REALEASED = 17
+	SW_CONNPOOL_INIT	= 0,					/// 连接池初始状态
+	SW_CONNPOOL_INITED  = 1,				/// 连接池创建成功
+	SW_CONNPOOL_RELEASED = 2,			/// 连接池销毁
+	SW_CONNPOOLOBJ      = 10,			/// 连接对象的初始状态
+	SW_CONNPOOLOBJ_DEFER_CONNECT = 11,	/// 连接对象延迟连接状态
+	SW_CONNPOOLOBJ_WAIT_CONNECT = 12,	/// 连接对象等待连接结果回调
+	SW_CONNPOOLOBJ_WAIT_HB = 13,			/// 连接对象等待心跳开始
+	SW_CONNPOOLOBJ_HB = 14,				/// 连接对象心跳过程中
+	SW_CONNPOOLOBJ_CONNECTED = 15,		/// 连接对象处于空闲状态
+	SW_CONNPOOLOBJ_WAIT_CB = 16,			/// 连接对象获取，等待回调至业务层
+	SW_CONNPOOLOBJ_REALEASED = 17		/// 连接关联对象已经销毁，但连接对象处于延迟回调中，延迟回调中需要销毁连接对象
 };
 
 #define DEFAULT_CONNECT_TIMEOUT   200
 #define DEFAULT_RECVMSG_TIMEOUT   500
 #define DEFAULT_GETCONN_TIMEOUT   200
 
-#define MAX_RECONNECT_TIMES       5
+#define DEFAULT_RECONNECT_TIMES   5
+#define MAX_RECONNECT_TIMES		 15
+
 /// 用于产生重连间隔随机数
 #define MAX_RECONNECT_INTERVAL    10
 #define MIN_RECONNECT_INTERVAL    1
@@ -79,8 +85,8 @@ enum connpool_status{
 typedef struct _tag_connpool connpool;
 
 typedef struct _tag_connobj{
-	uint8_t     connStatus:2;
-	uint8_t		connTimes:6;
+	uint8_t     connStatus;
+	uint8_t		connTimes;
 	uint8_t     currStatus;
 	connpool*   pool;
 	uint64_t 	clientId;
@@ -104,14 +110,14 @@ typedef struct _tag_connobj_arg{
 }connobj_arg;
 
 typedef struct _tag_connpool_property{
-	int 		 maxConnTimes;
+	int 		 	 maxConnTimes;
 	int   		 maxConnIntvl;
 	int			 connIntvl;
 	long   		 connpoolType;
 	long   		 connpoolMinNum;
 	long   		 connpoolMaxNum;
-	long		 connectTimeout;
-	long		 hbTimeout;
+	long		 	 connectTimeout;
+	long		 	 hbTimeout;
 	long         hbIntervalTime;
 	zval*  		 onHBMsgConstruct;
 	zval*  		 onHBMsgCheck;
@@ -130,7 +136,7 @@ typedef struct _tag_connpoolMap{
 	void* (*pop)(struct _tag_connpoolMap*);
 	int	  (*push)(struct _tag_connpoolMap* map,uint64_t id,void* data);
 	int	  (*getNums)(struct _tag_connpoolMap* map);
-	int (*destroyMap)(struct _tag_connpoolMap* map);
+	int   (*destroyMap)(struct _tag_connpoolMap* map);
 }connpoolMap;
 
 struct _tag_connpool{
@@ -181,6 +187,7 @@ static void connpool_onTimeout(swTimer* timer,swTimer_node* node TSRMLS_DC);
 static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj* connClient);
 static int client_close(int type,connobj* connClient TSRMLS_DC);
 static void close_handler(zval* client);
+static void clean_conobj_resource(connobj* con_obj,int reconnect);
 static void connpool_onHBSend(swTimer* timer,swTimer_node* node);
 static void destroy_resource(connpool* pool,connpool_property* proptr);
 
@@ -193,13 +200,6 @@ void releaseConnobj(zval* client)
 	}
 
 	swoole_set_property(client,swoole_connpool_object,NULL);
-	/// 对象在等待回调时，不能立即释放，需要在延迟回调中处理
-	if (connClient->currStatus == SW_CONNPOOLOBJ_WAIT_CB)
-	{
-		connClient->currStatus = SW_CONNPOOLOBJ_REALEASED;
-		return ;
-	}
-
 	connpool* pool = connClient->pool;
 	connClient->pool = NULL;
 	if (pool && pool->connObjMap)
@@ -210,6 +210,13 @@ void releaseConnobj(zval* client)
 	if (pool && 1 == pool->refCount--)
 	{
 		swoole_efree(pool);
+	}
+
+	/// 对象在等待回调时，不能立即释放，需要在延迟回调中处理
+	if (connClient->currStatus == SW_CONNPOOLOBJ_WAIT_CB)
+	{
+		connClient->currStatus = SW_CONNPOOLOBJ_REALEASED;
+		return ;
 	}
 
 	swoole_efree(connClient);
@@ -273,7 +280,6 @@ static void defer_create_connobj(connpool* pool,connpool_property* proptr,int co
 	connobj_arg* args = emalloc(sizeof(connobj_arg));
 	memset(args,0x00,sizeof(connobj_arg));
 	args->type = SW_CONNINTERVAL_CALL;
-//	args->pool = pool;
 
 	connobj* con_obj = newConnobj(pool);
 	con_obj->connTimes = connTimes;
@@ -385,7 +391,9 @@ void swoole_connpool_init(int module_number TSRMLS_DC)
 	/// declare property
 //	zend_declare_property_long(swoole_connpool_class_entry_ptr, SW_STRL("errCode")-1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
 	zend_declare_class_constant_long(swoole_connpool_class_entry_ptr, SW_STRL("SWOOLE_CONNPOOL_TCP")-1,SW_CONNPOOL_TCP TSRMLS_CC);
+#ifdef SW_USE_REDIS
 	zend_declare_class_constant_long(swoole_connpool_class_entry_ptr, SW_STRL("SWOOLE_CONNPOOL_REDIS")-1,SW_CONNPOOL_REDIS TSRMLS_CC);
+#endif
 	zend_declare_class_constant_long(swoole_connpool_class_entry_ptr, SW_STRL("SWOOLE_CONNPOOL_MYSQL")-1,SW_CONNPOOL_MYSQL TSRMLS_CC);
 //	zend_declare_class_constant_long(swoole_connpool_class_entry_ptr, SW_STRL("SWOOLE_CONNPOOL_HTTP")-1,SW_CONNPOOL_HTTP TSRMLS_CC);
 	zend_declare_class_constant_long(swoole_connpool_class_entry_ptr, SW_STRL("SWOOLE_CONNNECT_OK")-1,SW_CONNOBJ_OK TSRMLS_CC);
@@ -575,7 +583,7 @@ static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* co
 	int ret = SW_OK;
 	if (sw_call_user_function_ex(NULL,&client,function,&retval,3,args,0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("call tcpclient connect error.");
+		swError("call tcpclient connect error.");
 		ret = SW_ERR;
 	}
 
@@ -583,7 +591,7 @@ static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* co
 
 	if (retval && !ZVAL_IS_NULL(retval) && !Z_BVAL_P(retval))
 	{
-		swWarn("tcpclient connect return false.");
+		swDebug("tcpclient connect return false.");
 		ret = SW_ERR;
 	}
 
@@ -612,6 +620,7 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 	sw_call_user_function_ex(EG(function_table),NULL,php_callback,&retval,0,NULL,0,NULL TSRMLS_CC);
 	if (!retval || ZVAL_IS_NULL(retval) || Z_TYPE_P(retval) != IS_ARRAY)
 	{
+		if (retval) {sw_zval_ptr_dtor(&retval);retval = NULL;}
 		return SW_ERR;
 	}
 
@@ -620,9 +629,11 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 	zval *data = NULL;
 	if (!php_swoole_array_get_value(_ht, "args", data))
 	{
+		if (retval) {sw_zval_ptr_dtor(&retval);retval = NULL;}
 		return SW_ERR;
 	}
 
+	zval* result = NULL;
 	zend_update_property_long(swoole_client_class_entry_ptr, client, ZEND_STRL("sendTimeout"), poolproper->hbTimeout TSRMLS_CC);
 
 	{
@@ -632,8 +643,8 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 		SW_MAKE_STD_ZVAL(argv1);
 		SW_ZVAL_STRING(argv0,"timeout",1);
 		SW_ZVAL_STRING(argv1,"onClientTimeout",1);
-		sw_zend_call_method_with_2_params(&client,swoole_client_class_entry_ptr,NULL,"on",&retval,argv0,argv1);
-		if (retval)  {sw_zval_ptr_dtor(&retval);retval = NULL;}
+		sw_zend_call_method_with_2_params(&client,swoole_client_class_entry_ptr,NULL,"on",&result,argv0,argv1);
+		if (result)  {sw_zval_ptr_dtor(&result);result = NULL;}
 		sw_zval_ptr_dtor(&argv0);
 		sw_zval_ptr_dtor(&argv1);
 	}
@@ -645,8 +656,8 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 		SW_MAKE_STD_ZVAL(argv1);
 		SW_ZVAL_STRING(argv0,"receive",1);
 		SW_ZVAL_STRING(argv1,"onClientRecieve",1);
-		sw_zend_call_method_with_2_params(&client,swoole_client_class_entry_ptr,NULL,"on",&retval,argv0,argv1);
-		if (retval)  {sw_zval_ptr_dtor(&retval);retval = NULL;}
+		sw_zend_call_method_with_2_params(&client,swoole_client_class_entry_ptr,NULL,"on",&result,argv0,argv1);
+		if (result)  {sw_zval_ptr_dtor(&result);result = NULL;}
 		sw_zval_ptr_dtor(&argv0);
 		sw_zval_ptr_dtor(&argv1);
 	}
@@ -656,13 +667,12 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 	SW_ZVAL_STRING(function,"send",1);
 
 	int ret = SW_OK;
-	zval* result = NULL;
 	zval** args[1];
 	args[0] = &data;
 
 	if (sw_call_user_function_ex(NULL,&client,function,&result,1,args,0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("call tcp send failed.");
+		swError("call tcp send error.");
 		ret = SW_ERR;
 	}
 
@@ -674,6 +684,7 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 	}
 
 	if (result) sw_zval_ptr_dtor(&result);
+	if (retval) sw_zval_ptr_dtor(&retval);
 	sw_zval_ptr_dtor(&function);
 	return ret;
 }
@@ -818,14 +829,14 @@ static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* 
 	SW_ZVAL_STRING(function,"connect",1);
 	if (sw_call_user_function_ex(NULL,&client,function,&retval,3,argvs,0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("call redis connect error.");
+		swError("call redis connect error.");
 		ret = SW_ERR;
 	}
 
 	zend_update_property_long(swoole_redis_class_entry_ptr, client, ZEND_STRL("connectTimeout"), 0 TSRMLS_CC);
 	if (retval && !ZVAL_IS_NULL(retval) && !Z_BVAL_P(retval))
 	{
-		swWarn("redisclient connect return false.");
+		swDebug("redisclient connect return false.");
 		ret = SW_ERR;
 	}
 
@@ -854,6 +865,7 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 	sw_call_user_function_ex(EG(function_table),NULL,php_callback,&retval,0,NULL,0,NULL TSRMLS_CC);
 	if (!retval || ZVAL_IS_NULL(retval) || Z_TYPE_P(retval) != IS_ARRAY)
 	{
+		if (retval) sw_zval_ptr_dtor(&retval);
 		return SW_ERR;
 	}
 
@@ -862,9 +874,11 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 	zval* method = NULL;
 	if (!php_swoole_array_get_value(_ht, "method", method))
 	{
+		if (retval) sw_zval_ptr_dtor(&retval);
 		return SW_ERR;
 	}
 
+	zval* result = NULL;
 	zend_update_property_long(swoole_redis_class_entry_ptr, client, ZEND_STRL("queryTimeout"), poolproper->hbTimeout TSRMLS_CC);
 
 	{
@@ -874,8 +888,8 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 		SW_MAKE_STD_ZVAL(argv1);
 		SW_ZVAL_STRING(argv0,"timeout",1);
 		SW_ZVAL_STRING(argv1,"onClientTimeout",1);
-		sw_zend_call_method_with_2_params(&client,swoole_redis_class_entry_ptr,NULL,"on",&retval,argv0,argv1);
-		if (retval)  {sw_zval_ptr_dtor(&retval);retval = NULL;}
+		sw_zend_call_method_with_2_params(&client,swoole_redis_class_entry_ptr,NULL,"on",&result,argv0,argv1);
+		if (result)  {sw_zval_ptr_dtor(&result);result = NULL;}
 		sw_zval_ptr_dtor(&argv0);
 		sw_zval_ptr_dtor(&argv1);
 	}
@@ -895,24 +909,21 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 	argvs[argc++] = &callback;
 
 	int ret = SW_OK;
-	zval* result = NULL;
 	if (sw_call_user_function_ex(NULL,&client,method,&result,argc,argvs,0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("call redis __call failed.");
+		swError("call redis __call failed.");
 		ret = SW_ERR;
 	}
 
 	zend_update_property_long(swoole_redis_class_entry_ptr, client, ZEND_STRL("queryTimeout"), 0 TSRMLS_CC);
 	if (result && !ZVAL_IS_NULL(result) && !Z_BVAL_P(result))
 	{
-		swWarn("redisclient __call return false.");
+		swDebug("redisclient __call return false.");
 		ret = SW_ERR;
 	}
 
-	if (result)
-	{
-		sw_zval_ptr_dtor(&result);
-	}
+	if (result) sw_zval_ptr_dtor(&result);
+	if (retval) sw_zval_ptr_dtor(&retval);
 
 	sw_zval_ptr_dtor(&callback);
 
@@ -1044,7 +1055,7 @@ static sw_inline int mysqlclient_connect(connpool_property* poolproper,connobj* 
 	SW_ZVAL_STRING(function,"connect",1);
 	if (sw_call_user_function_ex(NULL,&client,function,&retval,2,argvs,0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("call mysql connect failed.");
+		swError("call mysql connect failed.");
 		ret = SW_ERR;
 	}
 
@@ -1052,7 +1063,7 @@ static sw_inline int mysqlclient_connect(connpool_property* poolproper,connobj* 
 
 	if (retval && !ZVAL_IS_NULL(retval) && !Z_BVAL_P(retval))
 	{
-		swWarn("mysqlclient connect return false.");
+		swDebug("mysqlclient connect return false.");
 		ret = SW_ERR;
 	}
 
@@ -1082,6 +1093,7 @@ static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* con
 
 	if (!retval || ZVAL_IS_NULL(retval) || Z_TYPE_P(retval) != IS_ARRAY)
 	{
+		if (retval) sw_zval_ptr_dtor(&retval);
 		return SW_ERR;
 	}
 
@@ -1091,9 +1103,11 @@ static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* con
 	zval *data = NULL;
 	if (!php_swoole_array_get_value(_ht, "args", data))
 	{
+		if (retval) sw_zval_ptr_dtor(&retval);
 		return SW_ERR;
 	}
 
+	zval* result = NULL;
 	zend_update_property_long(swoole_mysql_class_entry_ptr, client, ZEND_STRL("queryTimeout"), poolproper->hbTimeout TSRMLS_CC);
 
 	///设置超时回调
@@ -1104,8 +1118,8 @@ static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* con
 		SW_MAKE_STD_ZVAL(argv1);
 		SW_ZVAL_STRING(argv0,"timeout",1);
 		SW_ZVAL_STRING(argv1,"onClientTimeout",1);
-		sw_zend_call_method_with_2_params(&client,swoole_mysql_class_entry_ptr,NULL,"on",&retval,argv0,argv1);
-		if (retval) {sw_zval_ptr_dtor(&retval);retval = NULL;}
+		sw_zend_call_method_with_2_params(&client,swoole_mysql_class_entry_ptr,NULL,"on",&result,argv0,argv1);
+		if (result) {sw_zval_ptr_dtor(&result);result = NULL;}
 		sw_zval_ptr_dtor(&argv0);
 		sw_zval_ptr_dtor(&argv1);
 	}
@@ -1123,11 +1137,9 @@ static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* con
 	argvs[1] = &callback;
 
 	int ret = SW_OK;
-	zval* result = NULL;
-
 	if (sw_call_user_function_ex(NULL,&client,method,&result,2,argvs,0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("call mysql query failed.");
+		swError("call mysql query failed.");
 		ret = SW_ERR;
 	}
 
@@ -1135,14 +1147,12 @@ static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* con
 
 	if (result && !ZVAL_IS_NULL(result) && !Z_BVAL_P(result))
 	{
-		swWarn("mysql connect return false.");
+		swDebug("mysql connect return false.");
 		ret = SW_ERR;
 	}
 
-	if (result)
-	{
-		sw_zval_ptr_dtor(&result);
-	}
+	if (result) sw_zval_ptr_dtor(&result);
+	if (retval) sw_zval_ptr_dtor(&retval);
 
 	sw_zval_ptr_dtor(&callback);
 	sw_zval_ptr_dtor(&method);
@@ -1157,7 +1167,11 @@ static sw_inline int tcpclient_close(connobj* connClient TSRMLS_DC)
 
 static sw_inline int redisclient_close(connobj* connClient TSRMLS_DC)
 {
+#ifdef SW_USE_REDIS
 	return client_close(SW_CONNPOOL_REDIS,connClient TSRMLS_CC);
+#else
+	return SW_OK;
+#endif
 }
 
 static sw_inline int mysqlclient_close(connobj* connClient TSRMLS_DC)
@@ -1171,28 +1185,23 @@ static int client_close(int type,connobj* connClient TSRMLS_DC)
 		return SW_ERR;
 	}
 
-	connClient->connStatus = SW_CONNOBJ_ERR;
-	if (!connClient->client)
+	/// 防二次调用
+	if (SW_CONNOBJ_CLOSED != connClient->connStatus)
 	{
-		if (connClient->timeId > 0)
+		clean_conobj_resource(connClient,connClient->client != NULL? 1:0);
+		if (!connClient->client)
 		{
-			swTimer_del(&SwooleG.timer,connClient->timeId);
-			connClient->timeId = 0;
-		}
+			connpool* pool = connClient->pool;
+			connClient->pool = NULL;
+			if (pool && 1 == pool->refCount--)
+			{
+				swoole_efree(pool);
+			}
 
-		connpool* pool = connClient->pool;
-		connClient->pool = NULL;
-		if (pool && pool->connObjMap)
-		{
-			pool->connObjMap->release(pool->connObjMap,connClient->clientId);
+			swoole_efree(connClient);
+			return SW_OK;
 		}
-
-		if (pool && 1 == pool->refCount--)
-		{
-			swoole_efree(pool);
-		}
-
-		swoole_efree(connClient);
+	} else if (!connClient->client){
 		return SW_OK;
 	}
 
@@ -1202,9 +1211,11 @@ static int client_close(int type,connobj* connClient TSRMLS_DC)
 	case SW_CONNPOOL_TCP:
 		client_class_entry_ptr = swoole_client_class_entry_ptr;
 		break;
+#ifdef SW_USE_REDIS
 	case SW_CONNPOOL_REDIS:
 		client_class_entry_ptr = swoole_redis_class_entry_ptr;
 		break;
+#endif
 	case SW_CONNPOOL_MYSQL:
 		client_class_entry_ptr = swoole_mysql_class_entry_ptr;
 		break;
@@ -1229,7 +1240,6 @@ static int client_close(int type,connobj* connClient TSRMLS_DC)
 		sw_zval_ptr_dtor(&retval);
 	}
 
-//	close_handler(client);
 	sw_zval_ptr_dtor(&client);
 	return SW_OK;
 }
@@ -1258,7 +1268,7 @@ ZEND_METHOD(swoole_connpool,__construct)
 	proptr->connectTimeout = DEFAULT_CONNECT_TIMEOUT;
 	proptr->connIntvl = rand()%(MAX_RECONNECT_INTERVAL - MIN_RECONNECT_INTERVAL) + MIN_RECONNECT_INTERVAL;
 	proptr->maxConnIntvl = rand()%(MAX_CONNECT_INTERVAL - MIN_CONNECT_INTERVAL) + MIN_CONNECT_INTERVAL;
-	proptr->maxConnTimes = MAX_RECONNECT_TIMES;
+	proptr->maxConnTimes = DEFAULT_RECONNECT_TIMES;
 	swoole_set_property(zobject,swoole_property_common,proptr);
 
 //	RETURN_TRUE;
@@ -1420,10 +1430,11 @@ ZEND_METHOD(swoole_connpool,setConfig)
 	if (php_swoole_array_get_value(_ht, "maxConnectTimes", value))
 	{
 		convert_to_long(value);
-		int maxConnectTimes =  proptr->maxConnIntvl;
+		int defConnectTimes =  proptr->maxConnIntvl;
 		proptr->maxConnTimes = Z_LVAL_P(value);
-		proptr->maxConnTimes = proptr->maxConnTimes <= maxConnectTimes?
-							maxConnectTimes:proptr->maxConnTimes;
+		proptr->maxConnTimes = proptr->maxConnTimes <= 0? defConnectTimes:
+								 (proptr->maxConnTimes > defConnectTimes?
+											 MAX_RECONNECT_TIMES: proptr->maxConnTimes);
 	}
 
 	if (proptr->cfg)
@@ -1451,7 +1462,7 @@ ZEND_METHOD(swoole_connpool,on)
 	zval *zcallback = NULL;
 	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &cb_name, &cb_name_len, &zcallback))
 	{
-		swWarn("parse user set parameters error.");
+		swError("parse user set parameters error.");
 		RETURN_FALSE
 	}
 
@@ -1547,12 +1558,12 @@ ZEND_METHOD(swoole_connpool,release)
 	status = (status == SW_CONNOBJ_OK)? result:status;
 	connobj* connClient = swoole_get_property(client,swoole_connpool_object);
 	/// 连接对象不存在
-	if (!connClient || SW_CONNOBJ_ERR == connClient->connStatus)
+	if (!connClient || SW_CONNOBJ_CLOSED == connClient->connStatus)
 	{
 		return;
 	}
 
-	/// 连接失效，需要关闭连接
+	/// 连接池销毁，需要关闭连接
 	if (SW_CONNPOOL_RELEASED == pool->connpoolStatus) {
 		pool->close(connClient);
 		RETURN_TRUE;
@@ -1607,9 +1618,6 @@ ZEND_FUNCTION(onClientClose)
 		return;
 	}
 
-//	connobj* con_obj = swoole_get_property(client,swoole_connpool_object);
-//	connpool* pool = con_obj->pool;
-//	pool->close(con_obj);
 	close_handler(client);
 	return;
 }
@@ -1659,7 +1667,11 @@ ZEND_FUNCTION(onSubClientConnect)
 	connpool_property* proptr = swoole_get_property(pool->zobject,swoole_property_common);
 	zend_class_entry *class_entry_ptr = (SW_CONNPOOL_MYSQL == proptr->connpoolType)?
 										swoole_mysql_class_entry_ptr:
+#ifdef SW_USE_REDIS
 										(SW_CONNPOOL_REDIS == proptr->connpoolType? swoole_redis_class_entry_ptr:NULL);
+#else
+										NULL;
+#endif
 
 	if (class_entry_ptr)
 	{
@@ -1699,7 +1711,7 @@ ZEND_FUNCTION(onClientRecieve)
 	if (zcallback &&
 			sw_call_user_function_ex(EG(function_table), NULL, zcallback, &retval, 3, argvs, 0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("onReactorCallback handler error");
+		swError("onReactorCallback handler error");
 	}
 
 	/// 心跳校验失败，需要释放连接对象
@@ -1795,7 +1807,7 @@ static void* map_pop_node(connpoolMap* map)
 		return NULL;
 	}
 
-	swLinkedList_node* node = swLinkedList_get_tail_node(map->list);
+	swLinkedList_node* node = swLinkedList_get_head_node(map->list);
 	if (!node)
 	{
 		return NULL;
@@ -1853,6 +1865,7 @@ static int initConnpool(int type, connpool* pool)
 			pool->send = tcpclient_send;
 			pool->argsCheck = tcpclient_args_check;
 			break;
+#ifdef SW_USE_REDIS
 		case SW_CONNPOOL_REDIS:
 			pool->create = redisclient_create;
 			pool->connect = redisclient_connect;
@@ -1860,6 +1873,7 @@ static int initConnpool(int type, connpool* pool)
 			pool->send = redisclient_send;
 			pool->argsCheck = redisclient_args_check;
 			break;
+#endif
 		case SW_CONNPOOL_MYSQL:
 			pool->create = mysqlclient_create;
 			pool->connect = mysqlclient_connect;
@@ -1909,37 +1923,41 @@ static void onDefer_handler(void* data TSRMLS_DC)
 	}
 
 	connobj_arg* cbArgs = (connobj_arg*)data;
-	connobj* connClient = NULL;
-	connpool* pool = NULL;
+	connpool* pool = (connpool*)cbArgs->pool;
 	if (cbArgs->obj)
 	{
-		uint8_t status = cbArgs->obj->currStatus;
-		cbArgs->obj->currStatus = SW_CONNPOOLOBJ_CONNECTED;
-		if (status == SW_CONNPOOLOBJ_REALEASED)
+		connobj* connClient = cbArgs->obj;
+		uint8_t curStatus = connClient->currStatus;
+		uint8_t connStatus = connClient->connStatus;
+		connClient->currStatus = SW_CONNPOOLOBJ_CONNECTED;
+		if (SW_CONNPOOL_RELEASED == pool->connpoolStatus)
 		{
-			connClient = cbArgs->obj;
-			cbArgs->obj = NULL;
-			pool = connClient->pool;
+			if (SW_CONNPOOLOBJ_REALEASED == curStatus)
+			{
+				swoole_efree(connClient);
+			}
+
+			goto free_args;
+		}
+		else if (SW_CONNPOOLOBJ_REALEASED == curStatus)
+		{
+			cbArgs->obj = (pool->idlePool)? pool->idlePool->pop(pool->idlePool):NULL;
 			connClient->pool = NULL;
+			swoole_efree(connClient);
+		}
+		else if (SW_CONNOBJ_OK != connStatus)
+		{
+			cbArgs->obj = (pool->idlePool)? pool->idlePool->pop(pool->idlePool):NULL;
 		}
 	}
 
-	if (!pool || pool->connpoolStatus != SW_CONNPOOL_RELEASED)
-	{
-		callback_connobj(cbArgs TSRMLS_CC);
-	}
+	callback_connobj(cbArgs);
 
-	if (pool && pool->connObjMap)
-	{
-		pool->connObjMap->release(pool->connObjMap,connClient->clientId);
-	}
-
+free_args:
 	if (pool && 1 == pool->refCount--)
 	{
 		swoole_efree(pool);
 	}
-
-	swoole_efree(connClient);
 
 	free_data(cbArgs);
 }
@@ -1963,7 +1981,7 @@ static void callback_connobj(connobj_arg* cbArgs TSRMLS_DC)
 
 	if (sw_call_user_function_ex(EG(function_table), NULL, cbArgs->user_callback, &retval, 2, argvs, 0, NULL TSRMLS_CC) == FAILURE)
 	{
-		swWarn("swoole_event: defer handler error");
+		swError("get connected obj call callback  error");
 	}
 
 	if (EG(exception))
@@ -2004,6 +2022,7 @@ static long getConnobjFromPool(connpool* pool,long timeout,zval* callback)
 
 		deferArgs->obj = obj;
 		obj->currStatus = SW_CONNPOOLOBJ_WAIT_CB;
+		pool->refCount++;
 		SwooleG.main_reactor->defer(SwooleG.main_reactor,onDefer_handler,deferArgs);
 	}
 	else
@@ -2043,7 +2062,8 @@ static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj*
 		connobj_arg* deferArgs = emalloc(sizeof(connobj_arg));
 		memset(deferArgs,0x00,sizeof(connobj_arg));
 		deferArgs->obj = connClient;
-		deferArgs->pool = arg->pool;
+		deferArgs->pool = pool;
+		pool->refCount++;
 		zval* callback = arg->user_callback;
 		deferArgs->user_callback = callback;
 		sw_zval_add_ref(&callback);
@@ -2056,7 +2076,7 @@ static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj*
 		/// 检测是否需要心跳
 		if (proptr->hbIntervalTime > 0 && proptr->onHBMsgConstruct && proptr->onHBMsgCheck)
 		{
-			connobj_arg* arg = emalloc(sizeof(connobj_arg));
+			arg = emalloc(sizeof(connobj_arg));
 			memset(arg,0x00,sizeof(connobj_arg));
 			arg->pool = pool;
 			arg->type = SW_HBINTERVAL_CALL;
@@ -2065,7 +2085,6 @@ static int handler_new_connobj(connpool* pool,connpool_property* proptr,connobj*
 				connClient->currStatus = SW_CONNPOOLOBJ_WAIT_HB;
 				arg->tmpId = connClient->timeId = id;
 				arg->clientId = connClient->clientId;
-//				arg->obj = connClient;
 			}
 			else
 			{
@@ -2112,19 +2131,39 @@ static void close_handler(zval* client)
 		return;
 	}
 
+	connpool* pool = con_obj->pool;
+	if (pool && SW_CONNPOOL_RELEASED == pool->connpoolStatus)
+	{
+		goto release_client;
+	}
+
+	if (SW_CONNOBJ_CLOSED != con_obj->connStatus)
+	{
+		clean_conobj_resource(con_obj,1);
+	}
+
+release_client:
 	con_obj->client = NULL;
+	sw_zval_ptr_dtor(&client);
+}
+
+static void clean_conobj_resource(connobj* con_obj,int reconnect)
+{
+	if (!con_obj)
+	{
+		return;
+	}
+
 	if (con_obj->timeId > 0)
 	{
 		swTimer_del(&SwooleG.timer,con_obj->timeId);
 		con_obj->timeId = 0;
 	}
 
-	con_obj->connStatus = SW_CONNOBJ_ERR;
+	con_obj->connStatus = SW_CONNOBJ_CLOSED;
 	connpool* pool = con_obj->pool;
-	int needReConnect = pool->connpoolStatus != SW_CONNPOOL_RELEASED;
-	if (!needReConnect)
+	if (pool && SW_CONNPOOL_RELEASED == pool->connpoolStatus)
 	{
-		sw_zval_ptr_dtor(&client);
 		return;
 	}
 
@@ -2134,14 +2173,16 @@ static void close_handler(zval* client)
 	int connTimes = con_obj->connTimes;
 	pool->idlePool->release(pool->idlePool,con_obj->clientId);
 	pool->connObjMap->release(pool->connObjMap,con_obj->clientId);
-	sw_zval_ptr_dtor(&client);
 	if (all_obj_nums > max_obj_nums)
 	{
 		return;
 	}
 
 	/// 延迟创建连接对象
-	defer_create_connobj(pool,proptr,connTimes);
+	if (reconnect)
+	{
+		defer_create_connobj(pool,proptr,connTimes);
+	}
 }
 
 static void destroy_resource(connpool* pool,connpool_property* proptr)

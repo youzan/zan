@@ -39,10 +39,6 @@
 #define SW_USE_MONOTONIC_TIME
 //#define SW_USE_RINGBUFFER
 
-//#define SW_DEBUG_REMOTE_OPEN
-#define SW_DEBUG_SERVER_HOST       "127.0.0.1"
-#define SW_DEBUG_SERVER_PORT       9999
-
 #define SW_SOCKET_OVERFLOW_WAIT    100
 #define SW_SOCKET_MAX_DEFAULT      65536
 #define SW_SOCKET_BUFFER_SIZE      (8*1024*1024)
@@ -101,10 +97,6 @@
 #define SW_MAINREACTOR_USE_UNSOCK  1    //主线程使用unsock
 #define SW_REACTOR_WRITER_TIMEO    3    //writer线程的reactor
 #define SW_TASKWAIT_TIMEOUT        0.5
-
-#ifdef HAVE_EVENTFD
-#define HAVE_LINUX_AIO
-#endif
 
 #define SW_AIO_THREAD_NUM_DEFAULT        2
 #define SW_AIO_THREAD_NUM_MAX            32

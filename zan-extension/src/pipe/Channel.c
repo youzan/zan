@@ -44,7 +44,7 @@ swChannel* swChannel_create(int size, int maxlen, int flag)
     void *mem = (flag & SW_CHAN_SHM)? sw_shm_malloc(size):sw_malloc(size);
     if (mem == NULL)
     {
-        swWarn("swChannel_create: malloc fail");
+        swFatalError("swChannel_create: malloc fail");
         return NULL;
     }
 
@@ -137,7 +137,7 @@ int swChannel_pop(swChannel *object, void *out, int buffer_length)
 
     swChannel_item *item = object->mem + object->head;
     assert(buffer_length >= item->length);
-//    swWarn("out,len=%d|data=%s", item->length, item->data);
+    swDebug("out,len=%d|data=%s", item->length, item->data);
     memcpy(out, item->data, item->length);
     object->head += (item->length + sizeof(item->length));
     if (object->head >= object->size)

@@ -27,9 +27,24 @@
 int16_t sw_errno = 0;
 char sw_error[SW_ERROR_MSG_SIZE] = {0};
 
-int swLog_init(char *logfile)
+int swLog_init(char *logfile,int port)
 {
+#ifdef SW_DEBUG_REMOTE_OPEN
+	swClient log_client;
+	swClient_create(&log_client, SW_SOCK_UDP, 0);
+
+	if (log_client.connect(&log_client, logfile, port, -1, 1) < 0)
+	{
+		SwooleG.log_fd = STDOUT_FILENO;
+		swWarn("connect to remote log server[%s:%d] failed.", logfile, port);
+	}
+	else
+	{
+		SwooleG.log_fd = log_client.socket->fd;
+	}
+#else
     SwooleG.log_fd = open(logfile, O_APPEND| O_RDWR | O_CREAT, 0666);
+#endif
     if (SwooleG.log_fd < 0)
     {
         printf("open(%s) failed. Error: %s[%d]", logfile, strerror(errno), errno);
@@ -44,7 +59,10 @@ void swLog_free(void)
     if (SwooleG.log_fd > STDOUT_FILENO)
     {
         close(SwooleG.log_fd);
+        SwooleG.log_fd = 0;
     }
+
+    sw_free(SwooleG.log_addr);
 }
 
 void swLog_put(int level, char *cnt)
@@ -70,6 +88,9 @@ void swLog_put(int level, char *cnt)
     case SW_LOG_TRACE:
         level_str = "TRACE";
         break;
+    case SW_LOG_FATAL_ERROR:
+    		level_str = "FATAL";
+    		break;
     default:
         level_str = "INFO";
         break;

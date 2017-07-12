@@ -46,34 +46,23 @@ int swAio_init(void)
 {
     if (SwooleAIO.init)
     {
-        swWarn("AIO has already been initialized");
+        swInfo("AIO has already been initialized");
         return SW_OK;
     }
 
     if (!SwooleG.main_reactor)
     {
-        swWarn("No eventloop, cannot initialized");
+        swError("No eventloop, cannot initialized");
         return SW_ERR;
     }
 
     if (swMutex_create(&SwooleAIO.wLock,0) < 0)
     {
-    	swWarn("create async lock error.");
-    	return SW_ERR;
+		swError("create async lock error.");
+		return SW_ERR;
     }
 
-    int ret = 0;
-    switch (SwooleAIO.mode)
-    {
-#ifdef HAVE_LINUX_AIO
-    case SW_AIO_LINUX:
-        ret = swAioLinux_init(SW_AIO_EVENT_NUM);
-        break;
-#endif
-    default:
-        ret = swAioBase_init(SW_AIO_EVENT_NUM);
-        break;
-    }
+    int ret = swAioBase_init(SW_AIO_EVENT_NUM);
 
     SwooleAIO.init = 1;
     return ret;
@@ -95,9 +84,9 @@ void swAio_free(void)
  */
 void swAio_callback_test(swAio_event *aio_event)
 {
-    printf("content=%s\n", (char *)aio_event->buf);
-    printf("fd: %d, request_type: %s, offset: %lld, length: %llu\n", aio_event->fd,
-            (aio_event == SW_AIO_READ) ? "READ" : "WRITE", aio_event->offset, (uint64_t) aio_event->nbytes);
+    swDebug("content=%s\n", (char *)aio_event->buf);
+    swDebug("fd: %d, request_type: %s, offset: %lld, length: %llu\n", aio_event->fd,
+            (aio_event == SW_AIO_READ) ? "READ" : "WRITE", (long long int)aio_event->offset, (long long unsigned)aio_event->nbytes);
     SwooleG.running = 0;
 }
 
@@ -107,7 +96,7 @@ static int swAioBase_onFinish(swReactor *reactor, swEvent *event)
     int n = read(event->fd, events, sizeof(swAio_event*) * SW_AIO_EVENT_NUM);
     if (n < 0)
     {
-        swWarn("read() failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("read() failed.");
         return SW_ERR;
     }
 
@@ -125,7 +114,7 @@ static int swAioBase_onFinish(swReactor *reactor, swEvent *event)
 
 static int swAioBase_onError(swReactor *reactor, swEvent *event)
 {
-	swWarn("asyncIO read pipe fd error,process will exit.");
+	swError("asyncIO read pipe fd error,process will exit.");
 	exit(1);
 	return SW_OK;
 }
@@ -178,7 +167,7 @@ int swAio_dns_lookup(int flags,void *hostname, void *ip_addr, size_t size)
     swAio_event *aio_ev = (swAio_event *) sw_malloc(sizeof(swAio_event));
     if (aio_ev == NULL)
     {
-        swWarn("malloc failed.");
+    	swFatalError("malloc failed.");
         return SW_ERR;
     }
 
@@ -230,7 +219,7 @@ start_switch:
 		}
 		break;
     default:
-        swWarn("unknow aio task.");
+        swError("unknow aio task.");
         break;
     }
 
@@ -271,7 +260,7 @@ static int swAioBase_write(int fd, void *inbuf, size_t size, off_t offset)
     swAio_event *aio_ev = (swAio_event *) sw_malloc(sizeof(swAio_event));
     if (aio_ev == NULL)
     {
-        swWarn("malloc failed.");
+        swFatalError("malloc failed.");
         return SW_ERR;
     }
 
@@ -299,7 +288,7 @@ static int swAioBase_read(int fd, void *inbuf, size_t size, off_t offset)
     swAio_event *aio_ev = (swAio_event *) sw_malloc(sizeof(swAio_event));
     if (aio_ev == NULL)
     {
-        swWarn("malloc failed.");
+    	swFatalError("malloc failed.");
         return SW_ERR;
     }
 

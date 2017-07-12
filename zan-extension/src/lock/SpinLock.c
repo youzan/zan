@@ -18,12 +18,13 @@
 
 #include "swLock.h"
 
-#ifdef HAVE_SPINLOCK
 
+#ifdef HAVE_SPINLOCK
 static int swSpinLock_lock(swLock *lock);
 static int swSpinLock_unlock(swLock *lock);
 static int swSpinLock_trylock(swLock *lock);
 static int swSpinLock_free(swLock *lock);
+
 
 int swSpinLock_create(swLock *lock, int use_in_process)
 {

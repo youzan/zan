@@ -43,10 +43,10 @@ int swProtocol_get_package_length(swProtocol *protocol, swConnection *conn, char
     //Protocol length is not legitimate, out of bounds or exceed the allocated length
     if (body_length < 0)
     {
-    	char addr[SW_IP_MAX_LENGTH] = {0};
-    	swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
-        swWarn("invalid package, remote_addr=%s:%d, length=%d, size=%d.",addr, swConnection_get_port(conn), body_length, size);
-        return SW_ERR;
+		char addr[SW_IP_MAX_LENGTH] = {0};
+		swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
+		swError("invalid package, remote_addr=%s:%d, length=%d, size=%d.",addr, swConnection_get_port(conn), body_length, size);
+		return SW_ERR;
     }
     //total package length
     return protocol->package_body_offset + body_length;

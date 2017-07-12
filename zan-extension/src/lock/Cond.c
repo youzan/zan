@@ -32,7 +32,7 @@ int swCond_create(swCond *cond)
 {
     if (!cond || pthread_cond_init(&cond->cond, NULL) < 0)
     {
-        swWarn("pthread_cond_init fail. Error: %s [%d]", strerror(errno), errno);
+        swSysError("pthread_cond_init fail");
         return SW_ERR;
     }
 

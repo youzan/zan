@@ -103,7 +103,7 @@ void swoole_init(void)
     SwooleStats = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swServerStats));
     if (SwooleStats == NULL)
     {
-        swError("[Master] Fatal Error: alloc memory for SwooleStats failed.");
+        printf("[Master] Fatal Error: alloc memory for SwooleStats failed.");
     }
 
     swoole_update_time();
@@ -136,7 +136,7 @@ void swoole_update_time(void)
     time_t now = time(NULL);
     if (now < 0)
     {
-        swWarn("get time failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("get time failed.");
     }
     else
     {
@@ -149,5 +149,22 @@ double swoole_microtime(void)
     struct timeval t;
     gettimeofday(&t, NULL);
     return (double) t.tv_sec + ((double) t.tv_usec / 1000000);
+}
+
+void set_log_level(int level)
+{
+	if (!SwooleGS)
+	{
+		return ;
+	}
+
+	if (level < SW_LOG_DEBUG || level > SW_LOG_FATAL_ERROR)
+	{
+		return ;
+	}
+
+	SwooleGS->log_lock.lock(&SwooleGS->log_lock);
+	SwooleGS->log_level = level;
+	SwooleGS->log_lock.unlock(&SwooleGS->log_lock);
 }
 

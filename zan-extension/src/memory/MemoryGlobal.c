@@ -96,11 +96,11 @@ static void *swMemoryGlobal_alloc(swMemoryPool *pool, uint32_t size)
     if (gm->offset + size > gm->size)
     {
         //没有足够的内存,再次申请
-        swWarn("swMemoryGlobal_alloc new page: size=%d|offset=%d|alloc=%d", gm->size, gm->offset, size);
+        swDebug("swMemoryGlobal_alloc new page: size=%d|offset=%d|alloc=%d", gm->size, gm->offset, size);
         void *page = swMemoryGlobal_new_page(gm);
         if (page == NULL)
         {
-            swWarn("swMemoryGlobal_alloc alloc memory error.");
+            swError("swMemoryGlobal_alloc alloc memory error.");
             return NULL;
         }
         //将next指向新申请的内存块
@@ -116,7 +116,7 @@ static void *swMemoryGlobal_alloc(swMemoryPool *pool, uint32_t size)
 
 static void swMemoryGlobal_free(swMemoryPool *pool, void *ptr)
 {
-    swWarn("swMemoryGlobal Allocator no free.");
+    swDebug("swMemoryGlobal Allocator no free.");
 }
 
 static void swMemoryGlobal_destroy(swMemoryPool *poll)

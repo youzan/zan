@@ -246,7 +246,7 @@ int swTaskWorker_finish(swServer *serv, char *data, int data_len, int flags)
     }
     if (ret < 0)
     {
-        swWarn("TaskWorker: send result to worker failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("TaskWorker: send result to worker failed.");
     }
     return ret;
 }

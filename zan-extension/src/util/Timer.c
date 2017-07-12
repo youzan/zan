@@ -317,7 +317,7 @@ static int swSystemTimer_timerfd_set(swTimer *timer, long interval)
 
     if (gettimeofday(&now, NULL) < 0)
     {
-        swWarn("gettimeofday() failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("gettimeofday() failed.");
         return SW_ERR;
     }
 
@@ -347,16 +347,16 @@ static int swSystemTimer_timerfd_set(swTimer *timer, long interval)
             timer->fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
             if (timer->fd < 0)
             {
-                swWarn("timerfd_create() failed. Error: %s[%d]", strerror(errno), errno);
-                return SW_ERR;
+				swSysError("timerfd_create() failed.");
+				return SW_ERR;
             }
         }
     }
 
     if (timerfd_settime(timer->fd, TFD_TIMER_ABSTIME, &timer_set, NULL) < 0)
     {
-        swWarn("timerfd_settime() failed. Error: %s[%d]", strerror(errno), errno);
-        return SW_ERR;
+		swSysError("timerfd_settime() failed.");
+		return SW_ERR;
     }
 
     return SW_OK;
@@ -378,7 +378,7 @@ static int swSystemTimer_signal_set(swTimer *timer, long interval)
     struct timeval now;
     if (gettimeofday(&now, NULL) < 0)
     {
-        swWarn("gettimeofday() failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("gettimeofday() failed.");
         return SW_ERR;
     }
 
@@ -401,7 +401,7 @@ static int swSystemTimer_signal_set(swTimer *timer, long interval)
 
     if (setitimer(ITIMER_REAL, &timer_set, NULL) < 0)
     {
-        swWarn("setitimer() failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("setitimer() failed.");
         return SW_ERR;
     }
     return SW_OK;
@@ -529,7 +529,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 	}
 
 	memset(tnode,0x00,sizeof(swTimer_node));
-	tnode->interval = interval ? _msec: 0;
+	tnode->interval = interval ? _msec : 0;
 	tnode->remove = 0;
 	tnode->used_type = used_type;
 

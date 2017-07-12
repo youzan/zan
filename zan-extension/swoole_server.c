@@ -1672,15 +1672,22 @@ PHP_METHOD(swoole_server, set)
     if (sw_zend_hash_find(vht, ZEND_STRS("log_file"), (void **) &value) == SUCCESS)
     {
         convert_to_string(value);
-        SwooleG.log_file = strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
+        SwooleG.log_addr = strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
     }
 
-    //log_level
+    value = NULL;
+	if (sw_zend_hash_find(vht, ZEND_STRS("log_remote_port"), (void **) &value) == SUCCESS)
+	{
+		convert_to_long(value);
+		SwooleG.log_port = (int) Z_LVAL_P(value);
+	}
+
+    //set log level
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("log_level"), (void **) &value) == SUCCESS)
     {
         convert_to_long(value);
-        SwooleG.log_level = (int) Z_LVAL_P(value);
+        set_log_level((int) Z_LVAL_P(value));
     }
 
     /// for dispatch_mode = 1/3
@@ -1876,6 +1883,10 @@ PHP_METHOD(swoole_server, set)
 
     sw_zend_call_method_with_1_params(&port_object, swoole_server_port_class_entry_ptr, NULL, "set", &retval, zset);
     zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), zset TSRMLS_CC);
+    if (retval)
+    {
+    	sw_zval_ptr_dtor(&retval);
+    }
 
     RETURN_TRUE;
 }
@@ -1946,6 +1957,7 @@ PHP_METHOD(swoole_server, on)
         zval *retval = NULL;
         sw_zval_add_ref(&port_object);
         sw_zend_call_method_with_2_params(&port_object, swoole_server_port_class_entry_ptr, NULL, "on", &retval, name, cb);
+        if (retval) {sw_zval_ptr_dtor(&retval);}
     }
 
     RETURN_TRUE;
@@ -2265,7 +2277,7 @@ PHP_METHOD(swoole_server, sendfile)
     //check fd
     if (fd <= 0 || fd > SW_MAX_SOCKET_ID)
     {
-        swoole_error_log(SW_LOG_WARNING, SW_ERROR_SESSION_INVALID_ID, "invalid fd[%ld].", fd);
+        swWarn("invalid fd[%ld].", fd);
         RETURN_FALSE;
     }
 
@@ -2379,7 +2391,7 @@ PHP_METHOD(swoole_server, reload)
 
     if (swKill(SwooleGS->manager_pid, only_reload_taskworker ? SIGUSR2 : SIGUSR1) < 0)
     {
-        swWarn("kill() failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("kill() failed.");
         RETURN_FALSE;
     }
 
@@ -2500,7 +2512,7 @@ PHP_METHOD(swoole_server, taskwait)
         }
         else
         {
-            swWarn("taskwait failed. Error: %s[%d]", strerror(errno), errno);
+            swSysError("taskwait failed.");
         }
     }
 
@@ -2684,9 +2696,15 @@ PHP_METHOD(swoole_server, bind)
 PHP_METHOD(swoole_server, getSocket)
 {
     long port = 0;
+    if (!swIsMaster())
+    {
+    		swWarn("listen socket info only in master process.");
+    		RETURN_FALSE;
+    }
+
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &port))
     {
-        return;
+    	RETURN_FALSE;
     }
 
     zval* zobject = getThis();

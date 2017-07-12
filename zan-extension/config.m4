@@ -337,8 +337,8 @@ if test "$PHP_ZAN" != "no"; then
 		src/network/TaskWorker.c \
 		src/network/Worker.c \
         src/os/AsyncIO.c \
-        src/os/linux_aio.c \
-        src/os/gcc_aio.c \
+dnl        src/os/linux_aio.c \
+dnl        src/os/gcc_aio.c \
         src/protocol/Base.c \
         src/protocol/Base64.c \
         src/protocol/Http.c \

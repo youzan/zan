@@ -68,7 +68,7 @@ do_sendfile:
     }
     else
     {
-        swWarn("sendfile failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("sendfile failed.");
         return SW_ERR;
     }
 
@@ -131,8 +131,8 @@ int swoole_sync_readfile(int fd, void *buf, int len)
         }
         else
         {
-            swWarn("read() failed. Error: %s[%d]", strerror(errno), errno);
-            break;
+			swSysError("read() failed.");
+			break;
         }
     }
     return readn;

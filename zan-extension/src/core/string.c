@@ -27,7 +27,7 @@ swString *swString_new(size_t size)
     swString *str = sw_malloc(sizeof(swString));
     if (str == NULL)
     {
-        swWarn("malloc[1] failed.");
+        swFatalError("malloc[1] failed.");
         return NULL;
     }
     bzero(str, sizeof(swString));
@@ -35,8 +35,8 @@ swString *swString_new(size_t size)
     str->str = sw_malloc(size);
     if (str->str == NULL)
     {
-        swSysError("malloc[2](%ld) failed.", size);
-        sw_free(str);
+    	sw_free(str);
+    	swFatalError("malloc[2](%ld) failed.", size);
         return NULL;
     }
     return str;
@@ -72,7 +72,7 @@ swString *swString_dup(const char *src_str, int length)
     swString *str = sw_malloc(sizeof(swString));
     if (str == NULL)
     {
-        swWarn("malloc[1] failed.");
+        swFatalError("malloc[1] failed.");
         return NULL;
     }
 
@@ -82,8 +82,8 @@ swString *swString_dup(const char *src_str, int length)
     str->str = sw_malloc(str->size);
     if (str->str == NULL)
     {
-        swWarn("malloc[2] failed.");
-        sw_free(str);
+    	sw_free(str);
+    	swFatalError("malloc[2] failed.");
         return NULL;
     }
 

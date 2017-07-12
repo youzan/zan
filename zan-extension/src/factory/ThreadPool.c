@@ -38,7 +38,7 @@ int swThreadPool_create(swThreadPool *pool, int thread_num)
     {
     	sw_free(pool->threads);
     	sw_free(pool->params);
-        swWarn("swThreadPool_create malloc fail");
+        swFatalError("swThreadPool_create malloc fail");
         return SW_ERR;
     }
 
@@ -48,7 +48,7 @@ int swThreadPool_create(swThreadPool *pool, int thread_num)
     pool->chan = swChannel_create(1024 * 256, 512, 0);
     if (pool->chan == NULL)
     {
-        swWarn("swThreadPool_create create channel failed");
+        swError("swThreadPool_create create channel failed");
         sw_free(pool->threads);
         sw_free(pool->params);
         return SW_ERR;
@@ -119,7 +119,7 @@ int swThreadPool_run(swThreadPool *pool)
         pool->params[index].object = pool;
         if (pthread_create(&(swThreadPool_thread(pool,index)->tid), NULL, swThreadPool_loop, &pool->params[index]) < 0)
         {
-            swWarn("pthread_create failed. Error: %s[%d]", strerror(errno), errno);
+            swSysError("pthread_create failed");
             return SW_ERR;
         }
     }

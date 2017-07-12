@@ -40,7 +40,7 @@ swModule* swModule_load(char *so_file)
     swModule *module = (swModule *) sw_malloc(sizeof(swModule));
     if (module == NULL)
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_MALLOC_FAIL, "malloc failed.");
+        swWarn("malloc failed.");
         return NULL;
     }
     //get init function

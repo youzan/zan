@@ -140,7 +140,7 @@ typedef struct
 typedef struct _swoole_http_client
 {
     int fd;
-    uint32_t http2 :1;
+    uint8_t http2;
 
 #ifdef SW_USE_HTTP2
     swHashMap *streams;

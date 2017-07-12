@@ -67,35 +67,12 @@ static void swoole_aio_file_complete(swAio_event *event TSRMLS_DC);
 
 static sw_inline void swoole_aio_free(void *ptr)
 {
-    if (SwooleAIO.mode == SW_AIO_LINUX)
-    {
-        sw_free(ptr);
-    }
-    else if (ptr)
-    {
-        swoole_efree(ptr);
-    }
+	swoole_efree(ptr);
 }
 
 static sw_inline void* swoole_aio_malloc(size_t __size)
 {
-    void *memory = NULL;
-    if (SwooleAIO.mode == SW_AIO_LINUX)
-    {
-        int buf_len = __size + (sysconf(_SC_PAGESIZE) - (__size % sysconf(_SC_PAGESIZE)));
-        if (posix_memalign((void **) &memory, sysconf(_SC_PAGESIZE), buf_len) != 0)
-        {
-            return NULL;
-        }
-        else
-        {
-            return memory;
-        }
-    }
-    else
-    {
-        return emalloc(__size);
-    }
+    return emalloc(__size);
 }
 
 static int swoole_gethost_from_cache(zval* domain,zval* callback TSRMLS_DC)
@@ -438,7 +415,7 @@ PHP_FUNCTION(swoole_async_read)
 
 	convert_to_string(filename);
 	int open_flag = O_RDONLY;
-	open_flag |= (SwooleAIO.mode == SW_AIO_LINUX)? O_DIRECT:0;
+//	open_flag |= (SwooleAIO.mode == SW_AIO_LINUX)? O_DIRECT:0;
 	int fd = open(Z_STRVAL_P(filename), open_flag, 0644);
 	if (fd < 0)
 	{
@@ -529,7 +506,7 @@ PHP_FUNCTION(swoole_async_write)
 
 	long fd = -1;
 	int open_flag = O_WRONLY | O_CREAT;
-	open_flag |= (SwooleAIO.mode == SW_AIO_LINUX)? O_DIRECT:0;
+//	open_flag |= (SwooleAIO.mode == SW_AIO_LINUX)? O_DIRECT:0;
 	open_flag |= (offset < 0)? O_APPEND:0;
 
 	fd = open(Z_STRVAL_P(filename), open_flag, 0644);
@@ -590,11 +567,11 @@ PHP_FUNCTION(swoole_async_set)
 
     zval *value = NULL ;
     HashTable *vht = Z_ARRVAL_P(zset);
-    if (php_swoole_array_get_value(vht, "aio_mode", value))
-    {
-        convert_to_long(value);
-        SwooleAIO.mode = (uint8_t) Z_LVAL_P(value);
-    }
+//    if (php_swoole_array_get_value(vht, "aio_mode", value))
+//    {
+//        convert_to_long(value);
+//        SwooleAIO.mode = (uint8_t) Z_LVAL_P(value);
+//    }
 
     value = NULL;
     if (php_swoole_array_get_value(vht, "thread_num", value))

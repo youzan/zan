@@ -75,7 +75,7 @@ static int swUDPThread_start(swServer *serv)
 
             if (pthread_create(&thread_id, NULL, (void * (*)(void *)) swReactorThread_loop_dgram, (void *) param) < 0)
             {
-                swWarn("pthread_create[udp_listener] fail");
+                swSysError("pthread_create[udp_listener] fail");
                 return SW_ERR;
             }
 
@@ -231,8 +231,8 @@ static int swReactorThread_loop_stream(swThreadParam *param)
                 swBuffer *buffer = swBuffer_new(sizeof(swEventData));
                 if (!buffer)
                 {
-                    swWarn("create buffer failed.");
-                    break;
+                	swError("create buffer failed.");
+                	break;
                 }
                 serv->connection_list[pipe_fd].in_buffer = buffer;
 
@@ -252,7 +252,7 @@ static int swReactorThread_loop_stream(swThreadParam *param)
                  */
                 if (swMutex_create(serv->connection_list[pipe_fd].object, 0) < 0)
                 {
-                    swWarn("create pipe mutex lock failed.");
+                    swError("create pipe mutex lock failed.");
                     break;
                 }
 
@@ -295,7 +295,7 @@ static void swHeartbeatThread_start(swServer *serv)
 
     if (pthread_create(&thread_id, NULL, (void * (*)(void *)) swHeartbeatThread_loop, (void *) param) < 0)
     {
-        swWarn("pthread_create[hbcheck] fail");
+    	swSysError("pthread_create[hbcheck] fail.");
     }
     SwooleG.heartbeat_pidt = thread_id;
 }
@@ -632,7 +632,7 @@ static int swReactorThread_onPipeWrite(swReactor *reactor, swEvent *ev)
 #endif
                 if (conn && conn->closed)
                 {
-                    swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_CLOSED_BY_SERVER, "Session#%d is closed by server.", send_data->info.fd);
+                    swNotice("Session#%d is closed by server.", send_data->info.fd);
                 }
                 swBuffer_pop_trunk(buffer, trunk);
                 continue;
@@ -703,13 +703,13 @@ static int swReactorThread_onPipeReceive(swReactor *reactor, swEvent *ev)
                 swServer* serv = SwooleG.serv;
                 int target_worker_id = _send.info.worker_id;
                 serv->workers[target_worker_id].deny_request = 1;
-                swWarn("[Master] set worker exit.[work_id=%d]", target_worker_id);
+                swNotice("[Master] set worker exit.[work_id=%d]", target_worker_id);
                 return SW_OK;
             } else if(_send.info.type == SW_EVENT_DENY_EXIT) {
                 swServer* serv = SwooleG.serv;
                 int target_worker_id = _send.info.worker_id;
                 serv->workers[target_worker_id].deny_request = 0;
-                swWarn("[Master] set worker idle.[work_id=%d]", target_worker_id);
+                swNotice("[Master] set worker idle.[work_id=%d]", target_worker_id);
                 return SW_OK;
             }
 
@@ -737,7 +737,7 @@ static int swReactorThread_onPipeReceive(swReactor *reactor, swEvent *ev)
         }
         else
         {
-            swWarn("read(worker_pipe) failed. Error: %s[%d]", strerror(errno), errno);
+            swSysError("read(worker_pipe) failed.");
             return SW_ERR;
         }
     }
@@ -863,9 +863,9 @@ int swReactorThread_close(swReactor *reactor, int fd)
         return SW_ERR;
     }
 
-    if (!conn->removed && reactor->del(reactor, fd) < 0)
+    if (!conn->removed)
     {
-        return SW_ERR;
+    	reactor->del(reactor, fd);
     }
 
     if (serv->factory_mode == SW_MODE_PROCESS)
@@ -1053,12 +1053,13 @@ int swReactorThread_send(swSendData *_send)
     {
         if (_send->info.type == SW_EVENT_TCP)
         {
-            swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_NOT_EXIST, "send %d byte failed, session#%d does not exist.", _send_length, session_id);
+            swNotice("send %d byte failed, session#%d does not exist.", _send_length, session_id);
         }
         else
         {
-            swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_NOT_EXIST, "send event$[%d] failed, session#%d does not exist.", _send->info.type, session_id);
+        	swNotice("send event$[%d] failed, session#%d does not exist.", _send->info.type, session_id);
         }
+
         return SW_ERR;
     }
 
@@ -1153,13 +1154,13 @@ int swReactorThread_send(swSendData *_send)
         //connection is closed
         if (conn->removed)
         {
-            swWarn("connection#%d is closed by client.", fd);
+            swNotice("connection#%d is closed by client.", fd);
             return SW_ERR;
         }
         //connection output buffer overflow
         if (conn->out_buffer->length >= serv->buffer_output_size)
         {
-            swoole_error_log(SW_LOG_WARNING, SW_ERROR_OUTPUT_BUFFER_OVERFLOW, "connection#%d output buffer overflow.", fd);
+        	swNotice("connection#%d output buffer overflow.", fd);
             conn->overflow = 1;
         }
 
@@ -1254,7 +1255,7 @@ int swReactorThread_start(swServer *serv)
     swReactor *main_reactor = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swReactor));
     if (swReactor_init(main_reactor, SW_REACTOR_MAXEVENTS) < 0)
     {
-        swWarn("Reactor create failed");
+        swError("Reactor create error");
         return SW_ERR;
     }
 
@@ -1339,7 +1340,7 @@ int swReactorThread_dispatch(swConnection *conn, char *data, uint32_t length)
     task.data.info.fd = conn->fd;
     task.data.info.from_id = conn->from_id;
 
-    swTrace("send string package, size=%ld bytes.", length);
+    swTrace("send string package, size=%u bytes.", length);
 
 #ifdef SW_USE_RINGBUFFER
     swServer *serv = SwooleG.serv;
@@ -1440,7 +1441,7 @@ void swReactorThread_free(swServer *serv)
             //wait thread
             if (thread->thread_id && pthread_join(thread->thread_id, NULL) != 0)
             {
-                swWarn("pthread_join(%ld) failed. Error: %s[%d]", (long)thread->thread_id,strerror(errno), errno);
+                swSysError("pthread_join(%ld) failed.", (long)thread->thread_id);
             }
 
             //release the lock
@@ -1465,7 +1466,7 @@ void swReactorThread_free(swServer *serv)
 
                 if (ls->thread_id && pthread_join(ls->thread_id, NULL) != 0)
                 {
-                    swWarn("pthread_join(%ld) failed. Error: %s[%d]", (long)ls->thread_id,strerror(errno), errno);
+                	swSysError("pthread_join(%ld) failed.", (long)ls->thread_id);
                 }
             }
         }

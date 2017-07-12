@@ -42,9 +42,9 @@ int swPipeBase_create(swPipe *p, int blocking)
 
     if (pipe(object->pipes) < 0)
     {
-    	sw_free(object);
-        swWarn("pipe create fail. Error: %s[%d]", strerror(errno), errno);
-        return SW_ERR;
+		sw_free(object);
+		swSysError("pipe create fail.");
+		return SW_ERR;
     }
 
 	swSetNonBlock(object->pipes[0],!blocking);

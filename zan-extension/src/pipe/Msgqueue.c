@@ -34,7 +34,7 @@ int swMsgQueue_create(swMsgQueue *q, int blocking, key_t msg_key, long type)
     int msg_id = msgget(msg_key, IPC_CREAT | O_EXCL | 0666);
     if (msg_id < 0)
     {
-        swWarn("msgget() failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("msgget() failed.");
         return SW_ERR;
     }
     else

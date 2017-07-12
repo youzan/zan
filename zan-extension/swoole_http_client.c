@@ -63,7 +63,6 @@ typedef struct
     zval _onError;
     zval _onClose;
     zval _onMessage;
-    zval _onTimeout;
     zval _cookies;
     zval _request_header;
     zval _request_body;
@@ -797,13 +796,7 @@ static void http_client_onReceive(swClient *cli, char *data, uint32_t length)
         }
         else if (http->keep_alive == 0 && http->state != HTTP_CLIENT_STATE_WAIT_CLOSE)
         {
-//            retval = NULL;
-//            sw_zend_call_method_with_0_params(&zobject, swoole_http_client_class_entry_ptr, NULL, "close", &retval);
-//            if (retval)
-//            {
-//                sw_zval_ptr_dtor(&retval);
-//            }
-        		cli->close(cli);
+        	cli->close(cli);
         }
     }
 }
@@ -859,9 +852,9 @@ static inline char* sw_http_build_query(zval *data, zend_size_t *length, smart_s
     {
         if (formstr->s)
         {
-	    smart_str_free(formstr);
-	}
-	return NULL;
+	    	smart_str_free(formstr);
+		}
+		return NULL;
     }
     if (!formstr->s)
     {
@@ -1067,6 +1060,7 @@ static void http_client_free(zval *object TSRMLS_DC)
 		swString_free(http->tmp_header_value_buf);
 		http->tmp_header_value_buf = NULL;
 	}
+
 	if (http->body)
 	{
 		swString_free(http->body);
@@ -1285,7 +1279,7 @@ static PHP_METHOD(swoole_http_client, setHeaders)
     http_client_property *hcc = swoole_get_property(getThis(), swoole_property_common);
     if (!hcc)
     {
-        swWarn("http_client_property is NULL ");
+        swDebug("http_client_property is NULL ");
         RETURN_FALSE;
     }
 
@@ -1306,7 +1300,7 @@ static PHP_METHOD(swoole_http_client, setCookies)
     http_client_property *hcc = swoole_get_property(getThis(), swoole_property_common);
     if (!hcc)
     {
-        swWarn("http_client_property is NULL ");
+    	swDebug("http_client_property is NULL ");
         RETURN_FALSE;
     }
 
@@ -1327,7 +1321,7 @@ static PHP_METHOD(swoole_http_client, setData)
     /// post_data 参数可以为空或者null. post_data存在时，必须为string类型或者array 类型
 	if (data && !ZVAL_IS_NULL(data) && Z_TYPE_P(data) != IS_ARRAY && Z_TYPE_P(data) != IS_STRING)
 	{
-		swWarn("post data must be string or array.");
+		swDebug("post data must be string or array.");
 		RETURN_FALSE;
 	}
 
@@ -1335,7 +1329,7 @@ static PHP_METHOD(swoole_http_client, setData)
     http_client_property *hcc = swoole_get_property(getThis(), swoole_property_common);
     if (!hcc)
     {
-        swWarn("http_client_property is NULL ");
+    	swDebug("http_client_property is NULL ");
         RETURN_FALSE;
     }
 
@@ -1359,7 +1353,7 @@ static PHP_METHOD(swoole_http_client, setMethod)
 	http_client_property *hcc = swoole_get_property(getThis(), swoole_property_common);
 	if (!hcc)
 	{
-		swWarn("http_client_property is NULL ");
+		swDebug("http_client_property is NULL ");
 		RETURN_FALSE;
 	}
 
@@ -1386,7 +1380,7 @@ static PHP_METHOD(swoole_http_client, close)
 	http_client *http = swoole_get_object(getThis());
 	if(!http)
 	{
-		swWarn("have no http client object.");
+		swDebug("have no http client object.");
 		RETURN_FALSE;
 	}
 
@@ -1425,7 +1419,7 @@ static PHP_METHOD(swoole_http_client, on)
 	http_client_property *hcc = swoole_get_property(getThis(), swoole_property_common);
 	if (!hcc)
 	{
-		swWarn("http_client_property is NULL ");
+		swDebug("http_client_property is NULL ");
 		RETURN_FALSE;
 	}
 
@@ -1445,31 +1439,46 @@ static PHP_METHOD(swoole_http_client, on)
 
     if (cb_name_len == strlen("error") && strncasecmp("error", cb_name, cb_name_len) == 0)
     {
-    	if (hcc->onError) sw_zval_ptr_dtor(&hcc->onError);
-    	hcc->onError = zcallback;
+		if (hcc->onError)
+		{
+			RETURN_FALSE;
+		}
+
+		hcc->onError = zcallback;
         sw_copy_to_stack(hcc->onError ,hcc->_onError);
     }
     else if (cb_name_len == strlen("timeout") && strncasecmp("timeout",cb_name,cb_name_len) == 0)
     {
-    	if (hcc->onTimeout) sw_zval_ptr_dtor(&hcc->onTimeout);
-    	hcc->onTimeout = zcallback;
-    	sw_copy_to_stack(hcc->onTimeout ,hcc->_onTimeout);
+		if (hcc->onTimeout) sw_zval_free(hcc->onTimeout);
+		hcc->onTimeout = sw_zval_dup(zcallback);
     }
     else if (cb_name_len == strlen("connect") && strncasecmp("connect", cb_name, cb_name_len) == 0)
     {
-    	if (hcc->onConnect) sw_zval_ptr_dtor(&hcc->onConnect);
+		if (hcc->onConnect)
+		{
+			RETURN_FALSE;
+		}
+
         hcc->onConnect = zcallback;
         sw_copy_to_stack(hcc->onConnect,hcc->_onConnect);
     }
     else if (cb_name_len == strlen("close") && strncasecmp("close", cb_name, cb_name_len) == 0)
     {
-        if (hcc->onClose) sw_zval_ptr_dtor(&hcc->onClose);
+        if (hcc->onClose)
+        {
+        		RETURN_FALSE;
+        }
+
         hcc->onClose = zcallback;
         sw_copy_to_stack(hcc->onClose,hcc->_onClose);
     }
     else if (cb_name_len == strlen("message") && strncasecmp("message", cb_name, cb_name_len) == 0)
     {    
-        if (hcc->onMessage) sw_zval_ptr_dtor(&hcc->onMessage);
+        if (hcc->onMessage)
+        {
+        		RETURN_FALSE;
+        }
+
         hcc->onMessage = zcallback;
         sw_copy_to_stack(hcc->onMessage,hcc->_onMessage);
     }
@@ -1491,6 +1500,7 @@ enum state
     s_header_value_start,
     s_header_value
 };
+
 static int http_client_parser_on_header_field(php_http_parser *parser, const char *at, size_t length)
 {
     SWOOLE_FETCH_TSRMLS;
@@ -1498,13 +1508,13 @@ static int http_client_parser_on_header_field(php_http_parser *parser, const cha
 	http_client* http = (http_client*)parser->data;
     if (!http)
     {
-        swWarn("http_client_parser_on_header_field, http is NULL");
+        swWarn("http is NULL");
         return SW_ERR;
     }
     enum state state = (enum state) parser->state;
     if(state == s_header_field_start || state == s_start_res)
     {
-      swString_clear(http->tmp_header_field_buf);
+    	swString_clear(http->tmp_header_field_buf);
     }
 
     if (swString_append_ptr(http->tmp_header_field_buf, (char *) at, length) < 0)
@@ -1512,6 +1522,7 @@ static int http_client_parser_on_header_field(php_http_parser *parser, const cha
     	swWarn("append string to http header_field failed");
         return SW_ERR;
     }
+
     return SW_OK;
 }
 
@@ -1546,6 +1557,7 @@ static int http_client_parser_on_header_value(php_http_parser *parser, const cha
     	swWarn("append string to http header_value failed");
         return SW_ERR;
     }                                                                    
+
     /// zend_str_tolower_dup,会emalloc 并返回给header_name,需要外部来进行释放
     char *header_name = zend_str_tolower_dup(http->tmp_header_field_buf->str, http->tmp_header_field_buf->length);
     zend_str_tolower(http->tmp_header_value_buf->str, http->tmp_header_value_buf->length);
@@ -1858,7 +1870,7 @@ static PHP_METHOD(swoole_http_client, push)
     http_client *http = swoole_get_object(getThis());
     if (!http || !http->cli || !!http->cli->socket)
     {
-        swWarn("http client or client object or socket is NULL");
+    	swDebug("http client or client object or socket is NULL");
         RETURN_FALSE;
     }
 

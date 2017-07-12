@@ -1177,7 +1177,7 @@ http_context* swoole_http_context_new(swoole_http_client* client TSRMLS_DC)
     http_context *ctx = emalloc(sizeof(http_context));
     if (!ctx)
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_MALLOC_FAIL, "emalloc(%ld) failed.", sizeof(http_context));
+        swError("emalloc(%ld) failed.", sizeof(http_context));
         return NULL;
     }
 
@@ -1492,7 +1492,7 @@ static PHP_METHOD(swoole_http_request, rawcontent)
 	http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
 	if (!ctx)
 	{
-		swWarn("swoole_http_request rawcontent failed: ctx is NULL");
+		swDebug("ctx is NULL");
 		RETURN_FALSE;
 	}
 
@@ -2030,7 +2030,7 @@ static PHP_METHOD(swoole_http_response, cookie)
 	http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
 	if (!ctx || ctx->response.release)
 	{
-		swWarn("swoole_http_response cookie failed: ctx->response is release.");
+		swDebug("ctx->response is release.");
 		RETURN_FALSE;
 	}
 
@@ -2137,7 +2137,7 @@ static PHP_METHOD(swoole_http_response, rawcookie)
 	http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
 	if (!ctx || ctx->response.release)
 	{
-		swWarn("swoole_http_response rawcookie failed: ctx->response is release.");
+		swDebug("ctx->response is release.");
 		RETURN_FALSE;
 	}
 
@@ -2245,7 +2245,7 @@ static PHP_METHOD(swoole_http_response, status)
 	http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
 	if (!ctx || ctx->response.release)
 	{
-		swWarn("swoole_http_response status failed: ctx->response is release.");
+		swDebug("ctx->response is release.");
 		RETURN_FALSE;
 	}
 
@@ -2263,7 +2263,7 @@ static PHP_METHOD(swoole_http_response, header)
 	http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
 	if (!ctx || ctx->response.release)
 	{
-		swWarn("swoole_http_response header failed: ctx->response is release.");
+		swDebug("ctx->response is release.");
 		RETURN_FALSE;
 	}
 
@@ -2318,7 +2318,7 @@ static PHP_METHOD(swoole_http_response, gzip)
 	http_context *context = http_get_context(getThis(), 0 TSRMLS_CC);
 	if (!context || context->response.release)
 	{
-		swWarn("swoole_http_response gzip failed: ctx->response is release.");
+		swDebug("ctx->response is release.");
 		RETURN_FALSE;
 	}
 

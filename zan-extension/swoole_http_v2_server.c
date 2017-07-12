@@ -37,7 +37,7 @@ static sw_inline void http2_add_header(nghttp2_nv *headers, char *k, int kl, cha
 
 static sw_inline void http2_onRequest(http_context *ctx, int server_fd TSRMLS_DC)
 {
-    zval *retval;
+    zval *retval = NULL;
     zval **args[2];
 
     zval *zrequest_object = ctx->request.zobject;
@@ -341,7 +341,7 @@ static int http2_parse_header(swoole_http_client *client, http_context *ctx, int
         in += proclen;
         inlen -= proclen;
 
-        //swTraceLog(SW_TRACE_HTTP2, "Header: %s[%d]: %s[%d]", nv.name, nv.namelen, nv.value, nv.valuelen);
+        swTrace("Header: %s[%d]: %s[%d]", nv.name, nv.namelen, nv.value, nv.valuelen);
 
         if (inflate_flags & NGHTTP2_HD_INFLATE_EMIT)
         {
@@ -468,7 +468,7 @@ int swoole_http2_onFrame(swoole_http_client *client, swEventData *req)
     int stream_id = ntohl((*(int *) (buf + 5))) & 0x7fffffff;
     uint32_t length = swHttp2_get_length(buf);
 
-    swTraceLog(SW_TRACE_HTTP2, "[%s]\tflags=%d, stream_id=%d, length=%d", swHttp2_get_type(type), flags, stream_id, length);
+    swTrace("[%s]\tflags=%d, stream_id=%d, length=%d", swHttp2_get_type(type), flags, stream_id, length);
 
     if (type == SW_HTTP2_TYPE_HEADERS)
     {
@@ -476,7 +476,7 @@ int swoole_http2_onFrame(swoole_http_client *client, swEventData *req)
         if (!ctx)
         {
             sw_zval_ptr_dtor(&zdata);
-            swoole_error_log(SW_LOG_WARNING, SW_ERROR_HTTP2_STREAM_NO_HEADER, "http2 error stream.");
+            swWarn("http2 stream no header.");
             return SW_ERR;
         }
 
@@ -527,7 +527,7 @@ int swoole_http2_onFrame(swoole_http_client *client, swEventData *req)
         if (!ctx)
         {
             sw_zval_ptr_dtor(&zdata);
-            swoole_error_log(SW_LOG_WARNING, SW_ERROR_HTTP2_STREAM_NO_HEADER, "http2 error stream.");
+            swWarn("http2 stream no header.");
             return SW_ERR;
         }
 

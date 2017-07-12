@@ -38,7 +38,6 @@ extern "C"
 enum swAioMode
 {
     SW_AIO_BASE = 0,
-    SW_AIO_GCC,
     SW_AIO_LINUX,
 };
 
@@ -67,7 +66,6 @@ typedef struct _swAio_event
 typedef struct
 {
     uint8_t init;
-    uint8_t mode;
     uint8_t thread_num;
     uint32_t task_num;
     uint32_t buf_max_len;
@@ -85,14 +83,6 @@ int swAio_init(void);
 void swAio_free(void);
 
 int swAio_dns_lookup(int type,void *hostname, void *ip_addr, size_t size);
-
-#ifdef HAVE_GCC_AIO
-int swAioGcc_init(int max_aio_events);
-#endif
-
-#ifdef HAVE_LINUX_AIO
-int swAioLinux_init(int max_aio_events);
-#endif
 
 #ifdef __cplusplus
 }

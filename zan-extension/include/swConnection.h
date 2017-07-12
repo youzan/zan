@@ -50,7 +50,7 @@ typedef struct _swConnection
     /**
      * session id
      */
-    uint32_t session_id :24;
+    uint32_t session_id;
 
     /**
      * socket type, SW_SOCK_TCP or SW_SOCK_UDP
@@ -68,53 +68,53 @@ typedef struct _swConnection
      * is active
      * system fd must be 0. en: timerfd, signalfd, listen socket
      */
-    uint32_t active :1;
+    uint8_t active;
 
-    uint32_t connect_notify :1;
+    uint8_t connect_notify;
 
     /**
      * for SWOOLE_BASE mode.
      */
-    uint32_t close_notify :1;
+    uint8_t close_notify;
 
-    uint32_t recv_wait :1;
-    uint32_t send_wait :1;
+    uint8_t recv_wait;
+    uint8_t send_wait;
 
-    uint32_t direct_send :1;
-    uint32_t ssl_send :1;
+    uint8_t direct_send;
+    uint8_t ssl_send;
 
     /**
      * protected connection, cannot be closed by heartbeat thread.
      */
-    uint32_t protect :1;
+    uint8_t protect;
 
-    uint32_t close_wait :1;
-    uint32_t closed :1;
-    uint32_t closing :1;
-    uint32_t close_force :1;
-    uint32_t close_reset :1;
-    uint32_t event_trigger:1;
-    uint32_t removed :1;			//// 是否从reactor 中移除
-    uint32_t overflow :1;
+    uint8_t close_wait;
+    uint8_t closed;
+    uint8_t closing;
+    uint8_t close_force;
+    uint8_t close_reset;
+    uint8_t event_trigger;
+    uint8_t removed;			//// 是否从reactor 中移除
+    uint8_t overflow;
 
-    uint32_t tcp_nopush :1;
-    uint32_t tcp_nodelay :1;
+    uint8_t tcp_nopush;
+    uint8_t tcp_nodelay;
 
-    uint32_t ssl_want_read :1;
-    uint32_t ssl_want_write :1;
+    uint8_t ssl_want_read;
+    uint8_t ssl_want_write;
 
-    uint32_t http_upgrade :1;
-    uint32_t http2_stream :1;
+    uint8_t http_upgrade;
+    uint8_t http2_stream;
 
     /**
      * ReactorThread id
      */
-    uint16_t from_id;
+    uint8_t from_id;
 
     /**
      * from which socket fd, 由哪个监听套接字accepte 出来
      */
-    uint16_t from_fd;
+    uint8_t from_fd;
 
     /**
      * socket address

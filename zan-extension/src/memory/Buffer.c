@@ -29,7 +29,7 @@ swBuffer* swBuffer_new(int trunk_size)
     swBuffer *buffer = sw_malloc(sizeof(swBuffer));
     if (buffer == NULL)
     {
-        swWarn("malloc for buffer failed. Error: %s[%d]", strerror(errno), errno);
+        swFatalError("malloc for buffer failed");
         return NULL;
     }
 
@@ -47,7 +47,7 @@ swBuffer_trunk *swBuffer_new_trunk(swBuffer *buffer, uint32_t type, uint32_t siz
     swBuffer_trunk *chunk = sw_malloc(sizeof(swBuffer_trunk));
     if (chunk == NULL)
     {
-        swWarn("malloc for trunk failed. Error: %s[%d]", strerror(errno), errno);
+        swFatalError("malloc for trunk failed");
         return NULL;
     }
 
@@ -59,8 +59,8 @@ swBuffer_trunk *swBuffer_new_trunk(swBuffer *buffer, uint32_t type, uint32_t siz
         void *buf = sw_malloc(size);
         if (buf == NULL)
         {
-            swWarn("malloc(%d) for data failed. Error: %s[%d]", size, strerror(errno), errno);
-            sw_free(chunk);
+        	sw_free(chunk);
+            swFatalError("malloc(%d) for data failed", size);
             return NULL;
         }
         chunk->size = size;
@@ -152,7 +152,7 @@ int swBuffer_append(swBuffer *buffer, void *data, uint32_t size)
 
     memcpy(chunk->store.ptr, data, size);
 
-    swTraceLog(SW_TRACE_BUFFER, "trunk_n=%d|size=%d|trunk_len=%d|trunk=%p", buffer->trunk_num, size,
+    swTrace("trunk_n=%d|size=%d|trunk_len=%d|trunk=%p", buffer->trunk_num, size,
             chunk->length, chunk);
 
     return SW_OK;

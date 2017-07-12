@@ -136,12 +136,12 @@ static int php_swoole_event_onError(swReactor *reactor, swEvent *event)
     socklen_t len = sizeof(error);
     if (getsockopt(event->fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
     {
-        swWarn("swoole_event->onError[1]: getsockopt[sock=%d] failed. Error: %s[%d]", event->fd, strerror(errno), errno);
+        swSysError("swoole_event->onError[1]: getsockopt[sock=%d] failed.", event->fd);
     }
 
     if (error != 0)
     {
-        swWarn("swoole_event->onError[1]: socket error. Error: %s [%d]", strerror(error), error);
+        swError("swoole_event->onError[1]: socket error. Error: %s [%d]", strerror(error), error);
     }
 
     swoole_efree(event->socket->object);
@@ -265,8 +265,11 @@ static int swoole_convert_to_fd(zval *zfd)
 #ifdef SW_USE_SOCKETS
 php_socket* swoole_convert_to_socket(int sock)
 {
-
     SWOOLE_FETCH_TSRMLS;
+    if (sock < 0)
+    {
+    		return NULL;
+    }
 
     php_socket *socket_object = emalloc(sizeof(php_socket));
     bzero(socket_object, sizeof(php_socket));

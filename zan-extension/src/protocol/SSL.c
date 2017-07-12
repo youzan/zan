@@ -279,9 +279,9 @@ int swSSL_get_client_certificate(SSL *ssl, char *buffer, size_t length)
     bio = BIO_new(BIO_s_mem());
     if (bio == NULL)
     {
-        swWarn("BIO_new() failed.");
-        X509_free(cert);
-        return SW_ERR;
+		swError("BIO_new() failed.");
+		X509_free(cert);
+		return SW_ERR;
     }
 
     if (PEM_write_bio_X509(bio, cert) == 0)
@@ -455,7 +455,7 @@ int swSSL_create(swConnection *conn, SSL_CTX* ssl_context, int flags)
     SSL *ssl = SSL_new(ssl_context);
     if (ssl == NULL)
     {
-        swWarn("SSL_new() failed.");
+        swError("SSL_new() failed.");
         return SW_ERR;
     }
     if (!SSL_set_fd(ssl, conn->fd))
@@ -517,7 +517,7 @@ static int swSSL_set_dhparam(SSL_CTX* ssl_context)
     dh = DH_new();
     if (dh == NULL)
     {
-        swWarn( "DH_new() failed");
+    	swError( "DH_new() failed");
         return SW_ERR;
     }
 

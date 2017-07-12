@@ -219,6 +219,7 @@ typedef struct _swServerGS
     sw_atomic_t spinlock;
     swLock lock;	 /// server master internal lock
     swLock log_lock;  /// log lock
+    uint8_t log_level; /// log level
 
     swProcessPool task_workers;
     swProcessPool event_workers;
@@ -293,7 +294,6 @@ typedef struct
     int signal_fd;
     int log_fd;
     int null_fd;
-    int debug_fd;
 
     /**
      * worker(worker and task_worker) process chroot / user / group
@@ -302,8 +302,8 @@ typedef struct
     char *user;
     char *group;
 
-    uint8_t log_level;
-    char *log_file;
+    char *log_addr;		/// host addr or file
+    int   log_port;
 
     /**
      *  task worker process num

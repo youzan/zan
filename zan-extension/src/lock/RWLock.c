@@ -42,8 +42,7 @@ int swRWLock_create(swLock *lock, int use_in_process)
         return SW_ERR;
     }
 
-    int ret = SW_OK;
-    if ((ret = pthread_rwlock_init(&lock->object.rwlock._lock, &lock->object.rwlock.attr)) < 0)
+    if (pthread_rwlock_init(&lock->object.rwlock._lock, &lock->object.rwlock.attr) < 0)
     {
         return SW_ERR;
     }
