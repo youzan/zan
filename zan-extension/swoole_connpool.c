@@ -254,7 +254,8 @@ static int createConnobj(connpool* pool,connpool_property* proptr,connobj* con_o
 	con_obj->currStatus = SW_CONNPOOLOBJ_WAIT_CONNECT;
 	con_obj->connStatus = SW_CONNOBJ_CONNING;
 	con_obj->timeId = 0;
-	if (pool->create(proptr,con_obj) < 0 || pool->connect(proptr,con_obj) < 0)
+	SWOOLE_FETCH_TSRMLS;
+	if (pool->create(proptr,con_obj TSRMLS_CC) < 0 || pool->connect(proptr,con_obj TSRMLS_CC) < 0)
 	{
 		pool->close(con_obj);
 	}
@@ -319,7 +320,7 @@ static void connpool_onHBSend(swTimer* timer,swTimer_node* node)
 	connpool_property* proptr = swoole_get_property(zobject,swoole_property_common);
 	obj->currStatus = SW_CONNPOOLOBJ_HB;
 	obj->timeId = 0;
-	if (pool->send(proptr,obj) < 0)
+	if (pool->send(proptr,obj TSRMLS_CC) < 0)
 	{
 		pool->close(obj);
 	}
@@ -1334,7 +1335,7 @@ ZEND_METHOD(swoole_connpool,createConnPool)
 	}
 
 	/// 校验连接参数
-	if (pool->argsCheck(proptr->cfg,ARGS_IS_VAILED) < 0)
+	if (pool->argsCheck(proptr->cfg,ARGS_IS_VAILED TSRMLS_CC) < 0)
 	{
 		RETURN_FALSE;
 	}
@@ -1549,7 +1550,7 @@ ZEND_METHOD(swoole_connpool,release)
 		RETURN_FALSE;
 	}
 
-	int result = pool->argsCheck(client,status == SW_CONNOBJ_ERR? OBJ_IS_INSTANCE:ARGC_IS_CONNECTED);
+	int result = pool->argsCheck(client,status == SW_CONNOBJ_ERR? OBJ_IS_INSTANCE:ARGC_IS_CONNECTED TSRMLS_CC);
 	if (result < 0)
 	{
 		RETURN_FALSE;
@@ -1565,14 +1566,14 @@ ZEND_METHOD(swoole_connpool,release)
 
 	/// 连接池销毁，需要关闭连接
 	if (SW_CONNPOOL_RELEASED == pool->connpoolStatus) {
-		pool->close(connClient);
+		pool->close(connClient TSRMLS_CC);
 		RETURN_TRUE;
 	}
 
 	if (status != SW_CONNOBJ_OK)
 	{
 		/// 关闭连接
-		pool->close(connClient);
+		pool->close(connClient TSRMLS_CC);
 		RETURN_TRUE;
 	}
 
@@ -1600,7 +1601,7 @@ ZEND_FUNCTION(onClientConnect)
 	connpool* pool = con_obj->pool;
 	if (SW_CONNPOOL_RELEASED == pool->connpoolStatus)
 	{
-		pool->close(con_obj);
+		pool->close(con_obj TSRMLS_CC);
 		return;
 	}
 
@@ -1633,7 +1634,7 @@ ZEND_FUNCTION(onClientTimeout)
 
 	connobj* con_obj = swoole_get_property(client,swoole_connpool_object);
 	connpool* pool = con_obj->pool;
-	pool->close(con_obj);
+	pool->close(con_obj TSRMLS_CC);
 	return;
 }
 
@@ -1650,7 +1651,7 @@ ZEND_FUNCTION(onSubClientConnect)
 	connpool* pool = con_obj->pool;
 	if (SW_CONNPOOL_RELEASED == pool->connpoolStatus)
 	{
-		pool->close(con_obj);
+		pool->close(con_obj TSRMLS_CC);
 		return;
 	}
 
@@ -1658,7 +1659,7 @@ ZEND_FUNCTION(onSubClientConnect)
 	if (result && !ZVAL_IS_NULL(result) && !Z_BVAL_P(result))
 	{
 		/// 和close 的处理方式一样.
-		pool->close(con_obj);
+		pool->close(con_obj TSRMLS_CC);
 		return;
 	}
 
@@ -1695,7 +1696,7 @@ ZEND_FUNCTION(onClientRecieve)
 	connpool* pool = con_obj->pool;
 	if (SW_CONNPOOL_RELEASED == pool->connpoolStatus)
 	{
-		pool->close(con_obj);
+		pool->close(con_obj TSRMLS_CC);
 		return;
 	}
 
@@ -1717,7 +1718,7 @@ ZEND_FUNCTION(onClientRecieve)
 	/// 心跳校验失败，需要释放连接对象
 	if (retval && !ZVAL_IS_NULL(retval) && !Z_BVAL_P(retval))
 	{
-		pool->close(con_obj);
+		pool->close(con_obj TSRMLS_CC);
 	}
 	else
 	{
@@ -2216,7 +2217,7 @@ static void destroy_resource(connpool* pool,connpool_property* proptr)
 		connobj* con_obj = pool->connObjMap? pool->connObjMap->pop(pool->connObjMap):NULL;
 		while (con_obj)
 		{
-			pool->close(con_obj);
+			pool->close(con_obj TSRMLS_CC);
 			con_obj = pool->connObjMap->pop(pool->connObjMap);
 		}
 
