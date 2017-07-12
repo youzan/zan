@@ -257,7 +257,7 @@ static int createConnobj(connpool* pool,connpool_property* proptr,connobj* con_o
 	SWOOLE_FETCH_TSRMLS;
 	if (pool->create(proptr,con_obj TSRMLS_CC) < 0 || pool->connect(proptr,con_obj TSRMLS_CC) < 0)
 	{
-		pool->close(con_obj);
+		pool->close(con_obj TSRMLS_CC);
 	}
 
 	return SW_OK;
@@ -320,9 +320,10 @@ static void connpool_onHBSend(swTimer* timer,swTimer_node* node)
 	connpool_property* proptr = swoole_get_property(zobject,swoole_property_common);
 	obj->currStatus = SW_CONNPOOLOBJ_HB;
 	obj->timeId = 0;
+	SWOOLE_FETCH_TSRMLS;
 	if (pool->send(proptr,obj TSRMLS_CC) < 0)
 	{
-		pool->close(obj);
+		pool->close(obj TSRMLS_CC);
 	}
 }
 
@@ -2190,6 +2191,7 @@ static void clean_conobj_resource(connobj* con_obj,int reconnect)
 
 static void destroy_resource(connpool* pool,connpool_property* proptr)
 {
+	SWOOLE_FETCH_TSRMLS;
 	zval* object = pool? pool->zobject:NULL;
 	if (pool)
 	{
