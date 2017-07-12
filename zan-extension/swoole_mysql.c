@@ -1191,8 +1191,8 @@ static int really_register_bound_param(struct mysql_bound_param_data *param, str
 	}
 
 	/* allocate storage for the parameter, keyed by its "canonical" name */
-	pparam = (param->name)? zend_hash_update_mem(hash, param->name, param, sizeof(struct mysql_bound_param_data)):
-			zend_hash_index_update_mem(hash, param->paramno, param, sizeof(struct mysql_bound_param_data));
+	pparam = (param->name)? zend_hash_update_mem(hash, param->name, param, sizeof(*pparam)):
+			zend_hash_index_update_mem(hash, param->paramno, param, sizeof(*pparam));
 #endif
 	return 1;
 }

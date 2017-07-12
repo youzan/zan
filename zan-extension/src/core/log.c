@@ -129,7 +129,7 @@ void swLog_put(int level, char *cnt)
     		"[%s %c%d.%d]\t%s\t%s\n", date_str, process_flag, SwooleG.pid, process_id, level_str, cnt);
     if (write(SwooleG.log_fd, log_str, n) < 0)
     {
-    		return;
+    	return;
     }
 }
 

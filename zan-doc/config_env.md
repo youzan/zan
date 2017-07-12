@@ -116,10 +116,10 @@ Zan编译安装常见问题：
         对应头文件路径则为/usr/include/curl。
     2.  确认curl库正确安装后，请务必重新phpize && configure以保证新的配置生效。
     3.  若按1)、2)操作后仍然报错，则可修改config.m4中PHP_CURL的配置路径为你安装curl的路径。
-4.  若执行configure时报错Enable sockets support, sockets extension installed incorrectly，请确认PHP版本及sockets扩展正确安装。
-    1. 保证PHP版本在5.6以上版本。
-    2. sockets扩展路径ext/sockets下应包含头文件php_sockets.h。
-    3. 请保证sockets扩展的加载在zan加载之前(php.ini中的引入加载顺序)。
+4.  若执行configure时报错enable sockets support, sockets extension installed incorrectly，请确认PHP版本及sockets扩展正确安装。
+    1. PHP版本需要在5.6以上版本。
+    2. 在PHP的include路径下应该包含头文件ext/sockets/php_sockets.h。
+    3. sockets扩展在zan之前加载(php.ini中的引入加载顺序)，以确保能引用符号表信息。
 5.  若执行configure时报错Enable openssl support, require openssl library，请重新安装openssl库并保证能链接正确。
     1.  重新安装openssl库。
     2.  添加openssl库路径供链接器找lib，如将-L/usr/local/opt/openssl/lib补充到config.m4中的LDFLAGS。
