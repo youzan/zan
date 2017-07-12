@@ -1748,13 +1748,11 @@ static void http_build_header(http_context *ctx, zval *object, swString *respons
     else
     {
 #ifdef SW_HAVE_ZLIB
-		body_length = ctx->gzip_enable? swoole_zlib_buffer->length:body_length;
+        body_length = ctx->gzip_enable? swoole_zlib_buffer->length:body_length;
 #endif
-		n = snprintf(buf, sizeof(buf), "Content-Length: %d\r\n", body_length);
-		n = n > SW_HTTP_HEADER_MAX_SIZE?SW_HTTP_HEADER_MAX_SIZE:n;
-		swString_append_ptr(response, buf, n);
-
-
+        n = snprintf(buf, sizeof(buf), "Content-Length: %d\r\n", body_length);
+        n = n > SW_HTTP_HEADER_MAX_SIZE?SW_HTTP_HEADER_MAX_SIZE:n;
+        swString_append_ptr(response, buf, n);
     }
 
     if (!(flag & HTTP_RESPONSE_CONTENT_TYPE))
