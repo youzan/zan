@@ -85,7 +85,7 @@ int swManager_start(swFactory *factory)
 
         if (swProcessPool_create(&SwooleGS->task_workers, SwooleG.task_worker_num, SwooleG.task_max_request, key, create_pipe) < 0)
         {
-            swWarn("[Master] create task_workers failed.");
+            swError("[Master] create task_workers failed.");
             return SW_ERR;
         }
 
@@ -669,7 +669,7 @@ static pid_t swManager_spawn_worker(swFactory *factory, int worker_id)
     //fork() failed
     if (pid < 0)
     {
-        swWarn("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
+        swError("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
         return SW_ERR;
     }
     //worker child processor
@@ -742,7 +742,7 @@ pid_t swManager_spawn_user_worker(swServer *serv, swWorker* worker)
     pid_t pid = fork();
     if (pid < 0)
     {
-        swWarn("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
+    	swError("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
         return SW_ERR;
     }
     //child

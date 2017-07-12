@@ -35,7 +35,18 @@
 #define PS_DELIMITER '|'
 #define PS_UNDEF_MARKER '!'
 
+static uint64_t current_seq_no = 0;
+static uint64_t swoole_get_seq_no();
 static int getServiceIp(char** ppIp);
+
+static uint64_t swoole_get_seq_no()
+{
+    if (++current_seq_no >= INT64_MAX) {
+        current_seq_no = 1;
+    }
+
+    return current_seq_no;
+}
 
 static int getServiceIp(char** ppIp)
 {

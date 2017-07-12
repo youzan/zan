@@ -110,7 +110,7 @@ static int swDNSResolver_get_servers(swDNS_server *dns_server)
 
     if ((fp = fopen(SW_DNS_SERVER_CONF, "rt")) == NULL)
     {
-        swWarn("fopen("SW_DNS_SERVER_CONF") failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("fopen("SW_DNS_SERVER_CONF") failed.");
         return SW_ERR;
     }
 
@@ -555,7 +555,7 @@ static int get_host_by_syscall(int af,char* name,swDNS_cache* cache)
 	hints.ai_protocol = IPPROTO_TCP;
 
 	if (getaddrinfo(name,NULL,&hints,&result) != 0 || !result){
-		swWarn("get address result(%ld) info error.%s",result? (long)result:0,gai_strerror(errno));
+		swWarn("get address info error.");
 		if (result) freeaddrinfo(result);
 		return SW_ERR;
 	}

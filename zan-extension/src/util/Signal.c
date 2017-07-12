@@ -198,14 +198,14 @@ int swSignalfd_setup(swReactor *reactor)
         signal_fd = signalfd(-1, &signalfd_mask, SFD_NONBLOCK | SFD_CLOEXEC);
         if (signal_fd < 0)
         {
-            swWarn("signalfd() failed. Error: %s[%d]", strerror(errno), errno);
+            swSysError("signalfd() failed.");
             return SW_ERR;
         }
         SwooleG.signal_fd = signal_fd;
         if (sigprocmask(SIG_BLOCK, &signalfd_mask, NULL) == -1)
         {
-            swWarn("sigprocmask() failed. Error: %s[%d]", strerror(errno), errno);
-            return SW_ERR;
+			swSysError("sigprocmask() failed.");
+			return SW_ERR;
         }
         reactor->setHandle(reactor, SW_FD_SIGNAL, swSignalfd_onSignal);
         reactor->add(reactor, signal_fd, SW_FD_SIGNAL);
@@ -241,7 +241,7 @@ static int swSignalfd_onSignal(swReactor *reactor, swEvent *event)
     n = read(event->fd, &siginfo, sizeof(siginfo));
     if (n < 0)
     {
-        swWarn("read from signalfd failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("read from signalfd failed.");
         return SW_ERR;
     }
 

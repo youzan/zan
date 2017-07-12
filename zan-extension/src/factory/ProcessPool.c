@@ -87,8 +87,7 @@ int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, k
 			sw_free(pool->queue);
 			swHashMap_free(pool->map);
 			SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
-            swWarn("malloc[2] failed.");
-//          sw_free(pool->workers);
+            swFatalError("malloc[2] failed.");
             return SW_ERR;
         }
 
@@ -179,7 +178,7 @@ int swProcessPool_dispatch(swProcessPool *pool, swEventData *data, int *dst_work
 
     if (ret < 0)
     {
-    	swWarn("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
+    	swNotice("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
     }
     else
     {
@@ -209,7 +208,7 @@ int swProcessPool_dispatch_blocking(swProcessPool *pool, swEventData *data, int 
 
     if (ret < 0)
     {
-        swWarn("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
+    	swNotice("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
     }
     else
     {
@@ -272,7 +271,7 @@ pid_t swProcessPool_spawn(swWorker *worker)
 			break;
     	}
     case -1:
-        swWarn("fork() failed. Error: %s [%d]", strerror(errno), errno);
+        swSysError("fork failed.");
         break;
         //parent
     default:
@@ -433,7 +432,7 @@ int swProcessPool_wait(swProcessPool *pool)
             new_pid = swProcessPool_spawn(exit_worker);
             if (new_pid < 0)
             {
-                swWarn("Fork worker process failed. Error: %s [%d]", strerror(errno), errno);
+                swSysError("Fork worker process failed");
                 return SW_ERR;
             }
             swHashMap_del_int(pool->map, pid);

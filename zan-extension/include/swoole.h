@@ -234,7 +234,7 @@ void swoole_init(void);
 void swoole_clean(void);
 void swoole_update_time(void);
 double swoole_microtime(void);
-
+void set_log_level();
 
 #ifdef __cplusplus
 }

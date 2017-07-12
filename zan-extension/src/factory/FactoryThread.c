@@ -60,7 +60,7 @@ int swFactoryThread_create(swFactory *factory, int worker_num)
     object = sw_calloc(worker_num, sizeof(swFactoryThread));
     if (object == NULL)
     {
-        swWarn("malloc[0] failed");
+        swFatalError("malloc[0] failed");
         return SW_ERR;
     }
 
@@ -129,11 +129,11 @@ static int swFactoryThread_finish(swFactory *factory, swSendData *_send)
     {
         if (_send->info.type == SW_EVENT_TCP)
         {
-            swWarn("send %d byte failed, session#%d is closed.", _send->length, session_id);
+        	swNotice("send %d byte failed, session#%d is closed.", _send->length, session_id);
         }
         else
         {
-            swWarn("send [%d] failed, session#%d is closed.", _send->info.type, session_id);
+        	swNotice("send [%d] failed, session#%d is closed.", _send->info.type, session_id);
         }
 
         return SW_ERR;
@@ -155,13 +155,13 @@ int swFactoryThread_dispatch(swFactory *factory, swDispatchData *task)
         swConnection *conn = swServer_connection_get(serv, task->data.info.fd);
         if (conn == NULL || conn->active == 0)
         {
-            swWarn("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
+        	swNotice("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
             return SW_ERR;
         }
         //server active close, discard data.
         if (conn->closed)
         {
-            swWarn("dispatch[type=%d] failed, connection#%d is closed by server.", task->data.info.type,
+        	swNotice("dispatch[type=%d] failed, connection#%d is closed by server.", task->data.info.type,
                     task->data.info.fd);
             return SW_OK;
         }
@@ -174,7 +174,7 @@ int swFactoryThread_dispatch(swFactory *factory, swDispatchData *task)
     char *data = sw_malloc(mem_size);
     if (data == NULL)
     {
-        swWarn("malloc failed");
+        swFatalError("malloc failed");
         return SW_ERR;
     }
 

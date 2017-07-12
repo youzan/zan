@@ -207,6 +207,13 @@ static void mysql_client_free(mysql_client *client)
 		client->buffer = NULL;
 	}
 
+	if (client->cli && client->cli->timer_id > 0)
+	{
+		long timer_id = client->cli->timer_id;
+		client->cli->timer_id = 0;
+		swTimer_del(&SwooleG.timer,timer_id);
+	}
+
 	if (client->response.result_array)
 	{
 		zval* result_array = client->response.result_array;
@@ -225,10 +232,8 @@ static void mysql_client_free(mysql_client *client)
 		swoole_efree(client->response.columns);
 	}
 
-//	mysql_free_cb(client);
 	mysql_close(client);
 
-//	client->fd = -1;
 	client->handshake = SW_MYSQL_HANDSHAKE_INIT;
 	client->state = SW_MYSQL_STATE_INIT;
 }
@@ -287,6 +292,13 @@ static void mysql_close(mysql_client *client)
 
 	if (client->cli)
 	{
+		if (client->cli->timer_id > 0)
+		{
+			long timer_id = client->cli->timer_id;
+			client->cli->timer_id = 0;
+			swTimer_del(&SwooleG.timer,timer_id);
+		}
+
 		client->cli->close(client->cli);
 		swoole_efree(client->cli);
 	}
@@ -332,7 +344,7 @@ static void mysql_free_cb(mysql_client *client)
 	}
 
 	if (client->onClose) {sw_zval_ptr_dtor(&client->onClose);client->onClose = NULL;}
-	if (client->onTimeout) {sw_zval_ptr_dtor(&client->onTimeout);client->onTimeout = NULL;}
+	if (client->onTimeout) {sw_zval_free(client->onTimeout);client->onTimeout = NULL;}
 	if (client->onConnect) {sw_zval_free(client->onConnect);client->onConnect = NULL;}
 	if (client->callback) {sw_zval_free(client->callback);client->callback = NULL;}
 }
@@ -413,9 +425,8 @@ static PHP_METHOD(swoole_mysql, on)
     }
     else if (len == strlen("timeout") && strncasecmp("timeout", name, len) == 0)
     {
-    	if (client->onTimeout) sw_zval_ptr_dtor(&client->onTimeout);
-		client->onTimeout = cb;
-		sw_copy_to_stack(client->onTimeout, client->_onTimeout);
+    	if (client->onTimeout) sw_zval_free(client->onTimeout);
+		client->onTimeout = sw_zval_dup(cb);
     }
     else
     {
@@ -730,6 +741,13 @@ static PHP_METHOD(swoole_mysql, close)
 
 	if (client->cli)
 	{
+		if (client->cli->timer_id > 0)
+		{
+			long timer_id = client->cli->timer_id;
+    		client->cli->timer_id = 0;
+    		swTimer_del(&SwooleG.timer,timer_id);
+		}
+
 		client->cli->close(client->cli);
 		swoole_efree(client->cli);
 	}

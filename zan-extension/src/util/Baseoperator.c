@@ -41,10 +41,8 @@
 
 #if __APPLE__
 #undef daemon
-extern int daemon(int, int);
+extern int daemon(int,int);
 #endif
-
-static uint64_t current_seq_no = 0;
 
 uint64_t swoole_hash_key(char *str, int str_len)
 {
@@ -89,7 +87,7 @@ int swoole_mkdir_recursive(const char *dir)
             {
                 if (mkdir(tmp, 0755) == -1)
                 {
-                    swWarn("mkdir(%s) failed. Error: %s[%d]", tmp, strerror(errno), errno);
+                    swSysError("mkdir(%s) failed.", tmp);
                     return -1;
                 }
             }
@@ -124,6 +122,18 @@ char* swoole_dirname(char *file)
     }
 
     return dirname;
+}
+
+int get_env_log_level()
+{
+	int level = SW_LOG_LEVEL_UNKNOW;
+	char* tmp = getenv("ZANEXT_DEBUG_LOG_LEVEL");
+	if (tmp)
+	{
+		level = strtol(tmp,NULL,0);
+	}
+
+	return level;
 }
 
 int swoole_type_size(char type)
@@ -182,7 +192,7 @@ int swoole_sync_writefile(int fd, void *data, int len)
         }
         else
         {
-            swWarn("write() failed. Error: %s[%d]", strerror(errno), errno);
+            swSysError("write() failed.");
             break;
         }
     }
@@ -293,19 +303,6 @@ int swoole_version_compare(char *version1, char *version2)
     return result;
 }
 
-
-//只能用于单线程，如果遇到多线程，考虑使用原子操作
-uint64_t swoole_get_seq_no()
-{
-//    sw_atomic_fetch_add(&current_seq_no, 1);
-//    printf("%lld\n", current_seq_no);
-    if (++current_seq_no >= INT64_MAX) {
-        current_seq_no = 1;
-    }
-
-    return current_seq_no;
-}
-
 void swoole_rtrim(char *str, int len)
 {
     int i;
@@ -360,7 +357,7 @@ swString* swoole_file_get_contents(char *filename)
     struct stat file_stat;
     if (lstat(filename, &file_stat) < 0)
     {
-        swWarn("lstat(%s) failed. Error: %s[%d]", filename, strerror(errno), errno);
+        swSysError("lstat(%s) failed.", filename);
         return NULL;
     }
     if (file_stat.st_size > SW_MAX_FILE_CONTENT)
@@ -371,7 +368,7 @@ swString* swoole_file_get_contents(char *filename)
     int fd = open(filename, O_RDONLY);
     if (fd < 0)
     {
-        swWarn("open(%s) failed. Error: %s[%d]", filename, strerror(errno), errno);
+    	swSysError("open(%s) failed.", filename);
         return NULL;
     }
 
@@ -397,10 +394,10 @@ swString* swoole_file_get_contents(char *filename)
             }
             else
             {
-                swWarn("pread() failed. Error: %s[%d]", strerror(errno), errno);
-                swString_free(content);
-                close(fd);
-                return NULL;
+				swSysError("pread() failed.");
+				swString_free(content);
+				close(fd);
+				return NULL;
             }
         }
         readn += n;
@@ -463,27 +460,11 @@ void swoole_redirect_stdout(int new_fd)
 {
     if (dup2(new_fd, STDOUT_FILENO) < 0)
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_SYSTEM_CALL_FAIL, "dup2(STDOUT_FILENO) failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("dup2(STDOUT_FILENO) failed.");
     }
     if (dup2(new_fd, STDERR_FILENO) < 0)
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_SYSTEM_CALL_FAIL, "dup2(STDERR_FILENO) failed. Error: %s[%d]", strerror(errno), errno);
-    }
-}
-
-void swoole_open_remote_debug(void)
-{
-    swClient debug_client;
-    swClient_create(&debug_client, SW_SOCK_UDP, 0);
-
-    if (debug_client.connect(&debug_client, SW_DEBUG_SERVER_HOST, SW_DEBUG_SERVER_PORT, -1, 1) < 0)
-    {
-        swWarn("connect to remote_debug_server[%s:%d] failed.", SW_DEBUG_SERVER_HOST, SW_DEBUG_SERVER_PORT);
-        SwooleG.debug_fd = 1;
-    }
-    else
-    {
-        SwooleG.debug_fd = debug_client.socket->fd;
+    	swSysError("dup2(STDERR_FILENO) failed.");
     }
 }
 
@@ -682,7 +663,7 @@ int swoole_daemon(int nochdir, int noclose)
 #ifndef HAVE_DAEMON
     if (!nochdir && chdir("/") != 0)
     {
-        swWarn("chdir() failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("chdir() failed.");
         return -1;
     }
 
@@ -691,14 +672,14 @@ int swoole_daemon(int nochdir, int noclose)
         int fd = open("/dev/null", O_RDWR);
         if (fd < 0)
         {
-            swWarn("open() failed. Error: %s[%d]", strerror(errno), errno);
+        	swSysError("open() failed.");
             return -1;
         }
 
         if (dup2(fd, 0) < 0 || dup2(fd, 1) < 0 || dup2(fd, 2) < 0)
         {
             close(fd);
-            swWarn("dup2() failed. Error: %s[%d]", strerror(errno), errno);
+            swSysError("dup2() failed.");
             return -1;
         }
 
@@ -708,7 +689,7 @@ int swoole_daemon(int nochdir, int noclose)
     pid_t pid = fork();
     if (pid < 0)
     {
-        swWarn("fork() failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("fork() failed.");
         return -1;
     }
     if (pid > 0)
@@ -717,7 +698,7 @@ int swoole_daemon(int nochdir, int noclose)
     }
     if (setsid() < 0)
     {
-        swWarn("setsid() failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("setsid() failed.");
         return -1;
     }
 

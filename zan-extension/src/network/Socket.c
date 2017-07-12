@@ -74,7 +74,7 @@ int swSocket_wait(int fd, int timeout_ms, int events)
         }
         else if (ret < 0 && errno != EINTR)
         {
-            swWarn("poll() failed. Error: %s[%d]", strerror(errno), errno);
+            swSysError("poll() failed.");
             return SW_ERR;
         }
         else
@@ -121,9 +121,9 @@ int swSocket_wait_multi(int *list_of_fd, int n_fd, int timeout_ms, int events)
         }
         else if (ret < 0 && errno != EINTR)
         {
-        	sw_free(event_list);
-            swWarn("poll() failed. Error: %s[%d]", strerror(errno), errno);
-            return SW_ERR;
+			sw_free(event_list);
+			swSysError("poll() failed.");
+			return SW_ERR;
         }
         else
         {
@@ -324,7 +324,7 @@ int swSocket_sendfile_sync(int sock, char *filename, double timeout)
     int file_fd = open(filename, O_RDONLY);
     if (file_fd < 0)
     {
-        swWarn("open(%s) failed. Error: %s[%d]", filename, strerror(errno), errno);
+        swSysError("open(%s) failed.", filename);
         return SW_ERR;
     }
 
@@ -397,14 +397,14 @@ int swSocket_create(int type,int *sockType,int* sockDomain)
         _type = SOCK_STREAM;
         break;
     default:
-        swWarn("unknown socket type [%d]", type);
+        swError("unknown socket type [%d]", type);
         return SW_ERR;
     }
 
     int sockfd = socket(_domain, _type, 0);
     if (sockfd < 0)
     {
-        swWarn("socket() failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("socket() failed");
         return SW_ERR;
     }
 
@@ -458,7 +458,7 @@ int swSocket_bind(int sock, int type, char *host, int port)
     //bind failed
     if (ret < 0)
     {
-        swWarn("bind(%s:%d) failed. Error: %s [%d]", host, port, strerror(errno), errno);
+        swSysError("bind(%s:%d) failed.", host, port);
         return SW_ERR;
     }
     return ret;
@@ -488,13 +488,13 @@ int swSocket_set_timeout(int sock, double timeout)
     ret = setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (void *) &timeo, sizeof(timeo));
     if (ret < 0)
     {
-        swWarn("setsockopt(SO_SNDTIMEO) failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("setsockopt(SO_SNDTIMEO) failed.");
         return SW_ERR;
     }
     ret = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (void *) &timeo, sizeof(timeo));
     if (ret < 0)
     {
-        swWarn("setsockopt(SO_RCVTIMEO) failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("setsockopt(SO_RCVTIMEO) failed.");
         return SW_ERR;
     }
     return SW_OK;

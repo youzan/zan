@@ -221,7 +221,7 @@ int php_swoole_process_start(swWorker *process, zval *object TSRMLS_DC)
     {
         SwooleG.main_reactor->free(SwooleG.main_reactor);
         SwooleG.main_reactor = NULL;
-        swTraceLog(SW_TRACE_PHP, "destroy reactor");
+        swTrace("destroy reactor");
     }
 
     bzero(&SwooleWG, sizeof(SwooleWG));

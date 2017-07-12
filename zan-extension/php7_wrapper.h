@@ -299,6 +299,7 @@ static sw_inline zval* sw_zval_dup(zval *val)
 
 static sw_inline void sw_zval_free(zval *val)
 {
+	if (!val) return ;
     sw_zval_ptr_dtor(&val);
     efree(val);
 }

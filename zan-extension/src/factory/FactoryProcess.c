@@ -51,7 +51,7 @@ int swFactoryProcess_create(swFactory *factory, int worker_num)
     object = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swFactoryProcess));
     if (object == NULL)
     {
-        swWarn("[Master] malloc[object] failed");
+        swFatalError("[Master] malloc[object] failed");
         return SW_ERR;
     }
 
@@ -100,7 +100,7 @@ static int swFactoryProcess_start(swFactory *factory)
     //必须先启动manager进程组，否则会带线程fork
     if (swManager_start(factory) < 0)
     {
-        swWarn("swFactoryProcess_manager_start failed.");
+        swError("swFactoryProcess_manager_start failed.");
         return SW_ERR;
     }
 
@@ -162,7 +162,7 @@ static int swFactoryProcess_dispatch(swFactory *factory, swDispatchData *task)
         swConnection *conn = swServer_connection_get(serv, task->data.info.fd);
         if (conn == NULL || conn->active == 0)
         {
-            swWarn("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
+            swNotice("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
             return SW_ERR;
         }
         //server active close, discard data.
@@ -170,7 +170,7 @@ static int swFactoryProcess_dispatch(swFactory *factory, swDispatchData *task)
         {
             if (!(task->data.info.type == SW_EVENT_CLOSE && conn->close_force))
             {
-                swWarn("dispatch[type=%d] failed, connection#%d[session_id=%d] is closed by server.",
+            	swNotice("dispatch[type=%d] failed, connection#%d[session_id=%d] is closed by server.",
                         task->data.info.type, task->data.info.fd, conn->session_id);
                 return SW_OK;
             }
@@ -195,18 +195,18 @@ static int swFactoryProcess_finish(swFactory *factory, swSendData *resp)
     swConnection *conn = swServer_connection_verify(serv, fd);
     if (!conn)
     {
-        swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_NOT_EXIST, "session#%d does not exist.", fd);
+    	swNotice("session#%d does not exist.", fd);
         return SW_ERR;
     }
     else if ((conn->closed || conn->removed) && resp->info.type != SW_EVENT_CLOSE)
     {
         int _len = resp->length > 0 ? resp->length : resp->info.len;
-        swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_CLOSED, "send %d byte failed, because session#%d is closed.", _len, fd);
+        swNotice("send %d byte failed, because session#%d is closed.", _len, fd);
         return SW_ERR;
     }
     else if (conn->overflow)
     {
-        swoole_error_log(SW_LOG_WARNING, SW_ERROR_OUTPUT_BUFFER_OVERFLOW, "send failed, session#%d output buffer has been overflowed.", fd);
+    	swNotice("send failed, session#%d output buffer has been overflowed.", fd);
         return SW_ERR;
     }
 
@@ -233,7 +233,7 @@ static int swFactoryProcess_finish(swFactory *factory, swSendData *resp)
         response.length = resp->length;
         response.worker_id = SwooleWG.id;
 
-        //swWarn("BigPackage, length=%d|worker_id=%d", response.length, response.worker_id);
+        swDebug("BigPackage, length=%d|worker_id=%d", response.length, response.worker_id);
 
         ev_data.info.from_fd = SW_RESPONSE_BIG;
         ev_data.info.len = sizeof(response);
@@ -256,7 +256,7 @@ static int swFactoryProcess_finish(swFactory *factory, swSendData *resp)
     ret = swWorker_send2reactor(&ev_data, sendn, fd);
     if (ret < 0)
     {
-        swWarn("sendto to reactor failed. Error: %s [%d]", strerror(errno), errno);
+        swSysError("sendto to reactor failed.");
     }
 
     return ret;
@@ -276,7 +276,7 @@ static int swFactoryProcess_end(swFactory *factory, int fd)
     swConnection *conn = swWorker_get_connection(serv, fd);
     if (conn == NULL || conn->active == 0)
     {
-        //swWarn("can not close. Connection[%d] not found.", _send.info.fd);
+    	swNotice("can not close. Connection[%d] not found.", _send.info.fd);
         return SW_ERR;
     }
     else if (conn->close_force)
@@ -285,7 +285,7 @@ static int swFactoryProcess_end(swFactory *factory, int fd)
     }
     else if (conn->closing)
     {
-        swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_CLOSING, "The connection[%d] is closing.", fd);
+        swNotice("The connection[%d] is closing.", fd);
         return SW_ERR;
     }
     else if (conn->closed)

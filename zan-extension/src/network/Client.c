@@ -65,8 +65,8 @@ int swClient_create(swClient *cli, int type, int async)
     cli->socket = async? swReactor_get(SwooleG.main_reactor, sockfd) : sw_malloc(sizeof(swConnection));
 	if (!cli->socket)
 	{
-		swWarn("malloc(%d) failed.", (int ) sizeof(swConnection));
 		close(sockfd);
+		swError("malloc(%d) failed.", (int ) sizeof(swConnection));
 		return SW_ERR;
 	}
 
@@ -296,7 +296,7 @@ static int swClient_tcp_connect_sync(swClient *cli, char *host, int port, double
 		return ret;
 	}
 
-	int timeout_set = (cli->timeout >= 0)?cli->timeout*1000:0;
+	int timeout_set = (cli->timeout > 0 && !nonblock)?cli->timeout*1000:-1;
 	if ((ret < 0 && errno == EINPROGRESS) && timeout_set > 0 &&
 			swSocket_wait(cli->socket->fd,timeout_set,SW_EVENT_WRITE) >= 0)
 	{
@@ -305,7 +305,7 @@ static int swClient_tcp_connect_sync(swClient *cli, char *host, int port, double
 		socklen_t len = sizeof(error);
 		if (getsockopt(cli->socket->fd,SOL_SOCKET,SO_ERROR,&error,&len) < 0 || error != 0)
 		{
-			swWarn("get socket option %s\n",error? strerror(error):"error");
+			swError("get socket option %s\n",error? strerror(error):"error");
 			ret = SW_ERR;
 		}
 	}
@@ -404,7 +404,7 @@ static int swClient_tcp_connect_async(swClient *cli, char *host, int port, doubl
 
     if (!(cli->onConnect && cli->onError && cli->onClose))
     {
-        swWarn("onConnect/onError/onClose callback have not set.");
+        swError("onConnect/onError/onClose callback have not set.");
         return SW_ERR;
     }
 
@@ -868,7 +868,7 @@ static int swClient_onWrite(swReactor *reactor, swEvent *event)
     socklen_t len = sizeof(SwooleG.error);
     if (getsockopt(event->fd, SOL_SOCKET, SO_ERROR, &SwooleG.error, &len) < 0)
     {
-        swWarn("getsockopt(%d) failed. Error: %s[%d]", event->fd, strerror(errno), errno);
+        swSysError("getsockopt(%d) failed.", event->fd);
         return SW_ERR;
     }
 

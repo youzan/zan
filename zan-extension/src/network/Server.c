@@ -32,10 +32,10 @@
 #include "swGlobalVars.h"
 
 
-swServerG SwooleG;			/// 超全局本地变量，此全局变量子进程中修改，其它进程不感知
-swServerGS *SwooleGS;		/// 超全局共享变量，此全局变量是基于共享内存的，修改字段，其它进程可感知
-swWorkerG SwooleWG;			/// 进程内全局变量，此全局变量在worker进程内初始化
-swServerStats *SwooleStats;
+swServerG SwooleG;				/// 超全局本地变量，此全局变量子进程中修改，其它进程不感知
+swServerGS *SwooleGS = NULL;		/// 超全局共享变量，此全局变量是基于共享内存的，修改字段，其它进程可感知
+swWorkerG SwooleWG;				/// 进程内全局变量，此全局变量在worker进程内初始化
+swServerStats *SwooleStats = NULL;
 __thread swThreadG SwooleTG;   /// 线程独立变量
 
 
@@ -387,7 +387,7 @@ int swServer_create(swServer *serv)
 {
     if (SwooleG.main_reactor)
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_SERVER_MUST_CREATED_BEFORE_CLIENT, "The swoole_server must create before client");
+        swError("The swoole_server must create before client");
         return SW_ERR;
     }
 
@@ -423,9 +423,9 @@ int swServer_start(swServer *serv)
     }
 
     //init loggger
-    if (SwooleG.log_file)
+    if (SwooleG.log_addr)
     {
-        swLog_init(SwooleG.log_file);
+        swLog_init(SwooleG.log_addr,SwooleG.log_port);
     }
 
     //run as daemon
@@ -449,7 +449,7 @@ int swServer_start(swServer *serv)
 			}
 			else
 			{
-				swoole_error_log(SW_LOG_ERROR, SW_ERROR_SYSTEM_CALL_FAIL, "open(/dev/null) failed. Error: %s[%d]", strerror(errno), errno);
+				swSysError("open(/dev/null) failed.");
 			}
 		}
 
@@ -470,7 +470,7 @@ int swServer_start(swServer *serv)
     serv->workers = SwooleG.memory_pool->alloc(SwooleG.memory_pool, serv->worker_num * sizeof(swWorker));
     if (!serv->workers)
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_SYSTEM_CALL_FAIL, "gmalloc[object->workers] failed");
+    	swFatalError("gmalloc[object->workers] failed");
         return SW_ERR;
     }
 
@@ -490,8 +490,8 @@ int swServer_start(swServer *serv)
 #ifdef SW_USE_RINGBUFFER
     for (index = 0; index < serv->reactor_num; index++)
     {
-        serv->reactor_threads[index].buffer_input = swRingBuffer_new(SwooleG.serv->buffer_input_size, 1);
-        if (!serv->reactor_threads[index].buffer_input)
+        serv->reactor_threads[i].buffer_input = swRingBuffer_new(SwooleG.serv->buffer_input_size, 1);
+        if (!serv->reactor_threads[i].buffer_input)
         {
             return SW_ERR;
         }
@@ -561,7 +561,7 @@ int swServer_start(swServer *serv)
 
 void swServer_reopen_log_file(swServer *serv)
 {
-    if (!SwooleG.log_file)
+    if (!SwooleG.log_addr)
     {
         return;
     }
@@ -569,7 +569,7 @@ void swServer_reopen_log_file(swServer *serv)
      * reopen log file
      */
     close(SwooleG.log_fd);
-    swLog_init(SwooleG.log_file);
+    swLog_init(SwooleG.log_addr,SwooleG.log_port);
     /**
      * redirect STDOUT & STDERR to log file
      */
@@ -656,17 +656,16 @@ uint32_t swServer_worker_schedule(swServer *serv, uint32_t schedule_key)
                 break;
             }
         }
-        //swWarn("schedule=%d|round=%d\n", target_worker_id, *round);
     }
 
     /// target worker id 校正
     int index = 0;
     while (serv->workers[target_worker_id].deny_request) {
         target_worker_id = (target_worker_id + 1) % serv->worker_num;
-    //    swWarn("target_work_id increased %d", target_worker_id);
+        swDebug("target_work_id increased %d", target_worker_id);
         if (++index > serv->worker_num) {
             target_worker_id = 0;
-            //swWarn("target_work_id is null %d", target_worker_id);
+            swDebug("target_work_id is null %d", target_worker_id);
             break;
         }
     }
@@ -726,18 +725,22 @@ int swServer_free(swServer *serv)
         serv->reactor.free(&(serv->reactor));
     }
     //close log file
-    if (SwooleG.log_file != 0)
+    if (SwooleG.log_addr != 0)
     {
         swLog_free();
     }
+
     if (SwooleG.null_fd > 0)
     {
         close(SwooleG.null_fd);
+        SwooleG.null_fd = 0;
     }
+
     if (SwooleGS->start > 0 && serv->onShutdown != NULL)
     {
         serv->onShutdown(serv);
     }
+
     swoole_clean();
     return SW_OK;
 }
@@ -754,8 +757,7 @@ int swServer_udp_send(swServer *serv, swSendData *resp)
     int ret = swSocket_sendto_blocking(sock, resp->data, resp->info.len, 0, (struct sockaddr*) &addr_in, sizeof(addr_in));
     if (ret < 0)
     {
-        swWarn("sendto to client[%s:%d] failed. Error: %s [%d]", inet_ntoa(addr_in.sin_addr), resp->info.from_id,
-                strerror(errno), errno);
+        swSysError("sendto to client[%s:%d] failed.", inet_ntoa(addr_in.sin_addr), resp->info.from_id);
     }
     return ret;
 }
@@ -799,7 +801,7 @@ int swServer_tcp_send(swServer *serv, int fd, void *data, uint32_t length)
      */
     if (length >= serv->buffer_output_size)
     {
-        swoole_error_log(SW_LOG_WARNING, SW_ERROR_OUTPUT_BUFFER_OVERFLOW, "More than the output buffer size[%d], please use the sendfile.", serv->buffer_output_size);
+        swWarn("More than the output buffer size[%d], please use the sendfile.", serv->buffer_output_size);
         return SW_ERR;
     }
     else
@@ -824,7 +826,7 @@ int swServer_tcp_send(swServer *serv, int fd, void *data, uint32_t length)
 
 int swServer_tcp_deny_request(swServer *serv, long nWorkerId)
 {
-    swWarn("swServer_tcp_deny_request");
+    swNotice("swServer_tcp_deny_request");
     swEventData ev_data;
     ev_data.info.fd = 0;
     ev_data.info.worker_id = nWorkerId;
@@ -884,7 +886,7 @@ int swServer_tcp_sendfile(swServer *serv, int fd, char *filename, uint32_t len)
     swConnection *conn = swServer_connection_verify(serv, fd);
     if (conn && conn->ssl)
     {
-        swoole_error_log(SW_LOG_WARNING, SW_ERROR_SSL_CANNOT_USE_SENFILE, "SSL session#%d cannot use sendfile().", fd);
+        swError("SSL session#%d cannot use sendfile().", fd);
         return SW_ERR;
     }
 #endif
@@ -896,15 +898,14 @@ int swServer_tcp_sendfile(swServer *serv, int fd, char *filename, uint32_t len)
     //file name size
     if (send_data.info.len > SW_BUFFER_SIZE - 1)
     {
-        swoole_error_log(SW_LOG_WARNING, SW_ERROR_NAME_TOO_LONG, "sendfile name too long. [MAX_LENGTH=%d]",
-                (int) SW_BUFFER_SIZE - 1);
+        swWarn("sendfile name too long. [MAX_LENGTH=%d]",(int) SW_BUFFER_SIZE - 1);
         return SW_ERR;
     }
 
     //check file exists
     if (access(filename, R_OK) < 0)
     {
-        swoole_error_log(SW_LOG_WARNING, SW_ERROR_FILE_NOT_EXIST, "file[%s] not found.", filename);
+        swError("file[%s] not found.", filename);
         return SW_ERR;
     }
 
@@ -924,7 +925,7 @@ int swServer_tcp_sendwait(swServer *serv, int fd, void *data, uint32_t length)
     swConnection *conn = swServer_connection_verify(serv, fd);
     if (!conn)
     {
-        swoole_error_log(SW_LOG_NOTICE, SW_ERROR_SESSION_CLOSED, "send %d byte failed, because session#%d is closed.", length, fd);
+        swNotice("send %d byte failed, because session#%d is closed.", length, fd);
         return SW_ERR;
     }
     return swSocket_write_blocking(conn->fd, data, length);
@@ -954,19 +955,19 @@ swListenPort* swServer_add_port(swServer *serv, int type, char *host, int port)
 {
     if (serv->listen_port_num >= SW_MAX_LISTEN_PORT)
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_SERVER_TOO_MANY_LISTEN_PORT, "allows up to %d ports to listen", SW_MAX_LISTEN_PORT);
+        swWarn("allows up to %d ports to listen", SW_MAX_LISTEN_PORT);
         return NULL;
     }
     if (!(type == SW_SOCK_UNIX_DGRAM || type == SW_SOCK_UNIX_STREAM) && (port < 1 || port > 65535))
     {
-        swoole_error_log(SW_LOG_ERROR, SW_ERROR_SERVER_INVALID_LISTEN_PORT, "invalid port [%d]", port);
+        swError("invalid port [%d]", port);
         return NULL;
     }
 
     swListenPort *ls = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swListenPort));
     if (ls == NULL)
     {
-        swError("alloc failed");
+        swFatalError("alloc failed");
         return NULL;
     }
 
@@ -998,7 +999,7 @@ swListenPort* swServer_add_port(swServer *serv, int type, char *host, int port)
     int sock = swSocket_create(ls->type,NULL,NULL);
     if (sock < 0)
     {
-        swSysError("create socket failed.");
+        swError("create socket failed.");
 
 create_error:
         SwooleG.memory_pool->free(SwooleG.memory_pool,ls);

@@ -176,7 +176,8 @@ int swServer_master_onAccept(swReactor *reactor, swEvent *event)
                     swServer_disable_accept(reactor);
                     reactor->disable_accept = 1;
                 }
-                swoole_error_log(SW_LOG_ERROR, SW_ERROR_SYSTEM_CALL_FAIL, "accept() failed. Error: %s[%d]", strerror(errno), errno);
+
+                swSysError("accept failed.");
                 return SW_OK;
             }
         }
@@ -192,7 +193,7 @@ int swServer_master_onAccept(swReactor *reactor, swEvent *event)
         //too many connection
         if (new_fd >= serv->max_connection)
         {
-            swoole_error_log(SW_LOG_WARNING, SW_ERROR_SERVER_TOO_MANY_SOCKET, "Too many connections [now: %d].", new_fd);
+            swWarn("Too many connections [now: %d].", new_fd);
             close(new_fd);
             return SW_OK;
         }

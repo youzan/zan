@@ -154,7 +154,7 @@ static int swReactorKqueue_add(swReactor *reactor, int fd, int fdtype)
     }
 
     memcpy(&e.udata, &fd_, sizeof(swFd));
-    swTrace("[THREAD #%ld]EP=%d|FD=%d\n", pthread_self(), this->epfd, fd);
+    swTrace("[THREAD #%ld]EP=%d|FD=%d\n", (long)pthread_self(), this->epfd, fd);
     reactor->event_num++;
     return SW_OK;
 }
@@ -284,10 +284,11 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
 
     while (reactor->running > 0)
     {
-        if (reactor->timeout_msec > 0)
+        if (reactor->timeout_msec > 0 || reactor->defer_callback_list)
         {
-            t.tv_sec = reactor->timeout_msec / 1000;
-            t.tv_nsec = (reactor->timeout_msec - t.tv_sec * 1000) * 1000;
+	    	int32_t timeout_msec = reactor->defer_callback_list? 1:reactor->timeout_msec;
+            t.tv_sec = timeout_msec / 1000;
+            t.tv_nsec = (timeout_msec - t.tv_sec * 1000) * 1000;
             t_ptr = &t;
         }
         else
@@ -298,10 +299,9 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
         n = kevent(object->epfd, NULL, 0, object->events, object->event_max, t_ptr);
         if (n < 0)
         {
-            //swTrace("kqueue error.EP=%d | Errno=%d\n", object->epfd, errno);
             if (swReactor_error(reactor) < 0)
             {
-                swWarn("Kqueue[#%d] Error: %s[%d]", reactor->id, strerror(errno), errno);
+            	swWarn("Kqueue[#%d].", reactor->id);
                 return SW_ERR;
             }
             else
@@ -350,13 +350,13 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
 						ret = handle(reactor, &event);
 						if (ret < 0)
 						{
-							swSysError("kqueue event write socket#%d handler failed.", event.fd);
+							swError("kqueue event write socket#%d handler failed.", event.fd);
 						}
                     }
                 }
                 else
                 {
-                    swWarn("kqueue event unknow filter=%d", object->events[i].filter);
+                	swWarn("kqueue event unknow filter=%d", object->events[i].filter);
                 }
             }
         }

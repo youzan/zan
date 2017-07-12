@@ -61,7 +61,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
             int tcp_nodelay = 0;
             if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (const void *) &tcp_nodelay, sizeof(int)) == -1)
             {
-                swWarn("setsockopt(TCP_NODELAY) failed. Error: %s[%d]", strerror(errno), errno);
+                swSysError("setsockopt(TCP_NODELAY) failed.");
             }
         }
         /**
@@ -69,7 +69,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
          */
         if (swSocket_tcp_nopush(conn->fd, 1) == -1)
         {
-            swWarn("swSocket_tcp_nopush() failed. Error: %s[%d]", strerror(errno), errno);
+        	swSysError("swSocket_tcp_nopush() failed.");
         }
     }
 #endif
@@ -77,7 +77,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
     int sendn = (task->filesize - task->offset > SW_SENDFILE_TRUNK) ?
     			SW_SENDFILE_TRUNK : task->filesize - task->offset;
     ret = swoole_sendfile(conn->fd, task->fd, &task->offset, sendn);
-    swTrace("ret=%d|task->offset=%ld|sendn=%d|filesize=%ld", ret, task->offset, sendn, task->filesize);
+    swTrace("ret=%d|task->offset=%lld|sendn=%d|filesize=%lld", ret, (long long int)(task->offset), sendn, (long long int)(task->filesize));
 
     if (ret <= 0)
     {
@@ -108,7 +108,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
              */
             if (swSocket_tcp_nopush(conn->fd, 0) == -1)
             {
-                swWarn("swSocket_tcp_nopush() failed. Error: %s[%d]", strerror(errno), errno);
+            	swSysError("swSocket_tcp_nopush() failed.");
             }
 
             /**
@@ -119,7 +119,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
                 int value = 1;
                 if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (const void *) &value, sizeof(int)) == -1)
                 {
-                    swWarn("setsockopt(TCP_NODELAY) failed. Error: %s[%d]", strerror(errno), errno);
+                	swSysError("setsockopt(TCP_NODELAY) failed.");
                 }
             }
         }
@@ -151,7 +151,7 @@ int swConnection_buffer_send(swConnection *conn)
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-            swWarn("send to fd[%d] failed. Error: %s[%d]", conn->fd, strerror(errno), errno);
+        	swSysError("send to fd[%d] failed.", conn->fd);
             break;
         case SW_CLOSE:
             conn->close_wait = 1;
@@ -192,7 +192,7 @@ swString* swConnection_get_string_buffer(swConnection *conn)
 int swConnection_get_ip(swConnection *conn,char* addip,int len)
 {
     if (len < SW_IP_MAX_LENGTH || !addip){
-        swWarn("swConnnection get ip cache len %d must more than %d\n",len,SW_IP_MAX_LENGTH);
+        swError("swConnnection get ip cache len %d must more than %d\n",len,SW_IP_MAX_LENGTH);
         return SW_ERR;
     }
 
@@ -290,7 +290,7 @@ int swConnection_sendfile_sync(swConnection *conn, char *filename, double timeou
     int file_fd = open(filename, O_RDONLY);
     if (file_fd < 0)
     {
-        swWarn("open(%s) failed. Error: %s[%d]", filename, strerror(errno), errno);
+    	swSysError("open(%s) failed.", filename);
         return SW_ERR;
     }
 
@@ -355,7 +355,7 @@ int swConnection_sendfile_async(swConnection *conn, char *filename)
     if (task == NULL)
     {
         close(file_fd);
-        swWarn("malloc for swTask_sendfile failed.");
+        swFatalError("malloc for swTask_sendfile failed.");
         return SW_ERR;
     }
 
@@ -367,7 +367,7 @@ int swConnection_sendfile_async(swConnection *conn, char *filename)
     swBuffer_trunk *chunk = swConnection_get_out_buffer(conn, SW_CHUNK_SENDFILE);
     if (!chunk)
     {
-        swWarn("get out_buffer trunk failed.");
+        swError("get out_buffer trunk failed.");
         swBuffer_trunk error_chunk;
         error_chunk.store.ptr = task;
         swConnection_sendfile_destructor(&error_chunk);

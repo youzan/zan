@@ -297,8 +297,8 @@ int swoole_type_size(char type);
 int swoole_mkdir_recursive(const char *dir);
 char* swoole_dirname(char *file);
 
+int get_env_log_level();
 void swoole_redirect_stdout(int new_fd);
-uint64_t swoole_get_seq_no();
 
 long swoole_file_get_size(FILE *fp);
 int swoole_tmpfile(char *filename);
@@ -307,7 +307,6 @@ swString* swoole_file_get_contents(char *filename);
 int swoole_rand(int min, int max);
 int swoole_system_random(int min, int max);
 
-void swoole_open_remote_debug(void);
 char *swoole_dec2hex(int value, int base);
 void replaceChar(char* str,int length,char srcCh,char dstCh);
 int swoole_version_compare(char *version1, char *version2);

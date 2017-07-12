@@ -199,6 +199,8 @@ int swReactorSelect_wait(swReactor *reactor, struct timeval *timeo)
             }
         }
 
+        int32_t timeout_msec = reactor->timeout_msec;
+        timeout_msec = reactor->defer_callback_list? 1:timeout_msec;
         timeout.tv_sec = (reactor->timeout_msec < 0)? SW_MAX_UINT:reactor->timeout_msec / 1000;
         timeout.tv_usec = (reactor->timeout_msec < 0)? 0:reactor->timeout_msec - timeout.tv_sec * 1000;
 
@@ -207,7 +209,7 @@ int swReactorSelect_wait(swReactor *reactor, struct timeval *timeo)
         {
             if (swReactor_error(reactor) < 0)
             {
-                swWarn("select error. Error: %s[%d]", strerror(errno), errno);
+                swSysError("select error.");
             }
 
             continue;

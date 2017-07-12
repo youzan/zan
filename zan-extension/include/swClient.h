@@ -45,15 +45,15 @@ typedef struct _swClient
     int reactor_fdtype;
     int64_t timer_id;
     uint8_t timeout_type;
-    uint8_t async :1;
-    uint8_t released :1;
-    uint8_t packet_mode :1;
+    uint8_t async;
+    uint8_t released;
+    uint8_t packet_mode;
 
     /**
      * one package: length check
      */
-    uint8_t open_length_check :1;
-    uint8_t open_eof_check :1;
+    uint8_t open_length_check;
+    uint8_t open_eof_check;
 
     swProtocol protocol;
 
@@ -82,9 +82,9 @@ typedef struct _swClient
     uint32_t buffer_input_size;
 
 #ifdef SW_USE_OPENSSL
-    uint8_t open_ssl :1;
-    uint8_t ssl_disable_compress :1;
-    uint8_t ssl_verify :1;
+    uint8_t open_ssl;
+    uint8_t ssl_disable_compress;
+    uint8_t ssl_verify;
     char *ssl_cert_file;
     char *ssl_key_file;
     SSL_CTX *ssl_context;
@@ -107,7 +107,6 @@ typedef struct _swClient
 } swClient;
 
 int swClient_create(swClient *cli, int type, int async);
-//int swClient_free(swClient *cli);
 
 #ifdef __cplusplus
 }

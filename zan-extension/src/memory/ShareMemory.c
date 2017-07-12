@@ -110,7 +110,7 @@ void *swShareMemory_mmap_create(swShareMemory *object, int size, char *mapfile)
     if (!mem)
 #endif
     {
-        swWarn("mmap() failed. Error: %s[%d]", strerror(errno), errno);
+        swSysError("mmap failed.");
         return NULL;
     }
     else
@@ -139,14 +139,14 @@ void *swShareMemory_sysv_create(swShareMemory *object, int size, int key)
     int shmid = -1;
     if ((shmid = shmget(key, size, IPC_CREAT)) < 0)
     {
-        swWarn("shmget() failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("shmget() failed.");
         return NULL;
     }
 
     void *mem = shmat(shmid, NULL, 0);
-    if ((long)mem < 0)
+    if ((intptr_t)mem < 0)
     {
-        swWarn("shmat() failed. Error: %s[%d]", strerror(errno), errno);
+    	swSysError("shmat() failed.");
         return NULL;
     }
     else

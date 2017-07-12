@@ -115,7 +115,7 @@ int swRingQueue_init(swRingQueue *queue, int buffer_size)
     queue->data = sw_calloc(buffer_size, sizeof(void*));
     if (queue->data == NULL)
     {
-        swWarn("malloc failed.");
+        swFatalError("malloc failed.");
         return SW_ERR;
     }
     queue->size = buffer_size;

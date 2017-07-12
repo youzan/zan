@@ -464,6 +464,7 @@ void php_swoole_onClose(swServer *, swDataHead *);
 
 ZEND_BEGIN_MODULE_GLOBALS(swoole)
     long aio_thread_num;
+	long log_level;
     zend_bool display_errors;
     zend_bool cli;
     zend_bool use_namespace;

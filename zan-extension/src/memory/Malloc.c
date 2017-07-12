@@ -26,14 +26,14 @@ static void swMalloc_destroy(swMemoryPool *pool);
 void* malloc_debug(const char* file,int line,const char* func,int __size)
 {
 	void *ptr = malloc(__size);
-	swWarn("malloc debug %s,%d,%s malloc %p",file,line,func,ptr);
+	swDebug("malloc debug %s,%d,%s malloc %p",file,line,func,ptr);
 	return ptr;
 }
 
 void free_debug(const char* file,int line,const char* func,void* ptr)
 {
-	swWarn("free debug %s,%d,%s free %p",file,line,func,ptr);
 	free(ptr);
+	swDebug("free debug %s,%d,%s free %p",file,line,func,ptr);
 }
 
 swMemoryPool* swMalloc_new()

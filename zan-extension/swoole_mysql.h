@@ -98,9 +98,9 @@ typedef struct
 
 typedef struct
 {
-	uint8_t released:1;
+	uint8_t released;
 	/* if true, commit or rollBack is allowed to be called */
-	uint8_t in_txn:1;
+	uint8_t in_txn;
     uint8_t state;
     uint8_t handshake;
     swString *buffer;
@@ -117,7 +117,6 @@ typedef struct
 #if PHP_MAJOR_VERSION >= 7
     zval _object;
     zval _onClose;
-    zval _onTimeout;
 #endif
 } mysql_client;
 

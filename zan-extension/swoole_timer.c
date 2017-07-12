@@ -356,18 +356,16 @@ PHP_FUNCTION(swoole_timer_clear)
 {
     if (!SwooleG.timer.set)
     {
-        swWarn("no timer");
         RETURN_FALSE;
     }
 
     long id;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &id))
     {
-        return;
+    	RETURN_FALSE;
     }
 
     swTimer_del(&SwooleG.timer,id);
-
 	RETURN_TRUE;
 }
 
@@ -375,7 +373,6 @@ PHP_FUNCTION(swoole_timer_exists)
 {
     if (!SwooleG.timer.set)
     {
-        swoole_php_error(E_WARNING, "no timer");
         RETURN_FALSE;
     }
 

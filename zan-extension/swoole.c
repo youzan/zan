@@ -253,6 +253,7 @@ ZEND_GET_MODULE(zan)
 
 PHP_INI_BEGIN()
 STD_PHP_INI_ENTRY("zan.aio_thread_num", "2", PHP_INI_ALL, OnUpdateLong, aio_thread_num, zend_swoole_globals, swoole_globals)
+STD_PHP_INI_ENTRY("zan.log_level", "5", PHP_INI_ALL, OnUpdateLong, log_level, zend_swoole_globals, swoole_globals)
 STD_PHP_INI_ENTRY("zan.display_errors", "On", PHP_INI_ALL, OnUpdateBool, display_errors, zend_swoole_globals, swoole_globals)
 /**
  * namespace class style
@@ -269,6 +270,7 @@ static void php_swoole_init_globals(zend_swoole_globals *swoole_globals)
 {
     swoole_globals->message_queue_key = 0;
     swoole_globals->aio_thread_num = SW_AIO_THREAD_NUM_DEFAULT;
+    swoole_globals->log_level = SW_LOG_WARNING;
     swoole_globals->socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
     swoole_globals->display_errors = 1;
     swoole_globals->use_namespace = 0;
@@ -505,6 +507,12 @@ PHP_MINIT_FUNCTION(zan)
 
     swoole_mysql_init(module_number TSRMLS_CC);
 
+    /// 初始化日志等级
+    if (SWOOLE_G(log_level) > 0)
+    {
+    		set_log_level(SWOOLE_G(log_level));
+    }
+
     if (SWOOLE_G(socket_buffer_size) > 0)
     {
         SwooleG.socket_buffer_size = SWOOLE_G(socket_buffer_size);
@@ -531,6 +539,8 @@ PHP_MINIT_FUNCTION(zan)
     swoole_objects.size = 65536;
     swoole_objects.array = calloc(swoole_objects.size, sizeof(void*));
 
+    /// 设置日志调试等级，方便调试使用，zan扩展自定义环境变量ZANEXT_DEBUG_LOG_LEVEL
+    set_log_level(get_env_log_level());
     return SUCCESS;
 }
 /* }}} */
@@ -593,12 +603,7 @@ PHP_MINFO_FUNCTION(zan)
 #ifdef SW_USE_RINGBUFFER
     php_info_print_table_row(2, "ringbuffer", "enabled");
 #endif
-#ifdef HAVE_LINUX_AIO
-    php_info_print_table_row(2, "Linux Native AIO", "enabled");
-#endif
-#ifdef HAVE_GCC_AIO
-    php_info_print_table_row(2, "GCC AIO", "enabled");
-#endif
+
 #ifdef HAVE_PCRE
     php_info_print_table_row(2, "pcre", "enabled");
 #endif
@@ -656,7 +661,7 @@ PHP_RSHUTDOWN_FUNCTION(zan)
             case E_USER_ERROR:
             case E_COMPILE_ERROR:
                     swWarn("PHP_RSHUTDOWN_FUNCTION(swoole).");
-                swoole_error_log(SW_LOG_ERROR, SW_ERROR_PHP_FATAL_ERROR, "Fatal error: %s in %s on line %d.",
+                    swError("Fatal error: %s in %s on line %d.",
                         PG(last_error_message), PG(last_error_file)?PG(last_error_file):"-", PG(last_error_lineno));
                 break;
             default:
@@ -665,7 +670,7 @@ PHP_RSHUTDOWN_FUNCTION(zan)
         }
         else
         {
-            swoole_error_log(SW_LOG_WARNING, SW_ERROR_SERVER_WORKER_TERMINATED, "worker process is terminated by exit()/die().");
+            swWarn("worker process is terminated by exit/die.");
         }
     }
 

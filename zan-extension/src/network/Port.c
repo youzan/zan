@@ -91,12 +91,12 @@ int swPort_set_option(swListenPort *ls)
         ls->ssl_context = swSSL_get_context(ls->ssl_method, ls->ssl_cert_file, ls->ssl_key_file);
         if (ls->ssl_context == NULL)
         {
-            swWarn("swSSL_get_context() error.");
+            swError("swSSL_get_context() error.");
             return SW_ERR;
         }
         if (ls->ssl_client_cert_file && swSSL_set_client_certificate(ls->ssl_context, ls->ssl_client_cert_file, ls->ssl_verify_depth) == SW_ERR)
         {
-            swWarn("swSSL_set_client_certificate() error.");
+        	swError("swSSL_set_client_certificate() error.");
             return SW_ERR;
         }
         if (ls->open_http_protocol)
@@ -110,7 +110,7 @@ int swPort_set_option(swListenPort *ls)
         }
         if (swSSL_server_set_cipher(ls->ssl_context, &ls->ssl_config) < 0)
         {
-            swWarn("swSSL_server_set_cipher() error.");
+        	swError("swSSL_server_set_cipher() error.");
             return SW_ERR;
         }
     }
@@ -125,7 +125,7 @@ int swPort_set_option(swListenPort *ls)
     //listen stream socket
     if (listen(sock, ls->backlog) < 0)
     {
-        swWarn("listen(%s:%d, %d) failed. Error: %s[%d]", ls->host, ls->port, ls->backlog, strerror(errno), errno);
+        swSysError("listen(%s:%d, %d) failed", ls->host, ls->port, ls->backlog);
         return SW_ERR;
     }
 
