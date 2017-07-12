@@ -1696,10 +1696,6 @@ static void http_build_header(http_context *ctx, zval *object, swString *respons
             {
                 flag |= HTTP_RESPONSE_CONNECTION;
             }
-            else if (strncasecmp(key, "Content-Length", keylen) == 0)
-            {
-                flag |= HTTP_RESPONSE_CONTENT_LENGTH;
-            }
             else if (strncasecmp(key, "Date", keylen) == 0)
             {
                 flag |= HTTP_RESPONSE_DATE;
@@ -1734,20 +1730,6 @@ static void http_build_header(http_context *ctx, zval *object, swString *respons
 	{
 		swString_append_ptr(response, ZEND_STRL("Allow: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS\r\nContent-Length: 0\r\n"));
 	}
-	else if (body_length > 0)
-	{
-#ifdef SW_HAVE_ZLIB
-		body_length = ctx->gzip_enable? swoole_zlib_buffer->length:body_length;
-#endif
-		n = snprintf(buf, sizeof(buf), "Content-Length: %d\r\n", body_length);
-		n = n > SW_HTTP_HEADER_MAX_SIZE?SW_HTTP_HEADER_MAX_SIZE:n;
-		swString_append_ptr(response, buf, n);
-
-		if (!(flag & HTTP_RESPONSE_CONTENT_TYPE))
-		{
-			swString_append_ptr(response, ZEND_STRL("Content-Type: text/html\r\n"));
-		}
-	}
 
 	if (!(flag & HTTP_RESPONSE_DATE))
 	{
@@ -1763,6 +1745,23 @@ static void http_build_header(http_context *ctx, zval *object, swString *respons
     {
         swString_append_ptr(response, ZEND_STRL("Transfer-Encoding: chunked\r\n"));
     }
+    else
+    {
+#ifdef SW_HAVE_ZLIB
+		body_length = ctx->gzip_enable? swoole_zlib_buffer->length:body_length;
+#endif
+		n = snprintf(buf, sizeof(buf), "Content-Length: %d\r\n", body_length);
+		n = n > SW_HTTP_HEADER_MAX_SIZE?SW_HTTP_HEADER_MAX_SIZE:n;
+		swString_append_ptr(response, buf, n);
+
+
+    }
+
+    if (!(flag & HTTP_RESPONSE_CONTENT_TYPE))
+    {
+        swString_append_ptr(response, ZEND_STRL("Content-Type: text/html\r\n"));
+    }
+
     //http cookies
     if (ctx->response.zcookie)
     {
