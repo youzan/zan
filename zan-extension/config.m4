@@ -22,13 +22,13 @@ PHP_ARG_ENABLE(zan-debug, whether to enable zan debug,
 [  --enable-zan-debug   Enable zan debug], no, no)
 
 PHP_ARG_ENABLE(sockets, enable sockets support,
-[  --enable-sockets        Do you have sockets extension?], no, no)
+[  --enable-sockets        Do you have sockets extension?], yes, no)
 
 PHP_ARG_ENABLE(ringbuffer, enable ringbuffer shared memory pool support,
 [  --enable-ringbuffer     Use ringbuffer memory pool?], no, no)
 
 PHP_ARG_ENABLE(async_redis, enable async_redis support,
-[  --enable-async-redis    Do you have hiredis?], no, no)
+[  --enable-async-redis    Do you have hiredis?], yes, no)
 
 PHP_ARG_ENABLE(openssl, enable openssl support,
 [  --enable-openssl        Use openssl?], no, no)

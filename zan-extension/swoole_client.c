@@ -282,7 +282,6 @@ static void client_onConnect(swClient *cli)
 
 static void client_onClose(swClient *cli)
 {
-    SWOOLE_FETCH_TSRMLS;
     if (cli && cli->timer_id > 0)
 	{
 		long timer_id = cli->timer_id;

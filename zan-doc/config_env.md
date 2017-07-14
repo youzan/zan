@@ -1,12 +1,12 @@
 ##  Zan扩展配置项
  --enable-zan-debug     开启Zan扩展调试功能(开启SW_DEBUG宏)
 
- --enable-sockets       使用sockets扩展
+ --enable-sockets       使用sockets扩展(默认打开)
                         注意需要安装PHP sockets扩展，否则configure时检查头文件php_sockets.h会出错
 
 --enable-ringbuffer     使用ringbuffer内存池(宏SW_USE_RINGBUFFER）
 
---enable-async-redis    使用异步hiredis客户端
+--enable-async-redis    使用异步hiredis客户端(默认打开)
 
 --enable-openssl        使用ssl功能
 
@@ -33,9 +33,9 @@ HAVE_REUSEPORT          socket端口复用
 
 AC_COMPILE              检查系统编译器，如果clang，添加编译选项-std=gnu89
 
-建议默认开启--enable-sockets --enable-async-redis  --enable-openssl这三个配置项。
+建议默认开启--enable-openssl配置项。
 
-设置编译选项CFLAGS与链接选项LDFLAGS
+设置编译选项CFLAGS与链接选项LDFLAGS。
 
 ##  依赖的头文件、库、编译安装
 检查运行时库
@@ -104,24 +104,27 @@ Zan扩展配置、编译、安装步骤如下：
 git clone https://github.com/youzan/zan.git
 cd zan-extension
 phpize
-./configure --enable-sockets --enable-async-redis  --enable-openssl
+./configure
 make 
 make install
 ```
 Zan编译安装常见问题：
-1.  若执行phpize报xxx/sed: No such file，请重装php或将/usr/bin/sed拷贝到xxx目录下。
-2.  若执行phpize报Cannot find autoconf，请先安装autoconf工具。
-3.  若执行configure时报错libcurl not installed，请重新安转curl库，并保证库与头文件名称与路径正确。
-    1.  如库名称与路径/usr/lib/libcurl.so(通常带版本号的libxxx.so.xxx会软连接到libXXX.so供链接器识别)，
-        对应头文件路径则为/usr/include/curl。
-    2.  确认curl库正确安装后，请务必重新phpize && configure以保证新的配置生效。
-    3.  若按1)、2)操作后仍然报错，则可修改config.m4中PHP_CURL的配置路径为你安装curl的路径。
-4.  若执行configure时报错enable sockets support, sockets extension installed incorrectly，请确认PHP版本及sockets扩展正确安装。
+1.  使用async-redis客户端及依赖sockets扩展默认打开，使用ssl功能默认不打开。
+    1. 若不想使用async-redis客户端，可在configure时采用选项```--disable-async-redis```关闭。
+    2. 使用async-redis客户端需要安装hiredis库，当前默认已提供x86下linux/mac的hiredis库。若需要支持arm等硬件平台，需要先安装hiredis库，然后在config.m4文件中添加```PHP_ADD_LIBRARY(hiredis, 1, ZAN_SHARED_LIBADD)```将其编译进ZAN扩展。
+    3. 若想使用ssl功能，可在configure时采用选项```--enable-openssl```开启。
+2.  若执行phpize报xxx/sed: No such file，请重装php或将/usr/bin/sed拷贝到xxx目录下。
+3.  若执行phpize报Cannot find autoconf，请先安装autoconf工具。
+4.  若执行configure时报错libcurl not installed，请重新安转curl库，并保证库与头文件名称与路径正确。
+    1. 如库名称与路径/usr/lib/libcurl.so(通常带版本号的libxxx.so.xxx会软连接到libXXX.so供链接器识别)，对应头文件路径则为/usr/include/curl。
+    2. 确认curl库正确安装后，请务必重新phpize && configure以保证新的配置生效。
+    3. 若按1)、2)操作后仍然报错，则可修改config.m4中PHP_CURL的配置路径为你安装curl的路径。
+5.  若执行configure时报错enable sockets support, sockets extension installed incorrectly，请确认PHP版本及sockets扩展正确安装。
     1. PHP版本需要在5.6以上版本。
     2. 在PHP的include路径下应该包含头文件ext/sockets/php_sockets.h。
     3. sockets扩展在zan之前加载(php.ini中的引入加载顺序)，以确保能引用符号表信息。
-5.  若执行configure时报错Enable openssl support, require openssl library，请重新安装openssl库并保证能链接正确。
-    1.  重新安装openssl库。
-    2.  添加openssl库路径供链接器找lib，如将-L/usr/local/opt/openssl/lib补充到config.m4中的LDFLAGS。
-    3.  添加openssl库依赖头文件路径，如将-I/usr/local/opt/openssl/include添加到config.m4中的CPPFLAGS。
-    4.  依然需要重新配置，按编译扩展步骤安装，phpize && ./configure XXX && make && make install。
+6.  若执行configure时报错Enable openssl support, require openssl library，请重新安装openssl库并保证能链接正确。
+    1. 重新安装openssl库。
+    2. 添加openssl库路径供链接器找lib，如将```-L/usr/local/opt/openssl/lib```补充到config.m4中的LDFLAGS。
+    3. 添加openssl库依赖头文件路径，如将```-I/usr/local/opt/openssl/include```添加到config.m4中的CPPFLAGS。
+    4. 依然需要重新配置，按编译扩展步骤安装，见上方。

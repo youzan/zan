@@ -691,6 +691,7 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 	return ret;
 }
 
+#ifdef SW_USE_REDIS
 static sw_inline int redisclient_args_check(zval* args,int type TSRMLS_DC)
 {
 	if (!args)
@@ -931,6 +932,7 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 
 	return ret;
 }
+#endif
 
 static sw_inline int mysqlclient_args_check(zval* args,int type TSRMLS_DC)
 {
@@ -1167,14 +1169,12 @@ static sw_inline int tcpclient_close(connobj* connClient TSRMLS_DC)
 	return client_close(SW_CONNPOOL_TCP,connClient TSRMLS_CC);
 }
 
+#ifdef SW_USE_REDIS
 static sw_inline int redisclient_close(connobj* connClient TSRMLS_DC)
 {
-#ifdef SW_USE_REDIS
 	return client_close(SW_CONNPOOL_REDIS,connClient TSRMLS_CC);
-#else
-	return SW_OK;
-#endif
 }
+#endif
 
 static sw_inline int mysqlclient_close(connobj* connClient TSRMLS_DC)
 {

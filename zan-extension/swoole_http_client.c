@@ -531,7 +531,6 @@ static void http_client_free_cb(zval* object)
 // @zobject: swoole_http_client object
 static void http_client_onClose(swClient *cli)
 {
-    SWOOLE_FETCH_TSRMLS;
     if (cli && cli->timer_id > 0)
 	{
 		swTimer_del(&SwooleG.timer,cli->timer_id);
@@ -1487,8 +1486,6 @@ enum state
 
 static int http_client_parser_on_header_field(php_http_parser *parser, const char *at, size_t length)
 {
-    SWOOLE_FETCH_TSRMLS;
-
 	http_client* http = (http_client*)parser->data;
     if (!http)
     {

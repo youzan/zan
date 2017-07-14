@@ -1202,7 +1202,6 @@ static int swoole_mysql_onError(swReactor *reactor, swEvent *event)
 
     if (event->socket->active)
     {
-        SWOOLE_FETCH_TSRMLS;
         mysql_client *client = event->socket->object;
         if (!client)
         {
