@@ -1,12 +1,22 @@
 #!/bin/sh
 
 PWD=`pwd`
-cd zan-extension 
-case $1 in
+cd zan-extension
+
+$1/phpize -v
+result=$?
+
+if [ $result != 0 ]
+then
+    echo '请输入PHP的bin路径'
+    exit
+fi
+
+case $2 in
     build)
-        phpize
-        ./configure --enable-sockets  --enable-async-redis --enable-openssl
-	make
+        $1/phpize
+        ./configure  --with-php-config=$1/php-config
+        make
         ;;
     install)
         make install
@@ -18,11 +28,13 @@ case $1 in
         make clean
         ./clean.sh
         ;;
-    *)	
-	phpize
-        ./configure --enable-sockets --enable-async-redis --enable-openssl
+    *)
         make clean
-	make install
+        ./clean.sh
+        $1/phpize
+        ./configure --with-php-config=$1/php-config
+        make
+        make install
         ;;
 esac
 cd $PWD
