@@ -129,9 +129,6 @@ static int php_swoole_event_onWrite(swReactor *reactor, swEvent *event)
 
 static int php_swoole_event_onError(swReactor *reactor, swEvent *event)
 {
-
-    SWOOLE_FETCH_TSRMLS;
-
     int error = 0;
     socklen_t len = sizeof(error);
     if (getsockopt(event->fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
