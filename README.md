@@ -37,6 +37,15 @@ phpize
 make 
 make install
 ```
+
+## 建议安装配置项
+```
+phpize 
+./configure --enable-openssl
+make 
+make install
+```
+
 ## Zan编译安装常见问题
 1.  使用async-redis客户端及依赖sockets扩展默认打开，使用ssl功能默认不打开。
     1. 若不想使用async-redis客户端，可在configure时采用选项```--disable-async-redis```关闭。
