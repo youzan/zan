@@ -1787,12 +1787,12 @@ static PHP_METHOD(swoole_http_client, post)
 //websocket method
 static PHP_METHOD(swoole_http_client, upgrade)
 {
-	http_client_property *hcc = swoole_get_property(getThis(), swoole_property_common);
-	if (!hcc)
-	{
-		swWarn("http_client_property is NULL ");
-		RETURN_FALSE;
-	}
+    http_client_property *hcc = swoole_get_property(getThis(), swoole_property_common);
+    if (!hcc || !hcc->onMessage)
+    {
+        swWarn("http_client_property is NULL, or not set onmessage cb before using upgrade method.");
+        RETURN_FALSE;
+    }
 
     char *uri = NULL;
     zend_size_t uri_len = 0;
@@ -1800,6 +1800,17 @@ static PHP_METHOD(swoole_http_client, upgrade)
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &uri, &uri_len, &finish_cb))
     {
         return;
+    }
+
+    if (!hcc->request_header)
+    {
+        zval *request_header = NULL;
+        SW_MAKE_STD_ZVAL(request_header);
+        array_init(request_header);
+        zend_update_property(swoole_http_client_class_entry_ptr, getThis(), ZEND_STRL("requestHeaders"), request_header TSRMLS_CC);
+        hcc->request_header = sw_zend_read_property(swoole_http_client_class_entry_ptr, getThis(), ZEND_STRL("requestHeaders"), 1 TSRMLS_CC);
+        sw_copy_to_stack(hcc->request_header, hcc->_request_header);
+        sw_zval_ptr_dtor(&request_header);
     }
 
     char buf[SW_WEBSOCKET_KEY_LENGTH + 1] = {0};
@@ -1849,7 +1860,7 @@ static PHP_METHOD(swoole_http_client, push)
     }
 
     http_client *http = swoole_get_object(getThis());
-    if (!http || !http->cli || !!http->cli->socket)
+    if (!http || !http->cli || !http->cli->socket)
     {
     	swDebug("http client or client object or socket is NULL");
         RETURN_FALSE;
