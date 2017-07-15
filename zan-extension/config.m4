@@ -233,7 +233,7 @@ if test "$PHP_ZAN" != "no"; then
         fi
     fi
     if test "$PHP_CURL" != "no"; then
-        for i in /usr /usr/local /usr/local/Cellar/curl/7.47.1; do
+        for i in /usr /usr/local /usr/local/Cellar/curl/*; do
             if test -f $i/include/curl/curl.h; then
                 CURL_DIR=$i
             fi
