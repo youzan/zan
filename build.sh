@@ -15,7 +15,7 @@ fi
 case $2 in
     build)
         $1/phpize
-        ./configure  --with-php-config=$1/php-config
+        ./configure   --enable-openssl --with-php-config=$1/php-config
         make
         ;;
     install)
@@ -32,7 +32,7 @@ case $2 in
         make clean
         ./clean.sh
         $1/phpize
-        ./configure --with-php-config=$1/php-config
+        ./configure  --enable-openssl --with-php-config=$1/php-config
         make
         make install
         ;;
