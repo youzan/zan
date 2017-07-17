@@ -204,7 +204,7 @@ static void swManager_check_exit_status(swServer *serv, int worker_id, pid_t pid
 {
     if (status != 0)
     {
-        swWarn("worker#%d[pid#%ld] abnormal exit, exited=%d, status=%d, wifsignaled=%d, signal=%d", worker_id, (long)pid,WIFEXITED(status), WEXITSTATUS(status), WIFSIGNALED(status), WTERMSIG(status));
+        swError("worker#%d[pid#%ld] abnormal exit, exited=%d, status=%d, wifsignaled=%d, signal=%d", worker_id, (long)pid,WIFEXITED(status), WEXITSTATUS(status), WIFSIGNALED(status), WTERMSIG(status));
         if (serv->onWorkerError != NULL)
         {
             serv->onWorkerError(serv, worker_id, pid, WEXITSTATUS(status), WTERMSIG(status));

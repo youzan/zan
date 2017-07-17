@@ -427,7 +427,7 @@ int swProcessPool_wait(swProcessPool *pool)
             }
             if (!WIFEXITED(status))
             {
-                swWarn("worker#%d abnormal exit, status=%d, signal=%d", exit_worker->id, WEXITSTATUS(status),  WTERMSIG(status));
+                swError("worker#%d abnormal exit, status=%d, signal=%d", exit_worker->id, WEXITSTATUS(status),  WTERMSIG(status));
             }
             new_pid = swProcessPool_spawn(exit_worker);
             if (new_pid < 0)

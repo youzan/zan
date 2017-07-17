@@ -950,7 +950,12 @@ static int disconnect_client(swRedisClient* redis)
 	if (redis && redis->context)
 	{
 		redisAsyncContext* context = redis->context;
-		redisAsyncDisconnect(context);
+		if (redis->state != SWOOLE_REDIS_STATE_CLOSED)
+		{
+			redis->state = SWOOLE_REDIS_STATE_CLOSED;
+			redisAsyncDisconnect(context);
+		}
+
 		redis->context = NULL;
 	}
 
