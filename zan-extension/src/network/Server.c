@@ -113,15 +113,15 @@ static int swServer_start_check(swServer *serv)
     }
 
     //check thread num
-    serv->reactor_num  = (serv->reactor_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU)? 
+    serv->reactor_num  = (serv->reactor_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU)?
                             (SW_CPU_NUM * SW_MAX_THREAD_NCPU):serv->reactor_num;
-   
-    serv->worker_num  = (serv->worker_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU)? 
+
+    serv->worker_num  = (serv->worker_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU)?
                             (SW_CPU_NUM * SW_MAX_THREAD_NCPU):serv->worker_num;
 
     serv->reactor_num = (serv->worker_num < serv->reactor_num)? serv->worker_num:
                                 serv->reactor_num;
-                                
+
     if (SwooleG.max_sockets > 0 && serv->max_connection > SwooleG.max_sockets)
     {
         swWarn("serv->max_connection is exceed the maximum value[%d].", SwooleG.max_sockets);
@@ -304,9 +304,9 @@ int swServer_worker_init(swServer *serv, swWorker *worker)
     /// 设置cpu 亲和性
     swoole_cpu_setAffinity(SwooleWG.id,serv);
 
-    int buffer_input_size = (serv->listen_list->open_eof_check || 
-                                serv->listen_list->open_length_check || 
-                                serv->listen_list->open_http_protocol)? 
+    int buffer_input_size = (serv->listen_list->open_eof_check ||
+                                serv->listen_list->open_length_check ||
+                                serv->listen_list->open_http_protocol)?
                                 serv->listen_list->protocol.package_max_length:
                                 SW_BUFFER_SIZE_BIG;
 
@@ -403,9 +403,9 @@ int swServer_create(swServer *serv)
     }
 #endif
 
-    return (serv->factory_mode == SW_MODE_SINGLE)? 
+    return (serv->factory_mode == SW_MODE_SINGLE)?
                 swReactorProcess_create(serv):
-                swReactorThread_create(serv); 
+                swReactorThread_create(serv);
 }
 
 int swServer_start(swServer *serv)
@@ -466,7 +466,7 @@ int swServer_start(swServer *serv)
 
     serv->send = (serv->have_udp_sock == 1 && serv->factory_mode != SW_MODE_PROCESS)?
                     swServer_send2:swServer_send1;
-    
+
     serv->workers = SwooleG.memory_pool->alloc(SwooleG.memory_pool, serv->worker_num * sizeof(swWorker));
     if (!serv->workers)
     {
@@ -548,7 +548,7 @@ int swServer_start(swServer *serv)
     swServer_signal_init();
 
     int ret = (serv->factory_mode == SW_MODE_SINGLE)?
-                swReactorProcess_start(serv):swReactorThread_start(serv);  
+                swReactorProcess_start(serv):swReactorThread_start(serv);
 
     if (ret < 0)
     {
@@ -698,7 +698,7 @@ int swServer_free(swServer *serv)
         pthread_cancel(SwooleG.heartbeat_pidt);
         pthread_join(SwooleG.heartbeat_pidt, NULL);
     }
-    
+
     if (serv->factory_mode == SW_MODE_SINGLE)
     {
         if (SwooleG.task_worker_num > 0)
@@ -833,12 +833,12 @@ int swServer_tcp_deny_request(swServer *serv, long nWorkerId)
     ev_data.info.type = SW_EVENT_DENY_REQUEST;
     //copy data
     memcpy(ev_data.data, "0", 1);
-    
+
     ev_data.info.len = 1;
     ev_data.info.from_fd = SW_RESPONSE_SMALL;
     ev_data.info.from_id = 0;
     int sendn = ev_data.info.len + sizeof(swDataHead);
-    
+
     swWorker *worker = swServer_get_worker(serv, nWorkerId);
     int ret = 0;
     if (SwooleG.main_reactor)
@@ -862,20 +862,20 @@ int swServer_tcp_deny_exit(swServer *serv, long nWorkerId)
     ev_data.info.type = SW_EVENT_DENY_EXIT;
     //copy data
     memcpy(ev_data.data, "0", 1);
-    
+
     ev_data.info.len = 1;
     ev_data.info.from_fd = SW_RESPONSE_SMALL;
     ev_data.info.from_id = 0;
     int sendn = ev_data.info.len + sizeof(swDataHead);
-    
+
     swWorker *worker = swServer_get_worker(serv, nWorkerId);
     if (!worker){
         return SW_ERR;
     }
 
-    int ret = (SwooleG.main_reactor)? 
+    int ret = (SwooleG.main_reactor)?
                 SwooleG.main_reactor->write(SwooleG.main_reactor, worker->pipe_worker, &ev_data, sendn):
-                swSocket_write_blocking(worker->pipe_worker, &ev_data, sendn);   
+                swSocket_write_blocking(worker->pipe_worker, &ev_data, sendn);
 
     return ret;
 }

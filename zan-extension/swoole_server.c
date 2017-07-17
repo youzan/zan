@@ -848,7 +848,7 @@ static int php_swoole_onTask(swServer *serv, swEventData *req)
 
     SWOOLE_FETCH_TSRMLS;
 
-    sw_atomic_fetch_sub(&SwooleStats->tasking_num, 1);
+    sw_stats_decr(&SwooleStats->tasking_num);
 
     zval* callback = php_sw_server_callbacks[SW_SERVER_CB_onTask];
     if (!callback || ZVAL_IS_NULL(callback))
@@ -2503,7 +2503,7 @@ PHP_METHOD(swoole_server, taskwait)
     if (swProcessPool_dispatch_blocking(&SwooleGS->task_workers, &buf, (int*) &dst_worker_id) >= 0)
     {
         task_notify_pipe->timeout = timeout;
-        sw_atomic_fetch_add(&SwooleStats->tasking_num, 1);
+        sw_stats_incr(&SwooleStats->tasking_num);
         int ret = task_notify_pipe->read(task_notify_pipe, &notify, sizeof(notify));
         if (ret > 0)
         {
@@ -2559,7 +2559,7 @@ PHP_METHOD(swoole_server, task)
     	RETURN_FALSE;
     }
 
-    sw_atomic_fetch_add(&SwooleStats->tasking_num, 1);
+    sw_stats_incr(&SwooleStats->tasking_num);
     RETURN_LONG(buf.info.fd);
 }
 

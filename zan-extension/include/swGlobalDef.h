@@ -27,6 +27,7 @@
 #include "swConnection.h"
 #include "swFactory.h"
 #include "swBaseData.h"
+#include "swStats.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -346,16 +347,6 @@ typedef struct
 
     swHashMap *functions;
 } swServerG;
-
-typedef struct
-{
-    time_t start_time;
-    sw_atomic_t connection_num;
-    sw_atomic_t accept_count;
-    sw_atomic_t close_count;
-    sw_atomic_t tasking_num;
-    sw_atomic_t request_count;
-} swServerStats;
 
 #ifdef __cplusplus
 }

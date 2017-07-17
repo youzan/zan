@@ -153,7 +153,7 @@ if test "$PHP_ZAN" != "no"; then
             [AC_DEFINE([HAVE_SOCKETS], 1, [ ])],
             [AC_MSG_ERROR([enable sockets support, sockets extension installed incorrectly])])
         AC_DEFINE(SW_USE_SOCKETS, 1, [enable sockets support])
-    fi   
+    fi
 
     if test "$PHP_RINGBUFFER" = "yes"; then
 		AC_DEFINE(SW_USE_RINGBUFFER, 1, [enable ringbuffer support])
@@ -201,7 +201,7 @@ if test "$PHP_ZAN" != "no"; then
     if test `uname` = "Darwin"; then
         AC_CHECK_LIB(c, clock_gettime, AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [have clock_gettime]))
         AC_CHECK_LIB(c, aio_read, AC_DEFINE(HAVE_GCC_AIO, 1, [have gcc aio]))
-     
+
         if test "$PHP_OPENSSL" != "no" || test "$PHP_OPENSSL_DIR" != "no"; then
             AC_DEFINE(SW_USE_OPENSSL, 1, [enable openssl support])
 	    if test "$PHP_OPENSSL_DIR" != "no"; then
@@ -226,7 +226,7 @@ if test "$PHP_ZAN" != "no"; then
 		PHP_ADD_LIBRARY_WITH_PATH(crypto,"${PHP_OPENSSL_DIR}/lib")
 		PHP_ADD_LIBRARY_WITH_PATH(crypt,"${PHP_OPENSSL_DIR}/lib")
             fi
-	    
+
             PHP_ADD_LIBRARY(ssl, 1, ZAN_SHARED_LIBADD)
             PHP_ADD_LIBRARY(crypt, 1, ZAN_SHARED_LIBADD)
             PHP_ADD_LIBRARY(crypto, 1, ZAN_SHARED_LIBADD)
@@ -238,14 +238,14 @@ if test "$PHP_ZAN" != "no"; then
                 CURL_DIR=$i
             fi
         done
-        
+
         if test -z "$CURL_DIR"; then
             AC_MSG_ERROR([libcurl not installed])
         fi
-        
+
         PHP_ADD_LIBRARY(curl, 1, ZAN_SHARED_LIBADD)
     fi
-    
+
     PHP_ADD_LIBRARY(pthread, 1, ZAN_SHARED_LIBADD)
 
     if test "$PHP_ASYNC_REDIS" = "yes"; then
@@ -260,11 +260,11 @@ if test "$PHP_ZAN" != "no"; then
             ;;
         esac
     fi
- 
+
 	if test "$PHP_HTTP2" = "yes"; then
 		PHP_ADD_LIBRARY(nghttp2, 1, ZAN_SHARED_LIBADD)
     fi
-    
+
     if test "$PHP_JEMALLOC" = "yes"; then
         PHP_ADD_LIBRARY(jemalloc, 1, ZAN_SHARED_LIBADD)
     elif test "$PHP_TCMALLOC" = "yes"; then

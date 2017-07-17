@@ -31,7 +31,7 @@ int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, k
 {
     if (!pool)
     {
-        return SW_ERR; 
+        return SW_ERR;
     }
 
     bzero(pool, sizeof(swProcessPool));
@@ -43,7 +43,7 @@ int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, k
         pool->use_msgqueue = 1;
         pool->msgqueue_key = msgqueue_key;
     }
-    
+
     pool->workers = SwooleG.memory_pool->alloc(SwooleG.memory_pool, worker_num * sizeof(swWorker));
     if (pool->workers == NULL)
     {
@@ -182,7 +182,7 @@ int swProcessPool_dispatch(swProcessPool *pool, swEventData *data, int *dst_work
     }
     else
     {
-    	sw_atomic_fetch_add(&worker->tasking_num, 1);
+    	sw_stats_incr(&worker->tasking_num);
     }
 
     return ret;
@@ -212,7 +212,7 @@ int swProcessPool_dispatch_blocking(swProcessPool *pool, swEventData *data, int 
     }
     else
     {
-        sw_atomic_fetch_add(&worker->tasking_num, 1);
+        sw_stats_incr(&worker->tasking_num);
     }
 
     return ret;
