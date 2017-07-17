@@ -2332,6 +2332,12 @@ PHP_METHOD(swoole_server, close)
 
 PHP_METHOD(swoole_server, stats)
 {
+    int i = 0;
+    int active_worker      = 0,
+        idle_worker        = 0,
+        active_task_worker = 0,
+        idle_task_worker   = 0;
+
     if (!SwooleGS->start)
     {
         swWarn("Server is not running.");
@@ -2346,6 +2352,22 @@ PHP_METHOD(swoole_server, stats)
 		RETURN_FALSE;
 	}
 
+    for (; i < serv->worker_num; i++)
+    {
+        if (serv->workers[i].status == SW_WORKER_BUSY) {
+            active_worker++;
+        }
+    }
+    idle_worker = serv->worker_num - active_worker;
+
+    for (i = 0; i < SwooleG.task_worker_num; i++)
+    {
+        if (serv->workers[serv->worker_num + i].status == SW_WORKER_BUSY) {
+            active_task_worker++;
+        }
+    }
+    idle_task_worker = SwooleG.task_worker_num - active_task_worker;
+
     array_init(return_value);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("start_time"), SwooleStats->start_time);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("connection_num"), SwooleStats->connection_num);
@@ -2356,6 +2378,10 @@ PHP_METHOD(swoole_server, stats)
     sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_request_count"), SwooleWG.request_count);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("total_worker"), serv->worker_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("total_task_worker"), SwooleG.task_worker_num);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("active_worker"), active_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("idle_worker"), idle_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("active_task_worker"), active_task_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("idle_task_worker"), idle_worker);
 
     if (SwooleG.task_ipc_mode > SW_IPC_UNSOCK)
     {

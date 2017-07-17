@@ -462,7 +462,7 @@ int swWorker_loop(swFactory *factory, int worker_id)
         swError("[Worker] create worker_reactor failed.");
         return SW_ERR;
     }
-    
+
     serv->workers[worker_id].status = SW_WORKER_IDLE;
     int pipe_worker = serv->workers[worker_id].pipe_worker;
 

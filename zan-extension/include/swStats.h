@@ -30,6 +30,8 @@ typedef struct
     sw_atomic_t close_count;
     sw_atomic_t tasking_num;
     sw_atomic_t request_count;
+    sw_atomic_t max_active_workers;
+    sw_atomic_t max_active_task_worker;
 } swServerStats;
 
 static sw_inline void sw_stats_incr(sw_atomic_t *val)
