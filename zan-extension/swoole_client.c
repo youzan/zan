@@ -100,7 +100,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_swoole_client_connect, 0, 0, 2)
     ZEND_ARG_INFO(0, host)
     ZEND_ARG_INFO(0, port)
-    ZEND_ARG_INFO(0, timeout)
     ZEND_ARG_INFO(0, sock_flag)
 ZEND_END_ARG_INFO()
 
