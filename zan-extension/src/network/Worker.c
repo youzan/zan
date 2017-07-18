@@ -200,7 +200,8 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
 
     factory->last_from_id = task->info.from_id;
     //worker busy
-    serv->workers[SwooleWG.id].status = SW_WORKER_BUSY;
+    sw_stats_set_worker_status(&serv->workers[SwooleWG.id], SW_WORKER_BUSY);
+    //serv->workers[SwooleWG.id].status = SW_WORKER_BUSY;
 
     switch (task->info.type)
     {
@@ -309,7 +310,8 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
     }
 
     //worker idle
-    serv->workers[SwooleWG.id].status = SW_WORKER_IDLE;
+    //serv->workers[SwooleWG.id].status = SW_WORKER_IDLE;
+    sw_stats_set_worker_status(&serv->workers[SwooleWG.id], SW_WORKER_IDLE);
 
     //maximum number of requests, process will exit.
     if (!SwooleWG.run_always && SwooleWG.request_count >= SwooleWG.max_request)
@@ -463,7 +465,8 @@ int swWorker_loop(swFactory *factory, int worker_id)
         return SW_ERR;
     }
 
-    serv->workers[worker_id].status = SW_WORKER_IDLE;
+    //serv->workers[worker_id].status = SW_WORKER_IDLE;
+    sw_stats_set_worker_status(&serv->workers[worker_id], SW_WORKER_IDLE);
     int pipe_worker = serv->workers[worker_id].pipe_worker;
 
     swSetNonBlock(pipe_worker,1);

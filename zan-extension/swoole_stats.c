@@ -16,42 +16,45 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef _SW_STATS_H_
-#define _SW_STATS_H_
+#include "swGlobalVars.h"
+#include "swWork.h"
 
-#include <sys/time.h>
-#include "swAtomic.h"
-
-typedef struct
+void sw_stats_set_worker_status(swWorker *worker, int status)
 {
-    time_t start_time;
-    sw_atomic_t connection_num;
-    sw_atomic_t accept_count;
-    sw_atomic_t close_count;
-    sw_atomic_t tasking_num;
-    sw_atomic_t request_count;
-    sw_atomic_t active_worker;
-    sw_atomic_t active_task_worker;
-    sw_atomic_t max_active_worker;
-    sw_atomic_t max_active_task_worker;
-} swServerStats;
-
-static sw_inline void sw_stats_incr(sw_atomic_t *val)
-{
-    sw_atomic_fetch_add(val, 1);
+    worker->status = status;
+    if (status == SW_WORKER_BUSY)
+    {
+        if (swIsWorker())
+        {
+            sw_stats_incr(&SwooleStats->active_worker);
+            if (SwooleStats->active_worker > SwooleStats->max_active_worker)
+            {
+                SwooleStats->max_active_worker = SwooleStats->active_worker;
+            }
+        }
+        else if (swIsTaskWorker())
+        {
+            sw_stats_incr(&SwooleStats->active_task_worker);
+            if (SwooleStats->active_task_worker > SwooleStats->max_active_task_worker)
+            {
+                SwooleStats->max_active_task_worker = SwooleStats->active_task_worker;
+            }
+        }
+    }
+    else if (status == SW_WORKER_IDLE)
+    {
+        if (swIsWorker())
+        {
+            sw_stats_decr(&SwooleStats->active_worker);
+        }
+        else if (swIsTaskWorker())
+        {
+            sw_stats_decr(&SwooleStats->active_task_worker);
+        }
+    }
+    else
+    {
+        swWarn("Unknow worker status");
+    }
 }
 
-static sw_inline void sw_stats_decr(sw_atomic_t *val)
-{
-    sw_atomic_fetch_sub(val, 1);
-}
-
-static sw_inline void sw_stats_settime(time_t *dst, time_t *src)
-{
-    sw_atomic_set(dst, src);
-}
-
-int swoole_stats_init(swServerStats *stats);
-void sw_stats_set_worker_status(swWorker *worker, int status);
-
-#endif

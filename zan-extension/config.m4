@@ -288,6 +288,7 @@ if test "$PHP_ZAN" != "no"; then
         swoole_mysql.c \
         swoole_redis.c \
         swoole_nova.c \
+        swoole_stats.c \
         src/Base.c \
         src/core/hashmap.c \
         src/core/RingQueue.c \
