@@ -531,6 +531,8 @@ static int swManager_loop_sync(swFactory *factory)
                 }
                 else
                 {
+                    sw_stats_incr(status == 0 ? &SwooleStats->worker_normal_exit
+                            : &SwooleStats->worker_abnormal_exit);
                     swManager_check_exit_status(serv, index, pid, status);
                     pid = 0;
                     while (1)
@@ -559,6 +561,8 @@ static int swManager_loop_sync(swFactory *factory)
                     exit_worker = swHashMap_find_int(SwooleGS->task_workers.map, pid);
                     if (exit_worker != NULL)
                     {
+                        sw_stats_incr(status == 0 ? &SwooleStats->task_worker_normal_exit
+                                : &SwooleStats->task_worker_abnormal_exit);
                         swManager_check_exit_status(serv, exit_worker->id, pid, status);
                         if (exit_worker->deleted == 1)  //主动回收不重启
                         {

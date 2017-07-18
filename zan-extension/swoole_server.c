@@ -2362,6 +2362,10 @@ PHP_METHOD(swoole_server, stats)
     sw_add_assoc_long_ex(return_value, ZEND_STRS("idle_task_worker"), SwooleG.task_worker_num - SwooleStats->active_task_worker);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("max_active_worker"), SwooleStats->max_active_worker);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("max_active_task_worker"), SwooleStats->max_active_task_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_normal_exit"), SwooleStats->worker_normal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_abnormal_exit"), SwooleStats->worker_abnormal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_normal_exit"), SwooleStats->task_worker_normal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_abnormal_exit"), SwooleStats->task_worker_abnormal_exit);
 
     if (SwooleG.task_ipc_mode > SW_IPC_UNSOCK)
     {

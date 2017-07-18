@@ -54,7 +54,7 @@ void sw_stats_set_worker_status(swWorker *worker, int status)
     }
     else
     {
-        swWarn("Unknow worker status");
+        swWarn("Unknow worker[%d] status[%d]", worker->id, status);
     }
 }
 
