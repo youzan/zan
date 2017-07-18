@@ -2348,6 +2348,7 @@ PHP_METHOD(swoole_server, stats)
 
     array_init(return_value);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("start_time"), SwooleStats->start_time);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("last_reload"), SwooleStats->last_reload);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("connection_num"), SwooleStats->connection_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("accept_count"), SwooleStats->accept_count);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("close_count"), SwooleStats->close_count);

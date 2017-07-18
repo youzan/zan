@@ -25,6 +25,7 @@
 typedef struct
 {
     time_t start_time;
+    time_t last_reload;
     sw_atomic_t connection_num;
     sw_atomic_t accept_count;
     sw_atomic_t close_count;
@@ -48,11 +49,6 @@ static sw_inline void sw_stats_incr(sw_atomic_t *val)
 static sw_inline void sw_stats_decr(sw_atomic_t *val)
 {
     sw_atomic_fetch_sub(val, 1);
-}
-
-static sw_inline void sw_stats_settime(time_t *dst, time_t *src)
-{
-    sw_atomic_set(dst, src);
 }
 
 int swoole_stats_init(swServerStats *stats);

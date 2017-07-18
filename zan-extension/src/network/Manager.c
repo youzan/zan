@@ -599,6 +599,7 @@ kill_worker:
                 swSysError("kill(%d, SIGTERM) failed.", reload_workers[reload_worker_i].pid);
             }
             reload_worker_i++;
+            SwooleStats->last_reload = time(NULL);
         }
     }
 
