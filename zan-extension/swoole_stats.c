@@ -43,18 +43,18 @@ void sw_stats_set_worker_status(swWorker *worker, int status)
     }
     else if (status == SW_WORKER_IDLE)
     {
-        if (swIsWorker())
+        if (swIsWorker() && SwooleStats->active_worker > 0)
         {
             sw_stats_decr(&SwooleStats->active_worker);
         }
-        else if (swIsTaskWorker())
+        else if (swIsTaskWorker() && SwooleStats->active_task_worker > 0)
         {
             sw_stats_decr(&SwooleStats->active_task_worker);
         }
     }
     else
     {
-        swWarn("Unknow worker[%d] status[%d]", worker->id, status);
+        swWarn("Set worker status failed, unknow worker[%d] status[%d]", worker->id, status);
     }
 }
 

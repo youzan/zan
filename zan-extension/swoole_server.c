@@ -2371,7 +2371,7 @@ PHP_METHOD(swoole_server, stats)
 
     // workers_detail
     int i = 0;
-    // worker
+    swWorker *worker = NULL;
     zval *workers_detail, *worker_stats;
     SW_MAKE_STD_ZVAL(workers_detail);
     SW_MAKE_STD_ZVAL(worker_stats);
@@ -2379,12 +2379,13 @@ PHP_METHOD(swoole_server, stats)
 
     for (; i < serv->worker_num + SwooleG.task_worker_num; i++) {
         array_init(worker_stats);
-        if (serv->workers[serv->worker_num + i].status == SW_WORKER_BUSY) {}
+        worker = swServer_get_worker(serv, i);
+
         sw_add_assoc_long_ex(worker_stats, ZEND_STRS("start_time"), SwooleStats->workers[i].start_time);
         sw_add_assoc_long_ex(worker_stats, ZEND_STRS("total_request_count"), SwooleStats->workers[i].total_request_count);
         sw_add_assoc_long_ex(worker_stats, ZEND_STRS("request_count"), SwooleStats->workers[i].request_count);
         sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("status"),
-                serv->workers[i].status == SW_WORKER_BUSY ? "BUSY" : "IDLE", 4, 0);
+                worker->status == SW_WORKER_BUSY ? "BUSY" : "IDLE", 4, 0);
         if (i < serv->worker_num) {
             sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("type"),ZEND_STRL("worker"), 0);
         } else {
