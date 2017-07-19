@@ -475,6 +475,16 @@ int swServer_start(swServer *serv)
     }
 
     /**
+     * Alloc shared memory for worker stats
+     */
+    SwooleStats->workers = SwooleG.memory_pool->alloc(SwooleG.memory_pool,
+            (serv->worker_num + SwooleG.task_worker_num) * sizeof(swWorkerStats));
+    if (!SwooleStats->workers) {
+        swFatalError("gmalloc[SwooleStats->workers] failed");
+        return SW_ERR;
+    }
+
+    /**
      * store to swProcessPool object
      */
     SwooleGS->event_workers.workers = serv->workers;

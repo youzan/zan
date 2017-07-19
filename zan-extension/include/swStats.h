@@ -22,6 +22,13 @@
 #include <sys/time.h>
 #include "swAtomic.h"
 
+typedef struct {
+    time_t start_time;
+    sw_atomic_t total_request_count;
+    sw_atomic_t request_count;
+    sw_atomic_t start_count;
+} swWorkerStats;
+
 typedef struct
 {
     time_t start_time;
@@ -39,6 +46,7 @@ typedef struct
     sw_atomic_t worker_abnormal_exit;
     sw_atomic_t task_worker_normal_exit;
     sw_atomic_t task_worker_abnormal_exit;
+    swWorkerStats *workers;
 } swServerStats;
 
 static sw_inline void sw_stats_incr(sw_atomic_t *val)

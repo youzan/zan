@@ -14,7 +14,7 @@
   | zan@zanphp.io so we can mail you a copy immediately.                 |
   +----------------------------------------------------------------------+
   | Author: Tianfeng Han  <mikan.tenny@gmail.com>                        |
-  |         Zan Group   <zan@zanphp.io>                                  | 
+  |         Zan Group   <zan@zanphp.io>                                  |
   +----------------------------------------------------------------------+
 */
 

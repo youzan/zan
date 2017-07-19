@@ -35,6 +35,7 @@
 #include "ext/standard/php_smart_str.h"
 #else
 #include "zend_smart_str.h"
+#include "zend_hash.h"
 #endif
 
 zend_class_entry swoole_server_ce;
@@ -2367,6 +2368,30 @@ PHP_METHOD(swoole_server, stats)
     sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_abnormal_exit"), SwooleStats->worker_abnormal_exit);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_normal_exit"), SwooleStats->task_worker_normal_exit);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_abnormal_exit"), SwooleStats->task_worker_abnormal_exit);
+
+    // workers_detail
+    int i = 0;
+#if PHP_MAJOR_VERSION < 7
+    // todo
+#else
+    // worker
+    zval workers_detail, worker_stats;
+    array_init(&workers_detail);
+
+    for (; i < serv->worker_num + SwooleG.task_worker_num; i++) {
+        array_init(&worker_stats);
+        if (serv->workers[serv->worker_num + i].status == SW_WORKER_BUSY) {}
+        sw_add_assoc_long_ex(&worker_stats, ZEND_STRS("start_time"), SwooleStats->workers[i].start_time);
+        sw_add_assoc_long_ex(&worker_stats, ZEND_STRS("total_request_count"), SwooleStats->workers[i].total_request_count);
+        sw_add_assoc_long_ex(&worker_stats, ZEND_STRS("request_count"), SwooleStats->workers[i].request_count);
+        sw_add_assoc_stringl_ex(&worker_stats, ZEND_STRS("status"),
+                ZEND_STRS(serv->workers[i].status == SW_WORKER_BUSY ? "BUSY" : "IDLE"), 0);
+        sw_add_assoc_stringl_ex(&worker_stats, ZEND_STRS("type"),
+                ZEND_STRS(i >= serv->worker_num ? "worker" : "task_worker"), 0);
+        zend_hash_index_add(Z_ARRVAL_P(&workers_detail), i, &worker_stats);
+    }
+    zend_hash_str_add(Z_ARRVAL_P(return_value), "workers_detail", sizeof("workers_detail") - 1, (void *)&workers_detail);
+#endif
 
     if (SwooleG.task_ipc_mode > SW_IPC_UNSOCK)
     {
