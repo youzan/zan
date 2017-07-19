@@ -2371,26 +2371,33 @@ PHP_METHOD(swoole_server, stats)
 
     // workers_detail
     int i = 0;
-#if PHP_MAJOR_VERSION < 7
-    // todo
-#else
     // worker
-    zval workers_detail, worker_stats;
-    array_init(&workers_detail);
+    zval *workers_detail, *worker_stats;
+    SW_MAKE_STD_ZVAL(workers_detail);
+    SW_MAKE_STD_ZVAL(worker_stats);
+    array_init(workers_detail);
 
     for (; i < serv->worker_num + SwooleG.task_worker_num; i++) {
-        array_init(&worker_stats);
+        array_init(worker_stats);
         if (serv->workers[serv->worker_num + i].status == SW_WORKER_BUSY) {}
-        sw_add_assoc_long_ex(&worker_stats, ZEND_STRS("start_time"), SwooleStats->workers[i].start_time);
-        sw_add_assoc_long_ex(&worker_stats, ZEND_STRS("total_request_count"), SwooleStats->workers[i].total_request_count);
-        sw_add_assoc_long_ex(&worker_stats, ZEND_STRS("request_count"), SwooleStats->workers[i].request_count);
-        sw_add_assoc_stringl_ex(&worker_stats, ZEND_STRS("status"),
-                ZEND_STRS(serv->workers[i].status == SW_WORKER_BUSY ? "BUSY" : "IDLE"), 0);
-        sw_add_assoc_stringl_ex(&worker_stats, ZEND_STRS("type"),
-                ZEND_STRS(i >= serv->worker_num ? "worker" : "task_worker"), 0);
-        zend_hash_index_add(Z_ARRVAL_P(&workers_detail), i, &worker_stats);
+        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("start_time"), SwooleStats->workers[i].start_time);
+        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("total_request_count"), SwooleStats->workers[i].total_request_count);
+        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("request_count"), SwooleStats->workers[i].request_count);
+        sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("status"),
+                serv->workers[i].status == SW_WORKER_BUSY ? "BUSY" : "IDLE", 4, 0);
+        if (i < serv->worker_num) {
+            sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("type"),ZEND_STRL("worker"), 0);
+        } else {
+            sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("type"),ZEND_STRL("task_worker"), 0);
+        }
+#if PHP_MAJOR_VERSION < 7
+        zend_hash_index_update(Z_ARRVAL_P(workers_detail), i, (void *)&worker_stats, sizeof(zval *), NULL);
     }
-    zend_hash_str_add(Z_ARRVAL_P(return_value), "workers_detail", sizeof("workers_detail") - 1, (void *)&workers_detail);
+    zend_hash_add(Z_ARRVAL_P(return_value), "workers_detail", sizeof("workers_detail") - 1, (void **)&workers_detail, sizeof(zval *), NULL);
+#else
+        zend_hash_index_add(Z_ARRVAL_P(workers_detail), i, worker_stats);
+    }
+    zend_hash_str_add(Z_ARRVAL_P(return_value), "workers_detail", sizeof("workers_detail") - 1, (void *)workers_detail);
 #endif
 
     if (SwooleG.task_ipc_mode > SW_IPC_UNSOCK)

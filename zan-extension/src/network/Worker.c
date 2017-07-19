@@ -454,7 +454,7 @@ int swWorker_loop(swFactory *factory, int worker_id)
     SwooleWG.id = worker_id;
     SwooleWG.request_count = 0;
     SwooleStats->workers[SwooleWG.id].request_count = 0;
-    sw_stats_incr(&SwooleStats->start_count)
+    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].start_count);
     SwooleG.pid = getpid();
 
     //signal init

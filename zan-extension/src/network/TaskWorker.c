@@ -81,6 +81,8 @@ int swTaskWorker_onTask(swProcessPool *pool, swEventData *task)
         ret = serv->onTask(serv, task);
     }
 
+    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
     return ret;
 }
 
@@ -141,7 +143,10 @@ void swTaskWorker_onStart(swProcessPool *pool, int worker_id)
 
     SwooleG.main_reactor = NULL;
     SwooleWG.worker = swProcessPool_get_worker(pool, worker_id);
-    SwooleWG.worker->status = SW_WORKER_IDLE;
+
+    sw_stats_set_worker_status(SwooleWG.worker, SW_WORKER_IDLE);
+    SwooleStats->workers[worker_id].start_time = time(NULL);
+    SwooleStats->workers[SwooleWG.id].request_count = 0;
 }
 
 void swTaskWorker_onStop(swProcessPool *pool, int worker_id)
