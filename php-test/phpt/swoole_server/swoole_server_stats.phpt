@@ -11,15 +11,9 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 下午4:34
- */
 require_once __DIR__ . "/../inc/zan.inc";
 
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/opcode_server.php";
+$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/stats_server.php";
 $port = get_one_free_port();
 
 start_server($simple_tcp_server, TCP_SERVER_HOST, $port);
@@ -32,28 +26,62 @@ makeTcpClient(TCP_SERVER_HOST, $port, function(\swoole_client $cli) {
     assert($r !== false);
 }, function(\swoole_client $cli, $recv) {
     list($op, $data) = opcode_decode($recv);
-    /**
-     * array(7) {
-    ["start_time"]=>
-    int(1496842485)
-    ["connection_num"]=>
-    int(1)
-    ["accept_count"]=>
-    int(2)
-    ["close_count"]=>
-    int(1)
-    ["tasking_num"]=>
-    int(0)
-    ["request_count"]=>
-    int(0)
-    ["worker_request_count"]=>
-    int(0)
+    var_dump($data['last_reload']);
+    var_dump($data['connection_num']);
+    var_dump($data['accept_count']);
+    var_dump($data['close_count']);
+    var_dump($data['tasking_num']);
+    var_dump($data['request_count']);
+    var_dump($data['total_worker']);
+    var_dump($data['total_task_worker']);
+    var_dump($data['active_worker']);
+    var_dump($data['idle_worker']);
+    var_dump($data['max_active_worker']);
+    var_dump($data['max_active_task_worker']);
+    var_dump($data['worker_normal_exit']);
+    var_dump($data['worker_abnormal_exit']);
+    var_dump($data['task_worker_normal_exit']);
+    var_dump($data['task_worker_abnormal_exit']);
+    var_dump(count($data['workers_detail']));
+    // workers detail
+    $busy = false;
+    $task_worker_count = $worker_count = 0;
+    foreach ($data['workers_detail'] as $worker) {
+	    if ($worker['status'] == 'BUSY') {
+		    $busy = true;
+	    }
+	    if ($worker['type'] == 'worker') {
+		    $worker_count++;
+	    } elseif ($worker['type'] == 'task_worker') {
+		    $task_worker_count++;
+	    }
     }
-     */
+    var_dump($busy);
+    var_dump($worker_count);
+    var_dump($task_worker_count);
     swoole_event_exit();
-    echo "SUCCESS";
 });
 
 ?>
 --EXPECT--
-SUCCESS
+int(0)
+int(1)
+int(2)
+int(1)
+int(0)
+int(0)
+int(2)
+int(2)
+int(1)
+int(1)
+int(1)
+int(0)
+int(0)
+int(0)
+int(0)
+int(0)
+int(4)
+bool(true)
+int(2)
+int(2)
+
