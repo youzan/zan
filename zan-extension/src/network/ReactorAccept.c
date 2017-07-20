@@ -50,8 +50,8 @@ static swConnection* swConnection_create(swServer *serv, swListenPort *ls, int f
 {
     swConnection* connection = NULL;
 
-    SwooleStats->accept_count++;
-    sw_atomic_fetch_add(&SwooleStats->connection_num, 1);
+    sw_stats_incr(&SwooleStats->accept_count);
+    sw_stats_incr(&SwooleStats->connection_num);
 
     if (fd > swServer_get_maxfd(serv))
     {

@@ -117,7 +117,7 @@ static int swReactorThread_loop_dgram(swThreadParam *param)
 }
 
 static int swTCPThread_start(swServer *serv)
-{  
+{
     swListenPort *ls = NULL;
     LL_FOREACH(serv->listen_list, ls)
     {
@@ -811,7 +811,7 @@ static int swReactorThread_onWrite(swReactor *reactor, swEvent *ev)
         chunk = swBuffer_get_trunk(conn->out_buffer);
         if (chunk->type == SW_CHUNK_CLOSE)
         {
-            close_fd: 
+            close_fd:
             reactor->close(reactor, fd);
             return SW_OK;
         }
@@ -874,8 +874,8 @@ int swReactorThread_close(swReactor *reactor, int fd)
         assert(fd % serv->reactor_num == SwooleTG.id);
     }
 
-    sw_atomic_fetch_add(&SwooleStats->close_count, 1);
-    sw_atomic_fetch_sub(&SwooleStats->connection_num, 1);
+    sw_stats_incr(&SwooleStats->close_count);
+    sw_stats_decr(&SwooleStats->connection_num);
 
     swTrace("Close Event.fd=%d|from=%d", fd, reactor->id);
 
@@ -1210,7 +1210,7 @@ void swReactorThread_set_protocol(swServer *serv, swReactor *reactor)
 
 int swReactorThread_create(swServer *serv)
 {
-    
+
     ///init reactor thread pool
     serv->reactor_threads = SwooleG.memory_pool->alloc(SwooleG.memory_pool, (serv->reactor_num * sizeof(swReactorThread)));
     if (!serv->reactor_threads)
@@ -1225,7 +1225,7 @@ int swReactorThread_create(swServer *serv)
     serv->connection_list = (serv->factory_mode == SW_MODE_PROCESS)?
                         sw_shm_calloc(serv->max_connection, sizeof(swConnection)):
                         sw_calloc(serv->max_connection, sizeof(swConnection));
-                        
+
     if (!serv->connection_list)
     {
         swError("calloc[1] failed");
@@ -1273,7 +1273,7 @@ int swReactorThread_start(swServer *serv)
     SwooleG.process_type = SW_PROCESS_MASTER;
 
     main_reactor->thread = 1;
-    main_reactor->socket_list = serv->connection_list;    
+    main_reactor->socket_list = serv->connection_list;
     main_reactor->disable_accept = 0;
     main_reactor->enable_accept = swServer_enable_accept;
 
@@ -1297,7 +1297,7 @@ int swReactorThread_start(swServer *serv)
     SwooleG.reuse_port = 0;
 #endif
 
-    //listen TCP 
+    //listen TCP
     if (serv->have_tcp_sock == 1 && swTCPThread_start(serv) < 0)
     {
         swError("tcp thread start failed.");
@@ -1312,7 +1312,7 @@ int swReactorThread_start(swServer *serv)
         swTrace("hb timer start, time: %d live time:%d", serv->heartbeat_check_interval, serv->heartbeat_idle_time);
         swHeartbeatThread_start(serv);
     }
-    
+
     /**
      * set a special id
      */
@@ -1324,7 +1324,7 @@ int swReactorThread_start(swServer *serv)
     {
         serv->onStart(serv);
     }
-    
+
     struct timeval tmo;
     tmo.tv_sec = 1; //for seconds timer
     tmo.tv_usec = 0;

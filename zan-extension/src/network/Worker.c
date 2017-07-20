@@ -200,7 +200,7 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
 
     factory->last_from_id = task->info.from_id;
     //worker busy
-    serv->workers[SwooleWG.id].status = SW_WORKER_BUSY;
+    sw_stats_set_worker_status(&serv->workers[SwooleWG.id], SW_WORKER_BUSY);
 
     switch (task->info.type)
     {
@@ -217,7 +217,9 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         {
             serv->onReceive(serv, task);
             SwooleWG.request_count++;
-            sw_atomic_fetch_add(&SwooleStats->request_count, 1);
+            sw_stats_incr(&SwooleStats->request_count);
+            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
+            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
         }
         if (task->info.type == SW_EVENT_PACKAGE_END)
         {
@@ -261,7 +263,9 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         if (package->offset == package->length - sizeof(swDgramPacket))
         {
             SwooleWG.request_count++;
-            sw_atomic_fetch_add(&SwooleStats->request_count, 1);
+            sw_stats_incr(&SwooleStats->request_count);
+            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
+            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
             serv->onPacket(serv, task);
             swString_clear(package);
         }
@@ -309,7 +313,7 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
     }
 
     //worker idle
-    serv->workers[SwooleWG.id].status = SW_WORKER_IDLE;
+    sw_stats_set_worker_status(&serv->workers[SwooleWG.id], SW_WORKER_IDLE);
 
     //maximum number of requests, process will exit.
     if (!SwooleWG.run_always && SwooleWG.request_count >= SwooleWG.max_request)
@@ -449,6 +453,8 @@ int swWorker_loop(swFactory *factory, int worker_id)
     //worker_id
     SwooleWG.id = worker_id;
     SwooleWG.request_count = 0;
+    SwooleStats->workers[SwooleWG.id].request_count = 0;
+    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].start_count);
     SwooleG.pid = getpid();
 
     //signal init
@@ -462,8 +468,10 @@ int swWorker_loop(swFactory *factory, int worker_id)
         swError("[Worker] create worker_reactor failed.");
         return SW_ERR;
     }
-    
-    serv->workers[worker_id].status = SW_WORKER_IDLE;
+
+    sw_stats_set_worker_status(&serv->workers[worker_id], SW_WORKER_IDLE);
+    SwooleStats->workers[worker_id].start_time = time(NULL);
+
     int pipe_worker = serv->workers[worker_id].pipe_worker;
 
     swSetNonBlock(pipe_worker,1);
