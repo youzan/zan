@@ -292,7 +292,7 @@ static int swManager_loop_async(swFactory *factory)
 
                 ManagerProcess.reload_task_worker = 0;
                 goto kill_workers;
-            }            
+            }
         }
 
         if (SwooleG.running == 1)
@@ -366,17 +366,17 @@ kill_workers:
                         break;
                     }
                 }
-                
+
                 swWarn("start kill workers, id: %d, pid: %d.", index, reload_workers[index].pid);
                 if (swKill(reload_workers[index].pid, SIGUSR1) < 0)
                 {
                     swSysError("kill(%d, SIGTERM) failed.", reload_workers[index].pid);
-                }  
+                }
             }
 
             ManagerProcess.reloading = 0;
         }
-    } 
+    }
 
     sw_free(reload_workers);
 
@@ -440,7 +440,7 @@ kill_workers:
         serv->onManagerStop(serv);
     }
 
-    return SW_OK;   
+    return SW_OK;
 }
 
 static int swManager_loop_sync(swFactory *factory)
@@ -531,6 +531,8 @@ static int swManager_loop_sync(swFactory *factory)
                 }
                 else
                 {
+                    sw_stats_incr(status == 0 ? &SwooleStats->worker_normal_exit
+                            : &SwooleStats->worker_abnormal_exit);
                     swManager_check_exit_status(serv, index, pid, status);
                     pid = 0;
                     while (1)
@@ -559,6 +561,8 @@ static int swManager_loop_sync(swFactory *factory)
                     exit_worker = swHashMap_find_int(SwooleGS->task_workers.map, pid);
                     if (exit_worker != NULL)
                     {
+                        sw_stats_incr(status == 0 ? &SwooleStats->task_worker_normal_exit
+                                : &SwooleStats->task_worker_abnormal_exit);
                         swManager_check_exit_status(serv, exit_worker->id, pid, status);
                         if (exit_worker->deleted == 1)  //主动回收不重启
                         {
@@ -595,6 +599,7 @@ kill_worker:
                 swSysError("kill(%d, SIGTERM) failed.", reload_workers[reload_worker_i].pid);
             }
             reload_worker_i++;
+            SwooleStats->last_reload = time(NULL);
         }
     }
 

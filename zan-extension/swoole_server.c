@@ -35,6 +35,7 @@
 #include "ext/standard/php_smart_str.h"
 #else
 #include "zend_smart_str.h"
+#include "zend_hash.h"
 #endif
 
 zend_class_entry swoole_server_ce;
@@ -848,7 +849,7 @@ static int php_swoole_onTask(swServer *serv, swEventData *req)
 
     SWOOLE_FETCH_TSRMLS;
 
-    sw_atomic_fetch_sub(&SwooleStats->tasking_num, 1);
+    sw_stats_decr(&SwooleStats->tasking_num);
 
     zval* callback = php_sw_server_callbacks[SW_SERVER_CB_onTask];
     if (!callback || ZVAL_IS_NULL(callback))
@@ -2348,12 +2349,60 @@ PHP_METHOD(swoole_server, stats)
 
     array_init(return_value);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("start_time"), SwooleStats->start_time);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("last_reload"), SwooleStats->last_reload);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("connection_num"), SwooleStats->connection_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("accept_count"), SwooleStats->accept_count);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("close_count"), SwooleStats->close_count);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("tasking_num"), SwooleStats->tasking_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("request_count"), SwooleStats->request_count);
-    sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_request_count"), SwooleWG.request_count);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("total_worker"), serv->worker_num);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("total_task_worker"), SwooleG.task_worker_num);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("active_worker"), SwooleStats->active_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("idle_worker"), serv->worker_num - SwooleStats->active_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("active_task_worker"), SwooleStats->active_task_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("idle_task_worker"), SwooleG.task_worker_num - SwooleStats->active_task_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("max_active_worker"), SwooleStats->max_active_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("max_active_task_worker"), SwooleStats->max_active_task_worker);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_normal_exit"), SwooleStats->worker_normal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_abnormal_exit"), SwooleStats->worker_abnormal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_normal_exit"), SwooleStats->task_worker_normal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_abnormal_exit"), SwooleStats->task_worker_abnormal_exit);
+
+    // workers_detail
+    int i = 0;
+    swWorker *worker = NULL;
+    zval *workers_detail, *worker_stats;
+    zval **dest;
+    SW_MAKE_STD_ZVAL(workers_detail);
+    SW_MAKE_STD_ZVAL(worker_stats);
+    array_init(workers_detail);
+
+    for (; i < serv->worker_num + SwooleG.task_worker_num; i++) {
+        array_init(worker_stats);
+        worker = swServer_get_worker(serv, i);
+
+        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("start_time"), SwooleStats->workers[i].start_time);
+        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("total_request_count"), SwooleStats->workers[i].total_request_count);
+        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("request_count"), SwooleStats->workers[i].request_count);
+        sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("status"),
+                worker->status == SW_WORKER_BUSY ? "BUSY" : "IDLE", 4, 0);
+        if (i < serv->worker_num) {
+            sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("type"),ZEND_STRL("worker"), 0);
+        } else {
+            sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("type"),ZEND_STRL("task_worker"), 0);
+        }
+#if PHP_MAJOR_VERSION < 7
+        zend_hash_index_update(Z_ARRVAL_P(workers_detail), i, (void *)&worker_stats, sizeof(zval *), (void **)&dest);
+        if (dest) {
+            sw_zval_add_ref(dest);
+        }
+    }
+    zend_hash_add(Z_ARRVAL_P(return_value), "workers_detail", sizeof("workers_detail") - 1, (void **)&workers_detail, sizeof(zval *), NULL);
+#else
+        zend_hash_index_add(Z_ARRVAL_P(workers_detail), i, worker_stats);
+    }
+    zend_hash_str_add(Z_ARRVAL_P(return_value), "workers_detail", sizeof("workers_detail") - 1, (void *)workers_detail);
+#endif
 
     if (SwooleG.task_ipc_mode > SW_IPC_UNSOCK)
     {
@@ -2503,7 +2552,7 @@ PHP_METHOD(swoole_server, taskwait)
     if (swProcessPool_dispatch_blocking(&SwooleGS->task_workers, &buf, (int*) &dst_worker_id) >= 0)
     {
         task_notify_pipe->timeout = timeout;
-        sw_atomic_fetch_add(&SwooleStats->tasking_num, 1);
+        sw_stats_incr(&SwooleStats->tasking_num);
         int ret = task_notify_pipe->read(task_notify_pipe, &notify, sizeof(notify));
         if (ret > 0)
         {
@@ -2559,7 +2608,7 @@ PHP_METHOD(swoole_server, task)
     	RETURN_FALSE;
     }
 
-    sw_atomic_fetch_add(&SwooleStats->tasking_num, 1);
+    sw_stats_incr(&SwooleStats->tasking_num);
     RETURN_LONG(buf.info.fd);
 }
 

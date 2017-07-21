@@ -136,7 +136,7 @@ int swReactorProcess_start(swServer *serv)
 //    swServer_signal_init();
 
     swProcessPool_start(&SwooleGS->event_workers);
-    
+
     if (serv->onStart)
     {
         serv->onStart(serv);
@@ -210,7 +210,7 @@ static int swReactorProcess_loop(swProcessPool *pool, swWorker *worker)
     SwooleWG.id = worker->id;
     SwooleWG.max_request = serv->max_request;
     SwooleWG.request_count = 0;
-    
+
     SwooleTG.id = 0;
     SwooleTG.update_time = (worker->id == 0)? 1:SwooleTG.update_time;
 
@@ -243,7 +243,7 @@ static int swReactorProcess_loop(swProcessPool *pool, swWorker *worker)
         fdtype = swSocket_is_dgram(ls->type) ? SW_FD_UDP : SW_FD_LISTEN;
         if (fdtype == SW_FD_UDP && swPort_set_option(ls) < 0)
         {
-            continue; 
+            continue;
         }
 
 #ifdef HAVE_REUSEPORT
@@ -278,7 +278,7 @@ static int swReactorProcess_loop(swProcessPool *pool, swWorker *worker)
     reactor->thread = 1;
     reactor->socket_list = serv->connection_list;
     reactor->max_socket = serv->max_connection;
-    
+
     reactor->disable_accept = 0;
     reactor->enable_accept = swServer_enable_accept;
     reactor->close = swReactorThread_close;
