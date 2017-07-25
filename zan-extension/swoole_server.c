@@ -2372,7 +2372,6 @@ PHP_METHOD(swoole_server, stats)
     int i = 0;
     swWorker *worker = NULL;
     zval *workers_detail, *worker_stats;
-    zval **dest;
     SW_MAKE_STD_ZVAL(workers_detail);
     SW_MAKE_STD_ZVAL(worker_stats);
     array_init(workers_detail);
@@ -2392,6 +2391,7 @@ PHP_METHOD(swoole_server, stats)
             sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("type"),ZEND_STRL("task_worker"), 0);
         }
 #if PHP_MAJOR_VERSION < 7
+        zval **dest;
         zend_hash_index_update(Z_ARRVAL_P(workers_detail), i, (void *)&worker_stats, sizeof(zval *), (void **)&dest);
         if (dest) {
             sw_zval_add_ref(dest);
