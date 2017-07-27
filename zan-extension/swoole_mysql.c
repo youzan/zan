@@ -290,6 +290,11 @@ static void mysql_close(mysql_client *client)
 		client->fd = -1;
 	}
 
+	swoole_efree(client->connector.host);
+	swoole_efree(client->connector.password);
+	swoole_efree(client->connector.database);
+	swoole_efree(client->connector.user);
+
 	if (client->cli)
 	{
 		if (client->cli->timer_id > 0)
@@ -299,7 +304,7 @@ static void mysql_close(mysql_client *client)
 			swTimer_del(&SwooleG.timer,timer_id);
 		}
 
-		client->cli->close(client->cli);
+		swClient_free(client->cli);
 		swoole_efree(client->cli);
 	}
 
@@ -472,12 +477,20 @@ static PHP_METHOD(swoole_mysql, connect)
     zval *value = NULL;
     if (php_swoole_array_get_value(_ht, "host", value))
     {
-        convert_to_string(value);
-        connector->host = Z_STRVAL_P(value);
+        if (sw_convert_to_string(value) < 0)
+        {
+        		sw_zval_ptr_dtor(&server_info);
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+        }
+
+        swoole_efree(connector->host);
         connector->host_len = Z_STRLEN_P(value);
+        connector->host = estrndup(Z_STRVAL_P(value),connector->host_len);
     }
     else
     {
+    	sw_zval_ptr_dtor(&server_info);
         swWarn("HOST parameter is required.");
         RETURN_FALSE;
     }
@@ -493,21 +506,34 @@ static PHP_METHOD(swoole_mysql, connect)
     value = NULL;
     if (php_swoole_array_get_value(_ht, "user", value))
     {
-        convert_to_string(value);
-        connector->user = Z_STRVAL_P(value);
+		if (sw_convert_to_string(value) < 0)
+		{
+			sw_zval_ptr_dtor(&server_info);
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
+        swoole_efree(connector->user);
         connector->user_len = Z_STRLEN_P(value);
+        connector->user = estrndup(Z_STRVAL_P(value),connector->user_len);
     }
     else
     {
+    		sw_zval_ptr_dtor(&server_info);
         swWarn("USER parameter is required.");
         RETURN_FALSE;
     }
 
     if (php_swoole_array_get_value(_ht, "password", value))
     {
-        convert_to_string(value);
-        connector->password = Z_STRVAL_P(value);
+		if (sw_convert_to_string(value) < 0)
+		{
+			sw_zval_ptr_dtor(&server_info);
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
+        swoole_efree(connector->password);
         connector->password_len = Z_STRLEN_P(value);
+        connector->password = estrndup(Z_STRVAL_P(value),connector->password_len);
     }
     else
     {
@@ -516,40 +542,45 @@ static PHP_METHOD(swoole_mysql, connect)
     }
     if (php_swoole_array_get_value(_ht, "database", value))
     {
-        convert_to_string(value);
-        connector->database = Z_STRVAL_P(value);
+		if (sw_convert_to_string(value) < 0)
+		{
+			sw_zval_ptr_dtor(&server_info);
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
+        swoole_efree(connector->database);
         connector->database_len = Z_STRLEN_P(value);
+        connector->database = estrndup(Z_STRVAL_P(value),connector->database_len);
     }
     else
     {
+    	sw_zval_ptr_dtor(&server_info);
         swWarn("DATABASE parameter is required.");
         RETURN_FALSE;
     }
-
-//    value = NULL;
-//    int  use_connector_times = 0;
-//    connector->timeout = 1;
-//    if (php_swoole_array_get_value(_ht, "timeout", value))
-//    {
-//        convert_to_double(value);
-//        connector->timeout = Z_DVAL_P(value);
-//        use_connector_times = 1;
-//    }
 
     value = NULL;
     connector->character_set = 0;
     if (php_swoole_array_get_value(_ht, "charset", value))
     {
-        convert_to_string(value);
+		if (sw_convert_to_string(value) < 0)
+		{
+			sw_zval_ptr_dtor(&server_info);
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
         connector->character_set = mysql_get_charset(Z_STRVAL_P(value));
         if (connector->character_set < 0)
         {
         	char buf[1024] = {0};
             snprintf(buf, sizeof(buf), "unknown charset [%s].", Z_STRVAL_P(value));
+            sw_zval_ptr_dtor(&server_info);
             swWarn("%s",buf);
             RETURN_FALSE;
         }
     }
+
+    sw_zval_ptr_dtor(&server_info);
 
     int type = SW_SOCK_TCP;
     if (strncasecmp(connector->host, ZEND_STRL("unix:/")) == 0)
@@ -640,14 +671,12 @@ static PHP_METHOD(swoole_mysql, connect)
     	client->onConnect = sw_zval_dup(callback);
     }
 
-    zend_update_property(swoole_mysql_class_entry_ptr, getThis(), ZEND_STRL("serverInfo"), server_info TSRMLS_CC);
     zend_update_property_long(swoole_mysql_class_entry_ptr, getThis(), ZEND_STRL("sock"), cli->socket->fd TSRMLS_CC);
 
     client->buffer = swString_new(SW_BUFFER_SIZE_BIG);
     client->object = getThis();
     sw_zval_add_ref(&(client->object));
 	sw_copy_to_stack(client->object, client->_object);
-    sw_zval_ptr_dtor(&server_info);
 
     long timeout = 0;
     zval* connectTimeout = sw_zend_read_property(swoole_mysql_class_entry_ptr, getThis(), ZEND_STRL("connectTimeout"), 1 TSRMLS_CC);
@@ -748,7 +777,7 @@ static PHP_METHOD(swoole_mysql, close)
     		swTimer_del(&SwooleG.timer,timer_id);
 		}
 
-		client->cli->close(client->cli);
+		swClient_free(client->cli);
 		swoole_efree(client->cli);
 	}
 
@@ -1128,7 +1157,11 @@ static int really_register_bound_param(struct mysql_bound_param_data *param, str
 	}
 
 #if PHP_MAJOR_VERSION < 7
-	convert_to_string(param->parameter);
+	if (sw_convert_to_string(param->parameter) < 0)
+	{
+		swWarn("convert to string failed.");
+		return -1;
+	}
 
  	if (param->name)
      {
@@ -1165,7 +1198,11 @@ static int really_register_bound_param(struct mysql_bound_param_data *param, str
 
  #else
 	zval *parameter = Z_ISREF(param->parameter)? Z_REFVAL(param->parameter):&param->parameter;
-	convert_to_string(parameter);
+	if (sw_convert_to_string(parameter) < 0)
+	{
+		swWarn("convert to string failed.");
+		return -1;
+	}
 
 	if (param->name)
 	{

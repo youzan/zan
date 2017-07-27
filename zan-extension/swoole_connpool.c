@@ -125,6 +125,7 @@ typedef struct _tag_connpool_property{
 #if PHP_MAJOR_VERSION >= 7
 	zval   		 _onHBMsgConstruct;
 	zval   		 _onHBMsgCheck;
+	zval			 _cfg;
 #endif
 }connpool_property;
 
@@ -419,18 +420,24 @@ static sw_inline int tcpclient_args_check(zval* args,int type TSRMLS_DC)
 
 	if (type & ARGS_IS_VAILED)
 	{
-		HashTable *_ht = Z_ARRVAL_P(args);
+		zval* connection_cfg = args;
+		php_swoole_array_separate(connection_cfg);
+		HashTable *_ht = Z_ARRVAL_P(connection_cfg);
 		zval *value = NULL;
 		if (!php_swoole_array_get_value(_ht, "host", value))
 		{
+			sw_zval_ptr_dtor(&connection_cfg);
 			return SW_ERR;
 		}
 
 		value = NULL;
 		if (!php_swoole_array_get_value(_ht,"port",value))
 		{
+			sw_zval_ptr_dtor(&connection_cfg);
 			return SW_ERR;
 		}
+
+		sw_zval_ptr_dtor(&connection_cfg);
 	}
 
 	if (type & ARGC_IS_CONNECTED)
@@ -533,27 +540,33 @@ static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* co
 {
 	zval* client = connClient->client;
 	zval* connection_cfg = poolproper->cfg;
-//	php_swoole_array_separate(connection_cfg);
+	php_swoole_array_separate(connection_cfg);
 	HashTable *_ht = Z_ARRVAL_P(connection_cfg);
 
 	zval *host = NULL;
 	if (!php_swoole_array_get_value(_ht, "host", host))
 	{
+		sw_zval_ptr_dtor(&connection_cfg);
 		return SW_ERR;
 	}
 
-	convert_to_string(host);
+	if (sw_convert_to_string(host) < 0)
+	{
+		swWarn("convert to string failed.");
+		sw_zval_ptr_dtor(&connection_cfg);
+		return SW_ERR;
+	}
 
 	zval* port = NULL;
 	if (!php_swoole_array_get_value(_ht,"port",port))
 	{
+		sw_zval_ptr_dtor(&connection_cfg);
 		return SW_ERR;
 	}
 
 	convert_to_long(port);
 
 	zval* retval = NULL;
-
 	zend_update_property_long(swoole_client_class_entry_ptr, client, ZEND_STRL("connectTimeout"), poolproper->connectTimeout TSRMLS_CC);
 
 	{
@@ -604,7 +617,7 @@ static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* co
 
 	sw_zval_ptr_dtor(&flag);
 	sw_zval_ptr_dtor(&function);
-
+	sw_zval_ptr_dtor(&connection_cfg);
 	return ret;
 }
 
@@ -626,7 +639,10 @@ static sw_inline int tcpclient_send(connpool_property* poolproper,connobj* connC
 		return SW_ERR;
 	}
 
-//	php_swoole_array_separate(retval);
+	zval* return_value = retval;
+	php_swoole_array_separate(retval);
+	sw_zval_ptr_dtor(&return_value);
+
 	HashTable *_ht = Z_ARRVAL_P(retval);
 	zval *data = NULL;
 	if (!php_swoole_array_get_value(_ht, "args", data))
@@ -709,18 +725,24 @@ static sw_inline int redisclient_args_check(zval* args,int type TSRMLS_DC)
 
 	if (type & ARGS_IS_VAILED)
 	{
-		HashTable *_ht = Z_ARRVAL_P(args);
+		zval* connection_cfg = args;
+		php_swoole_array_separate(connection_cfg);
+		HashTable *_ht = Z_ARRVAL_P(connection_cfg);
 		zval *value = NULL;
 		if (!php_swoole_array_get_value(_ht, "host", value))
 		{
+			sw_zval_ptr_dtor(&connection_cfg);
 			return SW_ERR;
 		}
 
 		value = NULL;
 		if (!php_swoole_array_get_value(_ht,"port",value))
 		{
+			sw_zval_ptr_dtor(&connection_cfg);
 			return SW_ERR;
 		}
+
+		sw_zval_ptr_dtor(&connection_cfg);
 	}
 
 	if (type & ARGC_IS_CONNECTED)
@@ -780,20 +802,27 @@ static sw_inline int redisclient_create(connpool_property* poolproper,connobj* c
 static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* connClient TSRMLS_DC)
 {
 	zval* connection_cfg = poolproper->cfg;
-//	php_swoole_array_separate(connection_cfg);
+	php_swoole_array_separate(connection_cfg);
 	HashTable *_ht = Z_ARRVAL_P(connection_cfg);
 
 	zval *host = NULL;
 	if (!php_swoole_array_get_value(_ht, "host", host))
 	{
+		sw_zval_ptr_dtor(&connection_cfg);
 		return SW_ERR;
 	}
 
-	convert_to_string(host);
+	if (sw_convert_to_string(host) < 0)
+	{
+		swWarn("convert to string failed.");
+		sw_zval_ptr_dtor(&connection_cfg);
+		return SW_ERR;
+	}
 
 	zval* port = NULL;
 	if (!php_swoole_array_get_value(_ht,"port",port))
 	{
+		sw_zval_ptr_dtor(&connection_cfg);
 		return SW_ERR;
 	}
 
@@ -850,7 +879,7 @@ static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* 
 
 	sw_zval_ptr_dtor(&callback);
 	sw_zval_ptr_dtor(&function);
-
+	sw_zval_ptr_dtor(&connection_cfg);
 	return ret;
 }
 
@@ -872,12 +901,14 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 		return SW_ERR;
 	}
 
-//	php_swoole_array_separate(retval);
+	zval* return_value = retval;
+	php_swoole_array_separate(retval);
+	sw_zval_ptr_dtor(&return_value);
 	HashTable *_ht = Z_ARRVAL_P(retval);
 	zval* method = NULL;
 	if (!php_swoole_array_get_value(_ht, "method", method))
 	{
-		if (retval) sw_zval_ptr_dtor(&retval);
+		if (retval) {sw_zval_ptr_dtor(&retval);retval = NULL;}
 		return SW_ERR;
 	}
 
@@ -897,7 +928,13 @@ static sw_inline int redisclient_send(connpool_property* poolproper,connobj* con
 		sw_zval_ptr_dtor(&argv1);
 	}
 
-	convert_to_string(method);
+	if (sw_convert_to_string(method) < 0)
+	{
+		swWarn("convert to string failed.");
+		sw_zval_ptr_dtor(&retval);
+		return SW_ERR;
+	}
+
 	zval* callback;
 	SW_MAKE_STD_ZVAL(callback);
 	SW_ZVAL_STRING(callback,"onClientRecieve",1);
@@ -951,24 +988,31 @@ static sw_inline int mysqlclient_args_check(zval* args,int type TSRMLS_DC)
 
 	if (type & ARGS_IS_VAILED)
 	{
-		HashTable *_ht = Z_ARRVAL_P(args);
+		zval* connection_cfg = args;
+		php_swoole_array_separate(connection_cfg);
+		HashTable *_ht = Z_ARRVAL_P(connection_cfg);
 		zval *value = NULL;
 		if (!php_swoole_array_get_value(_ht, "host", value))
 		{
+			sw_zval_ptr_dtor(&connection_cfg);
 			return SW_ERR;
 		}
 
 		value = NULL;
 		if (!php_swoole_array_get_value(_ht,"user",value))
 		{
+			sw_zval_ptr_dtor(&connection_cfg);
 			return SW_ERR;
 		}
 
 		value = NULL;
 		if (!php_swoole_array_get_value(_ht,"database",value))
 		{
+			sw_zval_ptr_dtor(&connection_cfg);
 			return SW_ERR;
 		}
+
+		sw_zval_ptr_dtor(&connection_cfg);
 	}
 	else if (type & ARGC_IS_CONNECTED)
 	{
@@ -1101,13 +1145,16 @@ static sw_inline int mysqlclient_send(connpool_property* poolproper,connobj* con
 		return SW_ERR;
 	}
 
-//	php_swoole_array_separate(retval);
+	zval* return_value = retval;
+	php_swoole_array_separate(retval);
+	sw_zval_ptr_dtor(&return_value);
+
 	HashTable *_ht = Z_ARRVAL_P(retval);
 
 	zval *data = NULL;
 	if (!php_swoole_array_get_value(_ht, "args", data))
 	{
-		if (retval) sw_zval_ptr_dtor(&retval);
+		if (retval) {sw_zval_ptr_dtor(&retval);retval = NULL;}
 		return SW_ERR;
 	}
 
@@ -1380,7 +1427,7 @@ ZEND_METHOD(swoole_connpool,setConfig)
 		RETURN_FALSE;
 	}
 
-//	php_swoole_array_separate(args);
+	php_swoole_array_separate(args);
 	HashTable *_ht = Z_ARRVAL_P(args);
 	zval *value = NULL;
 	if (php_swoole_array_get_value(_ht, "hbTimeout", value))
@@ -1439,15 +1486,10 @@ ZEND_METHOD(swoole_connpool,setConfig)
 											 MAX_RECONNECT_TIMES: proptr->maxConnTimes);
 	}
 
-	if (proptr->cfg)
-	{
-		zval* cfg = proptr->cfg;
-		proptr->cfg = NULL;
-		sw_zval_free(cfg);
-	}
-
-	sw_zval_add_ref(&args);
-	proptr->cfg = sw_zval_dup(args);
+	zend_update_property(swoole_connpool_class_entry_ptr, getThis(), ZEND_STRL("config"), args TSRMLS_CC);
+	sw_zval_ptr_dtor(&args);
+	proptr->cfg = sw_zend_read_property(swoole_connpool_class_entry_ptr, getThis(), ZEND_STRL("config"), 1 TSRMLS_CC);
+	sw_copy_to_stack(proptr->cfg, proptr->_cfg);
 	RETURN_TRUE;
 }
 
@@ -1744,7 +1786,7 @@ static connpoolMap* createPoolMap(swDestructor dtor)
 	map->list = swLinkedList_create(0,dtor);
 	if (!map->list)
 	{
-		sw_free(map);
+		swoole_efree(map);
 		return NULL;
 	}
 
@@ -1753,7 +1795,7 @@ static connpoolMap* createPoolMap(swDestructor dtor)
 	{
 		swLinkedList_free(map->list);
 		map->list = NULL;
-		sw_free(map);
+		swoole_efree(map);
 		return NULL;
 	}
 
@@ -2233,7 +2275,6 @@ static void destroy_resource(connpool* pool,connpool_property* proptr)
 	if (proptr) proptr->connpoolType = SW_CONNPOOL_TYPE_INVAIL;
 	if (proptr && proptr->cfg)
 	{
-		sw_zval_free(proptr->cfg);
 		proptr->cfg = NULL;
 	}
 

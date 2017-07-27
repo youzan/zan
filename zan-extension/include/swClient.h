@@ -107,6 +107,7 @@ typedef struct _swClient
 } swClient;
 
 int swClient_create(swClient *cli, int type, int async);
+int swClient_free(swClient* cli);
 
 #ifdef __cplusplus
 }

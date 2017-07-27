@@ -59,7 +59,6 @@ typedef struct
     zval *zobject;		/// 对象
 
     /// 对象属性
-    zval *zdata;
     zval *zserver;
     zval *zheader;
     zval *zget;
@@ -69,7 +68,6 @@ typedef struct
 
 #if PHP_MAJOR_VERSION >= 7
     zval _zobject;
-    zval _zdata;
     zval _zserver;
     zval _zheader;
     zval _zget;
@@ -103,17 +101,17 @@ typedef struct
     int fd;
     int refcount;       /// 引用计数，一个http_conext 对象可能被request、response同时持有
 
-    uint16_t end:1;
-    uint16_t send_header :1;
-    uint16_t gzip_enable :1;
-    uint16_t gzip_level :4;
-    uint16_t chunk :1;
-    uint16_t keepalive :1;
-    uint16_t http2 :1;
+    uint8_t 	 end;
+    uint8_t  send_header;
+    uint8_t  gzip_enable;
+    uint8_t  gzip_level;
+    uint8_t chunk;
+    uint8_t keepalive;
+    uint8_t http2;
 
-    uint16_t request_read :1;
-    uint16_t current_header_name_allocated :1;
-    uint16_t content_sender_initialized :1;
+    uint8_t request_read;
+    uint8_t current_header_name_allocated;
+    uint8_t content_sender_initialized;
 
 #ifdef SW_USE_HTTP2
     uint8_t priority;

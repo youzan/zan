@@ -52,7 +52,6 @@
 #include "swAsyncIO.h"
 
 #define PHP_SWOOLE_VERSION  "3.1.0"
-#define PHP_SWOOLE_CHECK_CALLBACK
 
 /**
  * PHP5.2

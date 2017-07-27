@@ -22,22 +22,16 @@
 #include "php_swoole.h"
 #include "swWork.h"
 
-enum swoole_timer_type
-{
-    SW_TIMER_TICK,
-    SW_TIMER_AFTER,
-};
 
 typedef struct _swTimer_callback
 {
+    zval* callback;
+    zval* data;
+
 #if PHP_MAJOR_VERSION >= 7
 	zval  _data;
 	zval  _callback ;
 #endif
-    zval* callback;
-    zval* data;
-    int interval;
-    int type;
 } swTimer_callback;
 
 static void swoole_php_onTimeout(swTimer *timer, swTimer_node *tnode);
@@ -123,15 +117,6 @@ static long php_swoole_add_timer(long ms, zval *callback, zval *param, int is_ti
     }
 
     bzero(cb,sizeof(swTimer_callback));
-    cb->type = (is_tick)? SW_TIMER_TICK:SW_TIMER_AFTER;
-	long id = swTimer_add(&SwooleG.timer, ms, is_tick, cb,PHPTIMER_USED);
-	if (id < 0)
-	{
-		swWarn("addtimer failed.");
-		swoole_efree(cb);
-		return SW_ERR;
-	}
-
 	if (param)
 	{
 		cb->data = param;
@@ -144,6 +129,18 @@ static long php_swoole_add_timer(long ms, zval *callback, zval *param, int is_ti
 		cb->callback = callback;
 		sw_zval_add_ref(&callback);
 		sw_copy_to_stack(cb->callback,cb->_callback);
+	}
+
+	long id = swTimer_add(&SwooleG.timer, ms, is_tick, cb,PHPTIMER_USED);
+	if (id < 0)
+	{
+		swWarn("addtimer failed.");
+		if (cb->data) {sw_zval_ptr_dtor(&cb->data);cb->data = NULL;}
+		if (cb->callback) {sw_zval_ptr_dtor(&cb->callback);cb->callback = NULL;}
+
+		swoole_efree(cb);
+
+		return SW_ERR;
 	}
 
 	return id;
@@ -335,7 +332,7 @@ PHP_FUNCTION(swoole_timer_set)
 
 	zval *value = NULL ;
 	HashTable *vht = Z_ARRVAL_P(zset);
-	timer_cfg.use_time_wheel = 1;
+	timer_cfg.use_time_wheel = 0;
 	if (php_swoole_array_get_value(vht, "use_time_wheel", value))
 	{
 		convert_to_long(value);

@@ -768,7 +768,12 @@ static PHP_METHOD(swoole_process, exec)
     int index = 1;
     zval *value = NULL;
     SW_HASHTABLE_FOREACH_START(Z_ARRVAL_P(args), value)
-        convert_to_string(value);
+		if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
+
         sw_zval_add_ref(&value);
         exec_args[index] = Z_STRVAL_P(value);
         index++;

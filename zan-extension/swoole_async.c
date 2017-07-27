@@ -224,6 +224,7 @@ static void swoole_aio_dns_complete(swAio_event *event TSRMLS_DC)
 	}
 
 	swoole_efree(dns_req);
+	event->req = NULL;
 	swoole_efree(event->buf);
 
 	if (zcontent)
@@ -565,6 +566,7 @@ PHP_FUNCTION(swoole_async_set)
     }
 
     zval *value = NULL ;
+    php_swoole_array_separate(zset);
     HashTable *vht = Z_ARRVAL_P(zset);
 //    if (php_swoole_array_get_value(vht, "aio_mode", value))
 //    {
@@ -635,6 +637,7 @@ PHP_FUNCTION(swoole_async_set)
         }
     }
 #endif
+    sw_zval_ptr_dtor(&zset);
 }
 
 PHP_FUNCTION(swoole_async_dns_lookup)
