@@ -1190,7 +1190,7 @@ safe:
 						break;
 
 					default:
-						if (sw_convert_to_string(parameter) < 0)
+						if (sw_convert_to_string(&tmp_param) < 0)
 						{
 							swWarn("convert to string failed.");
 							ret = -1;

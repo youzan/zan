@@ -154,7 +154,7 @@ static inline int SW_Z_TYPE_P(zval *z)
 inline int SW_Z_TYPE_P(zval *z);
 #define SW_Z_TYPE_PP(z)        SW_Z_TYPE_P(*z)
 
-static sw_inline sw_convert_to_string(zval* val)
+static sw_inline int sw_convert_to_string(zval* val)
 {
     int type = Z_TYPE_P(val);
     if (type <= IS_STRING && IS_ARRAY != type && IS_OBJECT != type){
