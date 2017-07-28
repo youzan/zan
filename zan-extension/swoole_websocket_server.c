@@ -264,8 +264,6 @@ int swoole_websocket_onMessage(swEventData *req)
 
 int swoole_websocket_onHandshake(swListenPort *port, http_context *ctx)
 {
-	SWOOLE_FETCH_TSRMLS;
-
     int fd = ctx->fd;
     int ret = websocket_handshake(port, ctx);
     if (ret == SW_ERR)
