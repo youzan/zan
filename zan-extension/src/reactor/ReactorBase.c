@@ -153,8 +153,10 @@ static int swReactor_defer(swReactor *reactor, swCallback callback, void *data)
         swWarn("malloc(%ld) failed.", sizeof(swDefer_callback));
         return SW_ERR;
     }
-    cb->callback = callback;
+
+    memset(cb,0x00,sizeof(swDefer_callback));
     cb->data = data;
+    cb->callback = callback;
     LL_APPEND(reactor->defer_callback_list, cb);
     return SW_OK;
 }

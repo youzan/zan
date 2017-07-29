@@ -164,6 +164,7 @@ static const zend_function_entry swoole_client_methods[] =
 static sw_inline void defer_close(void* data)
 {
 	swClient* cli = (swClient*)data;
+	swClient_free(cli);
 	cli->released = 0;
 	client_onClose(cli);
 }
@@ -293,9 +294,8 @@ static void client_onClose(swClient *cli)
     		return;
     }
 
-    zval *zobject = cli->object;
     cli->released = 1;
-
+    zval *zobject = cli->object;
     if (zobject){
 		client_execute_callback(cli, SW_CLIENT_CALLBACK_onClose);
 
@@ -609,7 +609,11 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
     //package eof
     if (sw_zend_hash_find(vht, ZEND_STRS("package_eof"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_string(valuePtr);
+		if (sw_convert_to_string(valuePtr) < 0)
+		{
+			swWarn("convert to string failed.");
+			return;
+		}
         cli->protocol.package_eof_len = Z_STRLEN_P(valuePtr);
         if (cli->protocol.package_eof_len <= SW_DATA_EOF_MAXLEN)
         {
@@ -630,7 +634,12 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
     //package length size
     if (sw_zend_hash_find(vht, ZEND_STRS("package_length_type"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_string(valuePtr);
+        if (sw_convert_to_string(valuePtr) < 0)
+		{
+			swWarn("convert to string failed.");
+			return;
+		}
+
         cli->protocol.package_length_type = Z_STRVAL_P(valuePtr)[0];
         cli->protocol.package_length_size = swoole_type_size(cli->protocol.package_length_type);
 
@@ -680,7 +689,12 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
      */
     if (sw_zend_hash_find(vht, ZEND_STRS("bind_address"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_string(valuePtr);
+		if (sw_convert_to_string(valuePtr) < 0)
+		{
+			swWarn("convert to string failed.");
+			return;
+		}
+
         bind_address = Z_STRVAL_P(valuePtr);
     }
     /**
@@ -720,7 +734,12 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
     }
     if (sw_zend_hash_find(vht, ZEND_STRS("ssl_cert_file"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_string(valuePtr);
+    	if (sw_convert_to_string(valuePtr) < 0)
+		{
+			swWarn("convert to string failed.");
+			return;
+		}
+
         cli->ssl_cert_file = strdup(Z_STRVAL_P(valuePtr));
         if (access(cli->ssl_cert_file, R_OK) < 0)
         {
@@ -731,7 +750,12 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
     }
     if (sw_zend_hash_find(vht, ZEND_STRS("ssl_key_file"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_string(valuePtr);
+    	if (sw_convert_to_string(valuePtr) < 0)
+		{
+			swWarn("convert to string failed.");
+			return;
+		}
+
         cli->ssl_key_file = strdup(Z_STRVAL_P(valuePtr));
         if (access(cli->ssl_key_file, R_OK) < 0)
         {
@@ -879,7 +903,7 @@ void php_swoole_client_free(zval *object, swClient *cli TSRMLS_DC)
     if (cli)
     {
         swoole_efree(cli->server_str);
-        cli->close(cli);
+        swClient_free(cli);
         swoole_efree(cli);
     }
 }
@@ -1045,7 +1069,9 @@ static PHP_METHOD(swoole_client, set)
         return;
     }
 
+    php_swoole_array_separate(zset);
     zend_update_property(swoole_client_class_entry_ptr, getThis(), ZEND_STRL("setting"), zset TSRMLS_CC);
+    sw_zval_ptr_dtor(&zset);
     RETURN_TRUE;
 }
 
@@ -1598,7 +1624,7 @@ check_return:
 static PHP_METHOD(swoole_client, isConnected)
 {
     swClient *cli = swoole_get_object(getThis());
-    if (!cli || !cli->socket)
+    if (!cli || !cli->socket || cli->released)
     {
         RETURN_FALSE;
     }
@@ -1731,14 +1757,13 @@ static PHP_METHOD(swoole_client, close)
 	zval *internal_user = sw_zend_read_property(swoole_client_class_entry_ptr, getThis(), ZEND_STRL("internal_user"), 1 TSRMLS_CC);
 	if (internal_user && Z_BVAL_P(internal_user))
 	{
-		return;
+		RETURN_TRUE;
 	}
 
-	int ret = 1;
     zend_bool force = 0;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &force))
     {
-        return;
+    		RETURN_FALSE;
     }
 
     if (cli->timer_id > 0)
@@ -1748,18 +1773,18 @@ static PHP_METHOD(swoole_client, close)
     }
 
     zval* obj = cli->object;
-    cli->object = NULL;		///手动调用回调,不产生回调
-    ret = cli->close(cli);
+    cli->object = NULL;		///关闭连接,但不回调
+    cli->close(cli);
 
     /// 手动调用回调
     if (obj)
     {
-		cli->object = obj;
-		cli->released = 1;
+    	cli->released = 1;
+        cli->object = obj;
 		SwooleG.main_reactor->defer(SwooleG.main_reactor,defer_close,cli);
     }
 
-    SW_CHECK_RETURN(ret);
+    RETURN_TRUE;
 }
 
 static PHP_METHOD(swoole_client, on)

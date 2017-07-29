@@ -92,7 +92,7 @@ void swAio_callback_test(swAio_event *aio_event)
 
 static int swAioBase_onFinish(swReactor *reactor, swEvent *event)
 {
-    swAio_event *events[SW_AIO_EVENT_NUM];
+    swAio_event *events[SW_AIO_EVENT_NUM] = {0};
     int n = read(event->fd, events, sizeof(swAio_event*) * SW_AIO_EVENT_NUM);
     if (n < 0)
     {

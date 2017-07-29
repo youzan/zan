@@ -108,8 +108,10 @@ static PHP_METHOD(swoole_server_port, set)
         return;
     }
 
-    property->setting = zset;
+    php_swoole_array_separate(zset);
     HashTable *vht = Z_ARRVAL_P(zset);
+    property->setting = zset;
+
     //backlog
     zval *value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("backlog"), (void **) &value) == SUCCESS)
@@ -150,7 +152,12 @@ static PHP_METHOD(swoole_server_port, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("package_eof"), (void **) &value) == SUCCESS)
     {
-        convert_to_string(value);
+        if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
+
         port->protocol.package_eof_len = Z_STRLEN_P(value);
         if (port->protocol.package_eof_len > SW_DATA_EOF_MAXLEN)
         {
@@ -223,7 +230,11 @@ static PHP_METHOD(swoole_server_port, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("package_length_type"), (void **) &value) == SUCCESS)
     {
-        convert_to_string(value);
+        if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
         port->protocol.package_length_type = Z_STRVAL_P(value)[0];
         port->protocol.package_length_size = swoole_type_size(port->protocol.package_length_type);
 
@@ -274,7 +285,12 @@ static PHP_METHOD(swoole_server_port, set)
     	value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_cert_file"), (void **) &value) == SUCCESS)
         {
-            convert_to_string(value);
+        	if (sw_convert_to_string(value) < 0)
+			{
+				swWarn("convert to string failed.");
+				RETURN_FALSE;
+			}
+
             if (access(Z_STRVAL_P(value), R_OK) < 0)
             {
                 swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", Z_STRVAL_P(value));
@@ -286,7 +302,12 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_key_file"), (void **) &value) == SUCCESS)
         {
-            convert_to_string(value);
+        	if (sw_convert_to_string(value) < 0)
+			{
+				swWarn("convert to string failed.");
+				RETURN_FALSE;
+			}
+
             if (access(Z_STRVAL_P(value), R_OK) < 0)
             {
                 swoole_php_fatal_error(E_ERROR, "ssl key file[%s] not found.", Z_STRVAL_P(value));
@@ -304,7 +325,12 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_client_cert_file"), (void **) &value) == SUCCESS)
         {
-            convert_to_string(value);
+        	if (sw_convert_to_string(value) < 0)
+			{
+				swWarn("convert to string failed.");
+				RETURN_FALSE;
+			}
+
             if (access(Z_STRVAL_P(value), R_OK) < 0)
             {
                 swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", port->ssl_cert_file);
@@ -333,13 +359,22 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_ciphers"), (void **) &value) == SUCCESS)
         {
-            convert_to_string(value);
+        	if (sw_convert_to_string(value) < 0)
+			{
+				swWarn("convert to string failed.");
+				RETURN_FALSE;
+			}
+
             port->ssl_config.ciphers = strdup(Z_STRVAL_P(value));
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_ecdh_curve"), (void **) &value) == SUCCESS)
         {
-            convert_to_string(value);
+        	if (sw_convert_to_string(value) < 0)
+			{
+				swWarn("convert to string failed.");
+				RETURN_FALSE;
+			}
             port->ssl_config.ecdh_curve = strdup(Z_STRVAL_P(value));
         }
 
@@ -378,12 +413,11 @@ static PHP_METHOD(swoole_server_port, on)
     	return;
     }
 
-#ifdef PHP_SWOOLE_CHECK_CALLBACK
+
     if (swoole_check_callable(cb TSRMLS_CC) < 0)
     {
     	return;
     }
-#endif
 
     port->ptr = (!port->ptr)? property:port->ptr;
 

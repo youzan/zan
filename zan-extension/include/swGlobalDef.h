@@ -60,9 +60,6 @@ struct _swServer
      */
     uint8_t dispatch_mode; //分配模式，1平均分配，2按FD取摸固定分配，3,使用抢占式队列(IPC消息队列)分配
 
-    int worker_uid;
-    int worker_groupid;
-
     /**
      * max connection num
      */
@@ -80,7 +77,6 @@ struct _swServer
     int sock_server_buffer_size; //server的socket缓存区设置
 
     int signal_fd;
-    int event_fd;
 
     int udp_socket_ipv4;
     int udp_socket_ipv6;
@@ -88,9 +84,8 @@ struct _swServer
     int ringbuffer_size;
 
     /*----------------------------Reactor schedule--------------------------------*/
-    uint16_t reactor_round_i; //轮询调度
+    //uint16_t reactor_round_i; //轮询调度
     uint16_t reactor_next_i; //平均算法调度
-    uint16_t reactor_schedule_count;
 
     sw_atomic_t worker_round_id;
 
@@ -178,8 +173,6 @@ struct _swServer
      */
     uint64_t message_queue_key;
 
-    swReactor *reactor_ptr; //Main Reactor
-    swFactory *factory_ptr; //Factory
 
     void (*onStart)(swServer *serv);
     void (*onManagerStart)(swServer *serv);

@@ -46,7 +46,7 @@ int swFactoryProcess_create(swFactory *factory, int worker_num)
     if (!factory || worker_num < 1){
         return SW_ERR;
     }
-
+    
     swFactoryProcess *object;
     object = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swFactoryProcess));
     if (object == NULL)

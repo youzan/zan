@@ -414,7 +414,11 @@ int php_swoole_get_send_data(zval *zdata, char **str TSRMLS_DC)
     else
     {
 convert:
-        convert_to_string(zdata);
+        if (sw_convert_to_string(zdata) < 0)
+		{
+			swWarn("convert to string failed.");
+			return SW_ERR;
+		}
         length = Z_STRLEN_P(zdata);
         *str = Z_STRVAL_P(zdata);
     }
@@ -447,12 +451,9 @@ void php_swoole_server_before_start(swServer *serv, zval *zobject TSRMLS_DC)
     zval *zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), 1 TSRMLS_CC);
     if (zsetting == NULL || ZVAL_IS_NULL(zsetting))
     {
-      	zval* tmp = NULL;
-        SW_MAKE_STD_ZVAL(tmp);
-        array_init(tmp);
-        zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), tmp TSRMLS_CC);
-        zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), 1 TSRMLS_CC);
-        sw_zval_ptr_dtor(&tmp);
+        SW_ALLOC_INIT_ZVAL(zsetting);
+        array_init(zsetting);
+        zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), zsetting TSRMLS_CC);
     }
 
     if (!sw_zend_hash_exists(Z_ARRVAL_P(zsetting), ZEND_STRL("worker_num")))
@@ -778,12 +779,12 @@ static void php_swoole_onWorkerStart(swServer *serv, int worker_id)
         zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
     }
 
+    sw_zval_ptr_dtor(&zworker_id);
+
     if (retval)
     {
         sw_zval_ptr_dtor(&retval);
     }
-
-    sw_zval_ptr_dtor(&zworker_id);
 }
 
 static void php_swoole_onWorkerStop(swServer *serv, int worker_id)
@@ -1305,12 +1306,10 @@ int php_swoole_onReceive(swServer *serv, swEventData *req)
 
     zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, SW_SERVER_CB_onReceive);
 
-#ifdef PHP_SWOOLE_CHECK_CALLBACK
 	if (swoole_check_callable(callback TSRMLS_CC) < 0)
 	{
 		return SW_OK;
 	}
-#endif
 
     swFactory *factory = &serv->factory;
 
@@ -1564,7 +1563,6 @@ PHP_METHOD(swoole_server, __construct)
     object_init_ex(connection_iterator_object, swoole_connection_iterator_class_entry_ptr);
     zend_update_property(swoole_server_class_entry_ptr, server_object, ZEND_STRL("connections"),
     															connection_iterator_object TSRMLS_CC);
-    sw_zval_ptr_dtor(&connection_iterator_object);
 #endif
 
     zend_update_property_stringl(swoole_server_class_entry_ptr, server_object,
@@ -1608,13 +1606,18 @@ PHP_METHOD(swoole_server, set)
     	swWarn("not create servers.");
     	RETURN_FALSE;
     }
-
+    php_swoole_array_separate(zset);
     HashTable *vht = Z_ARRVAL_P(zset);
     //chroot
     zval *value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("chroot"), (void **) &value) == SUCCESS)
     {
-        convert_to_string(value);
+        if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+	    	RETURN_FALSE;
+		}
+
         SwooleG.chroot = strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
     }
 
@@ -1622,7 +1625,11 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("user"), (void **) &value) == SUCCESS)
     {
-        convert_to_string(value);
+    	if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
         SwooleG.user = strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
     }
 
@@ -1630,7 +1637,11 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("group"), (void **) &value) == SUCCESS)
     {
-        convert_to_string(value);
+    	if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
         SwooleG.group = strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
     }
 
@@ -1672,7 +1683,11 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("log_file"), (void **) &value) == SUCCESS)
     {
-        convert_to_string(value);
+    	if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
         SwooleG.log_addr = strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
     }
 
@@ -1733,7 +1748,12 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("task_tmpdir"), (void **) &value) == SUCCESS)
     {
-        convert_to_string(value);
+    	if (sw_convert_to_string(value) < 0)
+		{
+			swWarn("convert to string failed.");
+			RETURN_FALSE;
+		}
+
         SwooleG.task_tmpdir = emalloc(SW_TASK_TMPDIR_SIZE);
         SwooleG.task_tmpdir_len = snprintf(SwooleG.task_tmpdir, SW_TASK_TMPDIR_SIZE,
         										"%s/task.XXXXXX", Z_STRVAL_P(value)) + 1;
@@ -1884,10 +1904,6 @@ PHP_METHOD(swoole_server, set)
 
     sw_zend_call_method_with_1_params(&port_object, swoole_server_port_class_entry_ptr, NULL, "set", &retval, zset);
     zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), zset TSRMLS_CC);
-    if (retval)
-    {
-    	sw_zval_ptr_dtor(&retval);
-    }
 
     RETURN_TRUE;
 }
@@ -1920,7 +1936,12 @@ PHP_METHOD(swoole_server, on)
     	return ;
     }
 
-    convert_to_string(name);
+    if (sw_convert_to_string(name) < 0)
+	{
+		swWarn("convert to string failed.");
+		RETURN_FALSE;
+	}
+
     char property_name[128] = {0};
     memcpy(property_name, "on", 2);
     int l_property_name = 2;

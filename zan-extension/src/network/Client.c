@@ -38,7 +38,7 @@ static int swClient_tcp_sendfile_async(swClient *cli, char *filename);
 static int swClient_tcp_recv_no_buffer(swClient *cli, char *data, int len, int flags);
 static int swClient_udp_connect(swClient *cli, char *host, int port, double _timeout, int udp_connect);
 static int swClient_udp_recv(swClient *cli, char *data, int len, int waitall);
-static int swClient_free(swClient *cli);
+static int swClient_socket_free(swClient *cli);
 static int swClient_close(swClient *cli);
 
 static int swClient_onDgramRead(swReactor *reactor, swEvent *event);
@@ -114,6 +114,25 @@ int swClient_create(swClient *cli, int type, int async)
     return SW_OK;
 }
 
+int swClient_free(swClient* cli)
+{
+	if (!cli)
+	{
+		return SW_OK;
+	}
+
+	cli->close(cli);
+
+	//clear buffer
+	if (cli->buffer)
+	{
+		swString_free(cli->buffer);
+		cli->buffer = NULL;
+	}
+
+	return SW_OK;
+}
+
 #ifdef SW_USE_OPENSSL
 int swClient_enable_ssl_encrypt(swClient *cli)
 {
@@ -152,14 +171,11 @@ static int swClient_ssl_handshake(swClient *cli)
 }
 #endif
 
-static int swClient_free(swClient *cli)
+static int swClient_socket_free(swClient *cli)
 {
     if (!cli || !cli->socket) {
         return SW_OK;
     }
-
-//    //remove from reactor
-//    cli->close(cli);
 
     if (cli->socket->out_buffer)
     {
@@ -218,12 +234,7 @@ static int swClient_close(swClient *cli)
         }
     }
 #endif
-    //clear buffer
-    if (cli->buffer)
-    {
-        swString_free(cli->buffer);
-        cli->buffer = NULL;
-    }
+
     if (cli->type == SW_SOCK_UNIX_DGRAM)
     {
         unlink(cli->socket->info.addr.un.sun_path);
@@ -252,7 +263,7 @@ static int swClient_close(swClient *cli)
         cli->socket->active = 0;
     }
 
-    swClient_free(cli);
+    swClient_socket_free(cli);
 
     if (needCallback)
     {

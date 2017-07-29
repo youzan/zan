@@ -56,7 +56,7 @@ static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void 
 {
 
 
-    char stack_buf[SW_BUFFER_SIZE_BIG];
+    char stack_buf[SW_BUFFER_SIZE_BIG] = {0};
     int eof_pos;
     if (buffer->length - buffer->offset < protocol->package_eof_len)
     {

@@ -1190,7 +1190,13 @@ safe:
 						break;
 
 					default:
-						convert_to_string(&tmp_param);
+						if (sw_convert_to_string(&tmp_param) < 0)
+						{
+							swWarn("convert to string failed.");
+							ret = -1;
+							goto clean_up;
+						}
+
 						if (!mysql_handle_quoter(Z_STRVAL(tmp_param),
 						Z_STRLEN(tmp_param), &plc->quoted, &plc->qlen))
 						{

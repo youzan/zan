@@ -972,19 +972,20 @@ static int http_onReceive(swServer *serv, swEventData *req)
     php_http_parser_init(parser, PHP_HTTP_REQUEST);
 
     zval *zdata = NULL;
-    SW_MAKE_STD_ZVAL(zdata);
+    SW_ALLOC_INIT_ZVAL(zdata);
     php_swoole_get_recv_data(zdata, req, NULL, 0 TSRMLS_CC);
-    ctx->request.zdata = zdata;
-    sw_copy_to_stack(ctx->request.zdata,ctx->request._zdata);
 
     swTrace("httpRequest %d bytes:\n---------------------------------------\n%s\n", (int)Z_STRLEN_P(zdata), Z_STRVAL_P(zdata));
 
 	zval *zrequest_object = ctx->request.zobject;
 	zval *zresponse_object = ctx->response.zobject;
+	SW_SEPARATE_ZVAL(zrequest_object);
+	SW_SEPARATE_ZVAL(zresponse_object);
+
     long n = php_http_parser_execute(parser, &http_parser_settings, Z_STRVAL_P(zdata), Z_STRLEN_P(zdata));
     if (n < 0)
     {
-		sw_zval_ptr_dtor(&zdata);
+    	sw_zval_free(zdata);
 		sw_zval_ptr_dtor(&zrequest_object);
 		sw_zval_ptr_dtor(&zresponse_object);
         bzero(client, sizeof(swoole_http_client));
@@ -1015,14 +1016,12 @@ static int http_onReceive(swServer *serv, swEventData *req)
         swConnection *conn = swWorker_get_connection(SwooleG.serv, fd);
         if (!conn)
         {
+        	sw_zval_free(zdata);
             swWarn("connection[%d] is closed.", fd);
-			sw_zval_ptr_dtor(&zdata);
-			sw_zval_ptr_dtor(&zrequest_object);
-			sw_zval_ptr_dtor(&zresponse_object);
-			bzero(client, sizeof(swoole_http_client));
-			return SW_ERR;
+			goto free_object;
         }
 
+        swoole_set_property(zrequest_object, swoole_property_common, zdata);
         add_assoc_long(ctx->request.zserver, "server_port", swConnection_get_port(&SwooleG.serv->connection_list[conn->from_fd]));
         add_assoc_long(ctx->request.zserver, "remote_port", swConnection_get_port(conn));
         char addr[SW_IP_MAX_LENGTH] = {0}; //just means ip cache len
@@ -1036,11 +1035,8 @@ static int http_onReceive(swServer *serv, swEventData *req)
         //websocket handshake
         if (conn->websocket_status == WEBSOCKET_STATUS_CONNECTION && zcallback == NULL)
         {
-        	int iRet = swoole_websocket_onHandshake(port, ctx);
-			sw_zval_ptr_dtor(&zdata);
-			sw_zval_ptr_dtor(&zrequest_object);
-			sw_zval_ptr_dtor(&zresponse_object);
-			return iRet;
+        		swoole_websocket_onHandshake(port, ctx);
+        		goto free_object;
         }
 
         args[0] = &zrequest_object;
@@ -1058,17 +1054,13 @@ static int http_onReceive(swServer *serv, swEventData *req)
             if (zcallback == NULL)
             {
                 swoole_websocket_onRequest(ctx);
-                sw_zval_ptr_dtor(&zdata);
-				sw_zval_ptr_dtor(&zrequest_object);
-				sw_zval_ptr_dtor(&zresponse_object);
-                bzero(client, sizeof(swoole_http_client));
-                return SW_OK;
+                goto free_object;
             }
         }
 
         if (sw_call_user_function_ex(EG(function_table), NULL, zcallback, &retval, 2, args, 0, NULL TSRMLS_CC) == FAILURE)
         {
-            swoole_php_error(E_WARNING, "onRequest handler error");
+            swError("onRequest handler error");
         }
 
         if (EG(exception))
@@ -1091,7 +1083,7 @@ static int http_onReceive(swServer *serv, swEventData *req)
             sw_zval_ptr_dtor(&retval);
         }
 
-        sw_zval_ptr_dtor(&zdata);
+free_object:
 		sw_zval_ptr_dtor(&zrequest_object);
 		sw_zval_ptr_dtor(&zresponse_object);
 		bzero(client, sizeof(swoole_http_client));
@@ -1144,8 +1136,8 @@ static PHP_METHOD(swoole_http_server, on)
 
     if (swoole_check_callable(callback TSRMLS_CC) < 0)
     {
-    	swoole_php_fatal_error(E_WARNING,"user must set callback.");
-    	RETURN_FALSE;
+		swError("user must set callback.");
+		RETURN_FALSE;
     }
 
     if (strncasecmp("request", Z_STRVAL_P(event_name), Z_STRLEN_P(event_name)) == 0)
@@ -1251,7 +1243,6 @@ static void swoole_http_context_free(http_context *ctx TSRMLS_DC)
     }
 #endif
 
-    ctx->request.zdata = NULL;
     ctx->request.zobject = NULL;
     ctx->response.zobject = NULL;
 
@@ -1360,6 +1351,8 @@ static char *http_status_message(int code)
         return "502 Bad Gateway";
     case 503:
         return "503 Service Unavailable";
+    case 504:
+        return "504 Gateway Time-out";
     case 505:
         return "505 HTTP Version Not Supported";
     case 506:
@@ -1504,9 +1497,10 @@ static PHP_METHOD(swoole_http_request, rawcontent)
     }
 
     http_request *req = &ctx->request;
-    if (req->post_length > 0 && req->zdata)
+    if (req->post_length)
     {
-        SW_RETVAL_STRINGL(Z_STRVAL_P(req->zdata) + Z_STRLEN_P(req->zdata) - req->post_length, req->post_length, 1);
+    	zval *zdata = swoole_get_property(getThis(), swoole_property_common);
+        SW_RETVAL_STRINGL(Z_STRVAL_P(zdata) + Z_STRLEN_P(zdata) - req->post_length, req->post_length, 1);
     }
 #ifdef SW_USE_HTTP2
     else if (req->post_buffer)
@@ -1551,6 +1545,13 @@ static PHP_METHOD(swoole_http_request, __destruct)
     }
 
     swoole_set_object(getThis(), NULL);
+    zval *zdata = swoole_get_property(getThis(), swoole_property_common);
+    if (zdata)
+    {
+    	sw_zval_free(zdata);
+    	swoole_set_property(getThis(), swoole_property_common,NULL);
+    }
+
     if (ctx && ctx->refcount-- == 1)
     {
     	swoole_http_context_free(ctx TSRMLS_CC);

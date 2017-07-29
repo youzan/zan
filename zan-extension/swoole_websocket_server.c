@@ -163,7 +163,12 @@ static int websocket_handshake(swListenPort *port, http_context *ctx)
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "header no sec-websocket-key");
         return SW_ERR;
     }
-    convert_to_string(pData);
+
+    if (sw_convert_to_string(pData) < 0)
+	{
+		swWarn("convert to string failed.");
+		return SW_ERR;
+	}
 
     swString_clear(swoole_http_buffer);
     swString_append_ptr(swoole_http_buffer, ZEND_STRL("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"));
