@@ -593,7 +593,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 		timer->_next_msec = _msec;
         timer->set(timer, _msec);
     }
-	
+
 	swHashMap_add_int(timer->timer_map, tnode->id, tnode);
     return tnode->id;
 }
@@ -603,7 +603,9 @@ void swTimer_del(swTimer *timer, long id)
 	swTimer_node *tnode = swHashMap_find_int(timer->timer_map, id);
 	if (!tnode || tnode->remove)
 	{
-		swWarn("timer#%ld is not found.", id);
+        // php -r '$timerId = swoole_timer_after(10, function() use(&$timerId) { var_dump(swoole_timer_exists($timerId));swoole_timer_clear($timerId);});'
+        // swoole_php_onTimeout 会导致重复删除 报错
+        // swWarn("timer#%ld is not found.", id);
 		return ;
 	}
 
