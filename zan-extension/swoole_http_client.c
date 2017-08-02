@@ -372,6 +372,65 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
 		hcc->onResponse = sw_zval_dup(callback);
 	}
 
+    zval *valuePtr = NULL;
+    zval *zset = sw_zend_read_property(swoole_http_client_class_entry_ptr, zobject, ZEND_STRL("setting"), 1 TSRMLS_CC);
+    if (zset && !ZVAL_IS_NULL(zset))
+    {
+        HashTable *vht = Z_ARRVAL_P(zset);
+        int value = 1;
+
+        /**
+         * TCP_NODELAY
+         */
+        if (sw_zend_hash_find(vht, ZEND_STRS("open_tcp_nodelay"), (void **) &valuePtr) == SUCCESS)
+        {
+            value = 1;
+            if (setsockopt(cli->socket->fd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value)) < 0)
+            {
+                swSysError("setsockopt(%d, TCP_NODELAY) failed.", cli->socket->fd);
+            }
+        }
+    #ifdef SW_USE_OPENSSL
+        if (sw_zend_hash_find(vht, ZEND_STRS("ssl_method"), (void **) &valuePtr) == SUCCESS)
+        {
+            convert_to_long(valuePtr);
+            cli->ssl_method = (int) Z_LVAL_P(valuePtr);
+            cli->open_ssl = 1;
+        }
+        if (sw_zend_hash_find(vht, ZEND_STRS("ssl_compress"), (void **) &valuePtr) == SUCCESS)
+        {
+            convert_to_boolean(valuePtr);
+            cli->ssl_disable_compress = !Z_BVAL_P(valuePtr);
+        }
+        if (sw_zend_hash_find(vht, ZEND_STRS("ssl_cert_file"), (void **) &valuePtr) == SUCCESS)
+        {
+            convert_to_string(valuePtr);
+            cli->ssl_cert_file = strdup(Z_STRVAL_P(valuePtr));
+            if (access(cli->ssl_cert_file, R_OK) < 0)
+            {
+                swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", cli->ssl_cert_file);
+                return SW_ERR;
+            }
+            cli->open_ssl = 1;
+        }
+        if (sw_zend_hash_find(vht, ZEND_STRS("ssl_key_file"), (void **) &valuePtr) == SUCCESS)
+        {
+            convert_to_string(valuePtr);
+            cli->ssl_key_file = strdup(Z_STRVAL_P(valuePtr));
+            if (access(cli->ssl_key_file, R_OK) < 0)
+            {
+                swoole_php_fatal_error(E_ERROR, "ssl key file[%s] not found.", cli->ssl_key_file);
+                return SW_ERR;
+            }
+        }
+        if (cli->ssl_cert_file && !cli->ssl_key_file)
+        {
+            swoole_php_fatal_error(E_ERROR, "ssl require key file.");
+            return SW_ERR;
+        }
+    #endif
+    }
+
     //if connection is active
 	if (cli->socket->active)
 	{

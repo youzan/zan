@@ -53,49 +53,49 @@ void swLog_free(void);
 
 #define swDebug(str,...)		  do {if (SwooleGS && SwooleGS->log_level <= SW_LOG_DEBUG)	{\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
+snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s: "str,__func__,##__VA_ARGS__);\
 swLog_put(SW_LOG_DEBUG, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
 
 #define swTrace(str,...)		do {if (SwooleGS && SwooleGS->log_level <= SW_LOG_TRACE)	{\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
+snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s: "str,__func__,##__VA_ARGS__);\
 swLog_put(SW_LOG_TRACE, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
 
 #define swInfo(str,...)        do{ if(SwooleGS && SwooleGS->log_level <= SW_LOG_INFO)	{\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
+snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s: "str,__func__,##__VA_ARGS__);\
 swLog_put(SW_LOG_INFO, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
 
 #define swNotice(str,...)       do{ if(SwooleGS && SwooleGS->log_level <= SW_LOG_NOTICE)	{\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
+snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s: "str,__func__,##__VA_ARGS__);\
 swLog_put(SW_LOG_NOTICE, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
 
 #define swWarn(str,...)        do { if (SwooleGS && SwooleGS->log_level <= SW_LOG_WARNING) {\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
+snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s: "str,__func__,##__VA_ARGS__);\
 swLog_put(SW_LOG_WARNING, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
 
 #define swError(str,...)       do{ if(SwooleGS && SwooleGS->log_level <= SW_LOG_ERROR)	{\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error, SW_ERROR_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
+snprintf(sw_error, SW_ERROR_MSG_SIZE,"%s: "str,__func__,##__VA_ARGS__);\
 swLog_put(SW_LOG_ERROR, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
 
 #define swSysError(str,...)    do{ if(SwooleGS && SwooleGS->log_level <= SW_LOG_ERROR)	{\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s(:%d): "str" Error: %s[%d].",__func__,__LINE__,##__VA_ARGS__,strerror(errno),errno);\
+snprintf(sw_error,SW_ERROR_MSG_SIZE,"%s: "str" Error: %s[%d].",__func__,##__VA_ARGS__,strerror(errno),errno);\
 swLog_put(SW_LOG_ERROR, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
 
 #define swFatalError(str,...)	do{ if(SwooleGS && SwooleGS->log_level <= SW_LOG_FATAL_ERROR)	{\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
-snprintf(sw_error, SW_ERROR_MSG_SIZE, "%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
+snprintf(sw_error, SW_ERROR_MSG_SIZE, "%s: "str,__func__,##__VA_ARGS__);\
 swLog_put(SW_LOG_FATAL_ERROR, sw_error);\
 SwooleGS->log_lock.unlock(&SwooleGS->log_lock);exit(1);}}while(0)
 
