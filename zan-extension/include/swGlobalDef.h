@@ -253,6 +253,7 @@ typedef struct
     swString **buffer_output;
     swWorker *worker;
 
+    uint8_t fatal_error;
 } swWorkerG;
 
 typedef struct

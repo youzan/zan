@@ -16,6 +16,7 @@
  +----------------------------------------------------------------------+
  */
 
+#include "php_swoole.h"
 #include "swLog.h"
 #include "swError.h"
 #include "swWork.h"
@@ -46,7 +47,7 @@ int swFactoryProcess_create(swFactory *factory, int worker_num)
     if (!factory || worker_num < 1){
         return SW_ERR;
     }
-    
+
     swFactoryProcess *object;
     object = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swFactoryProcess));
     if (object == NULL)
@@ -257,6 +258,11 @@ static int swFactoryProcess_finish(swFactory *factory, swSendData *resp)
     if (ret < 0)
     {
         swSysError("sendto to reactor failed.");
+    }
+
+    if (SwooleWG.fatal_error) {
+        SWOOLE_FETCH_TSRMLS;
+        zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
     }
 
     return ret;
