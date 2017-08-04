@@ -1483,7 +1483,7 @@ void php_swoole_onClose(swServer *serv, swDataHead *info)
 
     if (EG(exception))
     {
-        zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
+        SwooleWG.fatal_error = 1;
     }
 
     sw_zval_ptr_dtor(&zfd);
