@@ -22,17 +22,20 @@
 
 #include <stdint.h>
 
+#define SW_ATOMIC_32_LEN                      (sizeof("-2147483648") - 1)
+typedef volatile int32_t atomic_int32_t;
+typedef volatile uint32_t atomic_uint32_t;
+
 #if defined(__x86_64__)
 #define SW_ATOMIC_64_LEN                     (sizeof("-9223372036854775808") - 1)
 typedef volatile int64_t atomic_int64_t;
 typedef volatile uint64_t atomic_uint64_t;
+typedef atomic_uint64_t sw_atomic_long_t;
+#else
+typedef atomic_uint32_t sw_atomic_long_t;
 #endif
 
-#define SW_ATOMIC_32_LEN                      (sizeof("-2147483648") - 1)
-typedef volatile int32_t atomic_int32_t;
-typedef volatile uint32_t atomic_uint32_t;
 typedef atomic_uint32_t  sw_atomic_t;
-
 
 #define sw_atomic_fetch_add(value, add)   __sync_fetch_and_add(value, add)
 #define sw_atomic_fetch_sub(value, sub)   __sync_fetch_and_sub(value, sub)
