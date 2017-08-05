@@ -1116,7 +1116,7 @@ static void http_onClose(swServer *serv, swDataHead *ev)
 
     php_swoole_onClose(serv, ev);
 
-	bzero(client, sizeof(swoole_http_client));
+    bzero(client, sizeof(swoole_http_client));
 }
 
 static PHP_METHOD(swoole_http_server, on)

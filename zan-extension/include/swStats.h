@@ -24,29 +24,29 @@
 
 typedef struct {
     time_t start_time;
-    sw_atomic_t total_request_count;
-    sw_atomic_t request_count;
+    sw_atomic_long_t total_request_count;
+    sw_atomic_long_t request_count;
     sw_atomic_t start_count;
 } swWorkerStats;
 
 typedef struct
 {
-    time_t start_time;
-    time_t last_reload;
-    sw_atomic_t connection_num;
-    sw_atomic_t accept_count;
-    sw_atomic_t close_count;
-    sw_atomic_t tasking_num;
-    sw_atomic_t request_count;
-    sw_atomic_t active_worker;
-    sw_atomic_t active_task_worker;
-    sw_atomic_t max_active_worker;
-    sw_atomic_t max_active_task_worker;
-    sw_atomic_t worker_normal_exit;
-    sw_atomic_t worker_abnormal_exit;
-    sw_atomic_t task_worker_normal_exit;
-    sw_atomic_t task_worker_abnormal_exit;
-    swWorkerStats *workers;
+    time_t             start_time;
+    time_t             last_reload;
+    sw_atomic_long_t   connection_num;
+    sw_atomic_long_t   accept_count;
+    sw_atomic_long_t   close_count;
+    sw_atomic_t        tasking_num;
+    sw_atomic_long_t   request_count;
+    sw_atomic_t        active_worker;
+    sw_atomic_t        active_task_worker;
+    sw_atomic_t        max_active_worker;
+    sw_atomic_t        max_active_task_worker;
+    sw_atomic_t        worker_normal_exit;
+    sw_atomic_t        worker_abnormal_exit;
+    sw_atomic_t        task_worker_normal_exit;
+    sw_atomic_t        task_worker_abnormal_exit;
+    swWorkerStats      *workers;
 } swServerStats;
 
 static sw_inline void sw_stats_incr(sw_atomic_t *val)
