@@ -138,7 +138,7 @@ struct _swWorker
     /**
      * tasking num
      */
-    sw_atomic_t tasking_num;
+    sw_atomic_long_t tasking_num;
 
 	/**
 	 * worker id
