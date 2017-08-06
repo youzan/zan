@@ -49,15 +49,8 @@ typedef struct
     swWorkerStats      *workers;
 } swServerStats;
 
-static sw_inline void sw_stats_incr(sw_atomic_t *val)
-{
-    sw_atomic_fetch_add(val, 1);
-}
-
-static sw_inline void sw_stats_decr(sw_atomic_t *val)
-{
-    sw_atomic_fetch_sub(val, 1);
-}
+#define sw_stats_incr(val) sw_atomic_fetch_add(val, 1)
+#define sw_stats_decr(val) sw_atomic_fetch_sub(val, 1)
 
 int swoole_stats_init(swServerStats *stats);
 void sw_stats_set_worker_status(swWorker *worker, int status);
