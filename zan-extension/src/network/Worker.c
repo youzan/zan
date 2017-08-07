@@ -469,7 +469,6 @@ int swWorker_loop(swFactory *factory, int worker_id)
         return SW_ERR;
     }
 
-    sw_stats_set_worker_status(&serv->workers[worker_id], SW_WORKER_IDLE);
     SwooleStats->workers[worker_id].start_time = time(NULL);
 
     int pipe_worker = serv->workers[worker_id].pipe_worker;
@@ -496,6 +495,7 @@ int swWorker_loop(swFactory *factory, int worker_id)
 
     swWorker_onStart(serv);
 
+    sw_stats_set_worker_status(&serv->workers[worker_id], SW_WORKER_IDLE);
 #ifdef HAVE_SIGNALFD
     if (SwooleG.use_signalfd)
     {
