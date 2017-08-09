@@ -105,6 +105,10 @@ void swoole_init(void)
     {
         printf("[Master] Fatal Error: alloc memory for SwooleStats failed.");
     }
+    else
+    {
+        swAtomicLock_create(&SwooleStats->lock, 1);
+    }
 
     swoole_update_time();
 }

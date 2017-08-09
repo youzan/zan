@@ -21,6 +21,7 @@
 
 void sw_stats_set_worker_status(swWorker *worker, int status)
 {
+    SwooleStats->lock.lock(&SwooleStats->lock);
     worker->status = status;
     if (status == SW_WORKER_BUSY)
     {
@@ -56,5 +57,6 @@ void sw_stats_set_worker_status(swWorker *worker, int status)
     {
         swWarn("Set worker status failed, unknow worker[%d] status[%d]", worker->id, status);
     }
+    SwooleStats->lock.unlock(&SwooleStats->lock);
 }
 
