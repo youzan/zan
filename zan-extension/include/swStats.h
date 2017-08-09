@@ -47,12 +47,12 @@ typedef struct
     sw_atomic_t        task_worker_normal_exit;
     sw_atomic_t        task_worker_abnormal_exit;
     swWorkerStats      *workers;
+    swLock             lock;
 } swServerStats;
 
 #define sw_stats_incr(val) sw_atomic_fetch_add(val, 1)
 #define sw_stats_decr(val) sw_atomic_fetch_sub(val, 1)
 
-int swoole_stats_init(swServerStats *stats);
 void sw_stats_set_worker_status(swWorker *worker, int status);
 
 #endif
