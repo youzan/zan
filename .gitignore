@@ -36,3 +36,4 @@ zan-extension/libtool
 zan-extension/modules/
 zan-extension/zan.la
 tags
+settings.json

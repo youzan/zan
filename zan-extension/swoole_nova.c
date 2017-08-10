@@ -147,6 +147,46 @@ PHP_FUNCTION(nova_decode)
     RETURN_TRUE;
 }
 
+PHP_FUNCTION(nova_decode_new)
+{
+    char* pBuf;
+    zend_size_t nBufLen;
+
+    if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pBuf, &nBufLen)) {
+        RETURN_FALSE;
+    }
+
+    if (swNova_IsNovaPack(pBuf, nBufLen) == SW_ERR) {
+        swWarn("not a nova packet");
+        RETURN_FALSE;
+    }
+
+    //decode
+    swNova_Header *pHeader = createNovaHeader();
+    if (swNova_unpack(pBuf, nBufLen, pHeader) == SW_ERR) {
+        swWarn("unpack nova failer");
+        deleteNovaHeader(pHeader);
+        RETURN_FALSE;
+    }
+
+    if (pHeader->msg_size > nBufLen) {
+    	swWarn("body len not enough,need %ld,but only have %ld",pHeader->msg_size,nBufLen);
+    	deleteNovaHeader(pHeader);
+    	RETURN_FALSE;
+    }
+
+    array_init(return_value);
+    sw_add_assoc_stringl_ex(return_value, ZEND_STRS("sName"), pHeader->service_name, pHeader->service_len, 1);
+    sw_add_assoc_stringl_ex(return_value, ZEND_STRS("mName"), pHeader->method_name, pHeader->method_len, 1);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("ip"), (long ) pHeader->ip);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("port"), (long ) pHeader->port);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("seqNo"), (long ) pHeader->seq_no);
+    sw_add_assoc_stringl_ex(return_value, ZEND_STRS("data"), pBuf + pHeader->head_size, pHeader->msg_size - pHeader->head_size, 1);
+    sw_add_assoc_stringl_ex(return_value, ZEND_STRS("attach"), pHeader->attach, pHeader->attach_len, 1);
+
+    deleteNovaHeader(pHeader);
+}
+
 PHP_FUNCTION(nova_encode)
 {
     char* pServiceName = NULL;
@@ -231,6 +271,84 @@ PHP_FUNCTION(nova_encode)
     deleteNovaHeader(pHeader);
     sw_free(pBuffer);
     RETURN_TRUE;
+}
+
+PHP_FUNCTION(nova_encode_new)
+{
+    char* pServiceName = NULL;
+    zend_size_t nServiceNameLen = 0;
+    char* pMethodName = NULL;
+    zend_size_t nMethodNameLen = 0;
+    char* pAttach = NULL;
+    zend_size_t nAttachLen = 0;
+    long nIp = 0;
+    long nPort = -1;
+    long nSeqNo = -1;
+    char* pData = NULL;
+    zend_size_t nDataLen = 0;
+
+    if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslllss", &pServiceName, &nServiceNameLen, &pMethodName, &nMethodNameLen, &nIp, &nPort,
+    							&nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen)) {
+        RETURN_FALSE;
+    }
+
+    swNova_Header* pHeader = createNovaHeader();
+    if(!pHeader)
+    {
+        RETURN_FALSE;
+    }
+
+    pHeader->magic = NOVA_MAGIC;
+    pHeader->version = 1;
+    pHeader->ip = nIp;
+    pHeader->port = nPort;
+
+    pHeader->service_len = nServiceNameLen <= 0? 0:nServiceNameLen;
+    pHeader->method_len = nMethodNameLen <= 0? 0:nMethodNameLen;
+    pHeader->attach_len = nAttachLen <= 0? 0:nAttachLen;
+    int headLen = NOVA_HEADER_COMMON_LEN + pHeader->service_len + pHeader->method_len + pHeader->attach_len;
+    if (headLen > 0x7fff)
+    {
+    	RETURN_FALSE;
+    }
+   
+    pHeader->head_size = (int16_t)headLen;
+ 
+    pHeader->service_name = sw_malloc(pHeader->service_len + 1);
+    if (pServiceName)
+    {
+    	memcpy(pHeader->service_name, pServiceName, pHeader->service_len);
+    }
+    pHeader->service_name[pHeader->service_len] = 0;
+
+    pHeader->method_name = sw_malloc(pHeader->method_len + 1);
+    if (pMethodName)
+    {
+    	memcpy(pHeader->method_name, pMethodName, pHeader->method_len);
+    }
+    pHeader->method_name[pHeader->method_len] = 0;
+
+    pHeader->seq_no = nSeqNo;
+
+    pHeader->attach = sw_malloc(pHeader->attach_len + 1);
+    if (pAttach)
+    {
+    	memcpy(pHeader->attach, pAttach, pHeader->attach_len);
+    }
+    pHeader->attach[pHeader->attach_len] = 0;
+
+    char* pBuffer = NULL;
+    int nBufLen = 0;
+    if(swNova_pack(pHeader, pData, nDataLen, &pBuffer, &nBufLen) < 0)
+    {
+        deleteNovaHeader(pHeader);
+        sw_free(pBuffer);
+        RETURN_FALSE;
+    }
+
+    SW_RETVAL_STRINGL(pBuffer, nBufLen, 1);
+    deleteNovaHeader(pHeader);
+    sw_free(pBuffer);
 }
 
 PHP_FUNCTION(is_nova_packet)
