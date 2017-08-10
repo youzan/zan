@@ -262,6 +262,8 @@ PHP_FUNCTION(swoole_get_local_ip);
 //For YouZan Nova
 PHP_FUNCTION(nova_encode);
 PHP_FUNCTION(nova_decode);
+PHP_FUNCTION(nova_encode_new);
+PHP_FUNCTION(nova_decode_new);
 PHP_FUNCTION(is_nova_packet);
 PHP_FUNCTION(nova_get_sequence);
 PHP_FUNCTION(nova_get_time);
