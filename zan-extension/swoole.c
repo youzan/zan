@@ -304,9 +304,9 @@ void swoole_set_object(zval *object, void *ptr)
     {
 		uint32_t old_size = swoole_objects.size;
 		uint32_t new_size = old_size * 2;
-        while(new_size < handle) {
-            new_size *= 2;
-        }
+		while(new_size < handle) {
+			new_size *= 2;
+		}
 		new_size = (new_size > SWOOLE_OBJECT_MAX)? SWOOLE_OBJECT_MAX:new_size;
 
 		void *old_ptr = swoole_objects.array;
