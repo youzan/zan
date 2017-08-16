@@ -26,6 +26,10 @@
 #include "swGlobalDef.h"
 #include "swAtomic.h"
 
+///
+#include "zanAtomic.h"
+
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -47,14 +51,14 @@ static sw_inline size_t get_filelen(int filefd)
 
 static sw_inline size_t get_filelen_byname(const char* filename)
 {
-	struct stat file_stat;
-	if (stat(filename, &file_stat) < 0)
-	{
-		swWarn("stat(%s) failed.", filename);
-		return 0;
-	}
+    struct stat file_stat;
+    if (stat(filename, &file_stat) < 0)
+    {
+        swWarn("stat(%s) failed.", filename);
+        return 0;
+    }
 
-	return file_stat.st_size;
+    return file_stat.st_size;
 }
 
 static sw_inline void sw_spinlock(sw_atomic_t *lock)
@@ -334,6 +338,39 @@ static uint64_t orwl_timestart = 0;
 int clock_gettime(clock_id_t which_clock, struct timespec *t);
 #endif
 #endif
+
+
+//==============================================================================
+static sw_inline void zan_spinlock(zan_atomic_t *lock)
+{
+    uint32_t i, n;
+    while (1)
+    {
+        if (*lock == 0 && zan_atomic_cmp_set(lock, 0, 1))
+        {
+            return;
+        }
+
+        if (SW_CPU_NUM > 1)
+        {
+            for (n = 1; n < SW_SPINLOCK_LOOP_N; n <<= 1)
+            {
+                for (i = 0; i < n; i++)
+                {
+                    zan_atomic_cpu_pause();
+                }
+
+                if (*lock == 0 && zan_atomic_cmp_set(lock, 0, 1))
+                {
+                    return;
+                }
+            }
+        }
+
+        swYield();
+    }
+}
+
 
 
 #ifdef __cplusplus
