@@ -86,10 +86,10 @@ AC_DEFUN([AC_ZAN_CPU_AFFINITY],
     AC_MSG_CHECKING([for cpu affinity])
     AC_TRY_COMPILE(
     [
-		#include <sched.h>
+        #include <sched.h>
     ], [
-		cpu_set_t cpu_set;
-		CPU_ZERO(&cpu_set);
+        cpu_set_t cpu_set;
+        CPU_ZERO(&cpu_set);
     ], [
         AC_DEFINE([HAVE_CPU_AFFINITY], 1, [cpu affinity?])
         AC_MSG_RESULT([yes])
@@ -103,10 +103,10 @@ AC_DEFUN([AC_ZAN_HAVE_REUSEPORT],
     AC_MSG_CHECKING([for socket REUSEPORT])
     AC_TRY_COMPILE(
     [
-		#include <sys/socket.h>
+        #include <sys/socket.h>
     ], [
         int val = 1;
-		setsockopt(0, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(val));
+        setsockopt(0, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(val));
     ], [
         AC_DEFINE([HAVE_REUSEPORT], 1, [have SO_REUSEPORT?])
         AC_MSG_RESULT([yes])
@@ -156,11 +156,11 @@ if test "$PHP_ZAN" != "no"; then
     fi
 
     if test "$PHP_RINGBUFFER" = "yes"; then
-		AC_DEFINE(SW_USE_RINGBUFFER, 1, [enable ringbuffer support])
+        AC_DEFINE(SW_USE_RINGBUFFER, 1, [enable ringbuffer support])
     fi
 
-	if test "$PHP_HTTP2" = "yes"; then
-		AC_DEFINE(SW_USE_HTTP2, 1, [enable http2.0 support])
+    if test "$PHP_HTTP2" = "yes"; then
+        AC_DEFINE(SW_USE_HTTP2, 1, [enable http2.0 support])
     fi
 
     AC_ZAN_CPU_AFFINITY
@@ -177,7 +177,7 @@ if test "$PHP_ZAN" != "no"; then
     AC_CHECK_LIB(c, timerfd_create, AC_DEFINE(HAVE_TIMERFD, 1, [have timerfd]))
     AC_CHECK_LIB(c, eventfd, AC_DEFINE(HAVE_EVENTFD, 1, [have eventfd]))
     AC_CHECK_LIB(c, epoll_create, AC_DEFINE(HAVE_EPOLL, 1, [have epoll]))
-	AC_CHECK_LIB(c, sendfile, AC_DEFINE(HAVE_SENDFILE, 1, [have sendfile]))
+    AC_CHECK_LIB(c, sendfile, AC_DEFINE(HAVE_SENDFILE, 1, [have sendfile]))
     AC_CHECK_LIB(c, kqueue, AC_DEFINE(HAVE_KQUEUE, 1, [have kqueue]))
     AC_CHECK_LIB(c, backtrace, AC_DEFINE(HAVE_EXECINFO, 1, [have execinfo]))
     AC_CHECK_LIB(c, daemon, AC_DEFINE(HAVE_DAEMON, 1, [have daemon]))
@@ -186,7 +186,7 @@ if test "$PHP_ZAN" != "no"; then
     AC_CHECK_LIB(c, inotify_init1, AC_DEFINE(HAVE_INOTIFY_INIT1, 1, [have inotify_init1]))
     AC_CHECK_LIB(pthread, pthread_rwlock_init, AC_DEFINE(HAVE_RWLOCK, 1, [have pthread_rwlock_init]))
     AC_CHECK_LIB(pthread, pthread_spin_lock, AC_DEFINE(HAVE_SPINLOCK, 1, [have pthread_spin_lock]))
-	AC_CHECK_LIB(pthread, pthread_mutex_timedlock, AC_DEFINE(HAVE_MUTEX_TIMEDLOCK, 1, [have pthread_mutex_timedlock]))
+    AC_CHECK_LIB(pthread, pthread_mutex_timedlock, AC_DEFINE(HAVE_MUTEX_TIMEDLOCK, 1, [have pthread_mutex_timedlock]))
     AC_CHECK_LIB(pthread, pthread_barrier_init, AC_DEFINE(HAVE_PTHREAD_BARRIER, 1, [have pthread_barrier_init]))
     AC_CHECK_LIB(ssl, SSL_connect, AC_DEFINE(HAVE_OPENSSL, 1, [have openssl]))
     AC_CHECK_LIB(pcre, pcre_compile, AC_DEFINE(HAVE_PCRE, 1, [have pcre]))
@@ -204,10 +204,10 @@ if test "$PHP_ZAN" != "no"; then
 
         if test "$PHP_OPENSSL" != "no" || test "$PHP_OPENSSL_DIR" != "no"; then
             AC_DEFINE(SW_USE_OPENSSL, 1, [enable openssl support])
-	    if test "$PHP_OPENSSL_DIR" != "no"; then
-            	PHP_ADD_INCLUDE("${PHP_OPENSSL_DIR}/include")
-            	PHP_ADD_LIBRARY_WITH_PATH(ssl, "${PHP_OPENSSL_DIR}/lib")
-		PHP_ADD_LIBRARY_WITH_PATH(crypto,"${PHP_OPENSSL_DIR}/lib")
+        if test "$PHP_OPENSSL_DIR" != "no"; then
+                PHP_ADD_INCLUDE("${PHP_OPENSSL_DIR}/include")
+                PHP_ADD_LIBRARY_WITH_PATH(ssl, "${PHP_OPENSSL_DIR}/lib")
+        PHP_ADD_LIBRARY_WITH_PATH(crypto,"${PHP_OPENSSL_DIR}/lib")
             fi
             PHP_ADD_LIBRARY(ssl, 1, ZAN_SHARED_LIBADD)
             PHP_ADD_LIBRARY_WITH_PATH(crypto, /usr/local/opt/openssl/lib, ZAN_SHARED_LIBADD)
@@ -220,11 +220,11 @@ if test "$PHP_ZAN" != "no"; then
 
         if test "$PHP_OPENSSL" != "no" || test "$PHP_OPENSSL_DIR" != "no"; then
             AC_DEFINE(SW_USE_OPENSSL, 1, [enable openssl support])
-	    if test "$PHP_OPENSSL_DIR" != "no"; then
-            	PHP_ADD_INCLUDE("${PHP_OPENSSL_DIR}/include")
-            	PHP_ADD_LIBRARY_WITH_PATH(ssl, "${PHP_OPENSSL_DIR}/lib")
-		PHP_ADD_LIBRARY_WITH_PATH(crypto,"${PHP_OPENSSL_DIR}/lib")
-		PHP_ADD_LIBRARY_WITH_PATH(crypt,"${PHP_OPENSSL_DIR}/lib")
+        if test "$PHP_OPENSSL_DIR" != "no"; then
+                PHP_ADD_INCLUDE("${PHP_OPENSSL_DIR}/include")
+                PHP_ADD_LIBRARY_WITH_PATH(ssl, "${PHP_OPENSSL_DIR}/lib")
+        PHP_ADD_LIBRARY_WITH_PATH(crypto,"${PHP_OPENSSL_DIR}/lib")
+        PHP_ADD_LIBRARY_WITH_PATH(crypt,"${PHP_OPENSSL_DIR}/lib")
             fi
 
             PHP_ADD_LIBRARY(ssl, 1, ZAN_SHARED_LIBADD)
@@ -261,14 +261,14 @@ if test "$PHP_ZAN" != "no"; then
         esac
     fi
 
-	if test "$PHP_HTTP2" = "yes"; then
-		PHP_ADD_LIBRARY(nghttp2, 1, ZAN_SHARED_LIBADD)
+    if test "$PHP_HTTP2" = "yes"; then
+        PHP_ADD_LIBRARY(nghttp2, 1, ZAN_SHARED_LIBADD)
     fi
 
     if test "$PHP_JEMALLOC" = "yes"; then
         PHP_ADD_LIBRARY(jemalloc, 1, ZAN_SHARED_LIBADD)
     elif test "$PHP_TCMALLOC" = "yes"; then
-    	PHP_ADD_LIBRARY(tcmalloc, 1, ZAN_SHARED_LIBADD)
+        PHP_ADD_LIBRARY(tcmalloc, 1, ZAN_SHARED_LIBADD)
     fi
 
     swoole_source_file="swoole.c \
@@ -282,7 +282,7 @@ if test "$PHP_ZAN" != "no"; then
         swoole_process.c \
         swoole_buffer.c \
         swoole_http_server.c \
-     	swoole_http_v2_server.c \
+        swoole_http_v2_server.c \
         swoole_websocket_server.c \
         swoole_http_client.c \
         swoole_mysql.c \
@@ -296,8 +296,8 @@ if test "$PHP_ZAN" != "no"; then
         src/core/array.c \
         src/core/list.c \
         src/core/heap.c \
-		src/core/log.c \
-		src/core/rbtree.c \
+        src/core/log.c \
+        src/core/rbtree.c \
         src/memory/ShareMemory.c \
         src/memory/MemoryGlobal.c \
         src/memory/RingBuffer.c \
@@ -305,11 +305,13 @@ if test "$PHP_ZAN" != "no"; then
         src/memory/Malloc.c \
         src/memory/Table.c \
         src/memory/Buffer.c \
+        src/memory/zanShmPool.c \
         src/factory/Factory.c \
         src/factory/FactoryThread.c \
         src/factory/FactoryProcess.c \
-		src/factory/ProcessPool.c \
-		src/factory/ThreadPool.c \
+        src/factory/ProcessPool.c \
+        src/factory/ThreadPool.c \
+        src/factory/zanFactory.c \
         src/reactor/ReactorBase.c \
         src/reactor/ReactorSelect.c \
         src/reactor/ReactorPoll.c \
@@ -318,29 +320,33 @@ if test "$PHP_ZAN" != "no"; then
         src/pipe/PipeBase.c \
         src/pipe/PipeEventfd.c \
         src/pipe/PipeUnsock.c \
-		src/pipe/Channel.c \
-		src/pipe/Msgqueue.c \
+        src/pipe/Channel.c \
+        src/pipe/Msgqueue.c \
         src/lock/Semaphore.c \
         src/lock/Mutex.c \
         src/lock/RWLock.c \
         src/lock/SpinLock.c \
         src/lock/FileLock.c \
-		src/lock/AtomicLock.c \
-		src/lock/Cond.c \
-		src/network/Client.c \
-		src/network/Connection.c \
-		src/network/Manager.c \
-		src/network/Port.c \
-		src/network/ReactorAccept.c \
-		src/network/ReactorProcess.c \
-		src/network/ReactorThread.c \
-		src/network/Server.c \
-		src/network/Socket.c \
-		src/network/TaskWorker.c \
-		src/network/Worker.c \
-        src/os/AsyncIO.c \
-dnl        src/os/linux_aio.c \
-dnl        src/os/gcc_aio.c \
+        src/lock/AtomicLock.c \
+        src/lock/Cond.c \
+        src/lock/zanSem.c \
+        src/lock/zanMutex.c \
+        src/lock/zanRWLock.c \
+        src/lock/zanSpinLock.c \
+        src/lock/zanFileLock.c \
+        src/lock/zanAtomicLock.c \
+        src/lock/zanLockBase.c \
+        src/network/Client.c \
+        src/network/Connection.c \
+        src/network/Manager.c \
+        src/network/Port.c \
+        src/network/ReactorAccept.c \
+        src/network/ReactorProcess.c \
+        src/network/ReactorThread.c \
+        src/network/Server.c \
+        src/network/Socket.c \
+        src/network/TaskWorker.c \
+        src/network/Worker.c \
         src/protocol/Base.c \
         src/protocol/Base64.c \
         src/protocol/Http.c \
@@ -349,14 +355,26 @@ dnl        src/os/gcc_aio.c \
         src/protocol/Nova.c \
         src/protocol/Sha1.c \
         src/protocol/SSL.c \
-		src/protocol/WebSocket.c \
+        src/protocol/WebSocket.c \
         src/util/Baseoperator.c \
         src/util/BinaryData.c \
-        src/util/DNS.c \
-        src/util/Module.c \
+        src/util/zanBinaryData.c \
         src/util/Sendfile.c \
-		src/util/Signal.c \
-		src/util/Timer.c"
+        src/util/zanLog.c \
+        src/util/zanProcess.c \
+        src/util/zanThread.c \
+        src/network/zanSocket.c \
+        src/dns/DNS.c \
+        src/signal/Signal.c \
+        src/ipc/zanCond.c \
+        src/ipc/zanPipe.c \
+        src/ipc/zanPipeBase.c \
+        src/ipc/zanUnSock.c \
+        src/ipc/zanMsgQueue.c \
+        src/ipc/zanShm.c \
+        src/aio/AsyncIO.c \
+        src/aio/zanAio.c \
+        src/timer/Timer.c"
 
 
     swoole_source_file="$swoole_source_file thirdparty/php_http_parser.c"

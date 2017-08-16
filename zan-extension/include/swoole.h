@@ -138,6 +138,10 @@ typedef unsigned long ulong_t;
 #define SW_DECLINED           -5
 #define SW_ABORT              -6
 
+//===============just for refactor...
+#define ZAN_OK                 0
+#define ZAN_ERR               -1
+
 //-------------------------------------------------------------------------------
 enum swReturnType
 {
@@ -202,6 +206,7 @@ enum swClientTimeoutType
 #define SW_MAX_FDTYPE          32 //32 kinds of event
 
 #define swYield()              sched_yield() //or usleep(1)
+#define zanYield()             sched_yield() //or usleep(1)
 
 #ifndef uchar
 typedef unsigned char uchar;
