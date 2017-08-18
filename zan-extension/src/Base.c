@@ -3,7 +3,6 @@
   | Zan                                                                  |
   +----------------------------------------------------------------------+
   | Copyright (c) 2016-2017 Zan Group <https://github.com/youzan/zan>    |
-  | Copyright (c) 2012-2016 Swoole Team <http://github.com/swoole>       |
   +----------------------------------------------------------------------+
   | This source file is subject to version 2.0 of the Apache license,    |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -13,11 +12,9 @@
   | to obtain it through the world-wide-web, please send a note to       |
   | zan@zanphp.io so we can mail you a copy immediately.                 |
   +----------------------------------------------------------------------+
-  | Author: Tianfeng Han  <mikan.tenny@gmail.com>                        |
   |         Zan Group   <zan@zanphp.io>                                  |
   +----------------------------------------------------------------------+
 */
-
 
 #include "swoole.h"
 #include "swSignal.h"
@@ -27,10 +24,13 @@
 #include "swBaseOperator.h"
 #include <sys/resource.h>
 
+#include "zanGlobalDef.h"
+
 void swoole_init(void)
 {
     if (SwooleG.running)
     {
+        printf("swoole is running.....\n");
         return;
     }
 
@@ -171,4 +171,123 @@ void set_log_level(int level)
 	SwooleGS->log_level = level;
 	SwooleGS->log_lock.unlock(&SwooleGS->log_lock);
 }
+
+///TODO::: 待补充
+void zan_init(void)
+{
+    if (ServerG.running)
+    {
+        printf("ServerG is running, can't init");
+        return;
+    }
+
+    bzero(&ServerG, sizeof(zanServerG));
+    bzero(&ServerWG, sizeof(zanWorkerG));
+
+    //init global shared memory, 初始化内存池
+    ServerG.g_shm_pool = zanShmGlobal_new(ZAN_GLOBAL_MEMORY_PAGESIZE, 1);
+    if (NULL == ServerG.g_shm_pool)
+    {
+        printf("[Master] Fatal Error: create global shm memory failed.");
+        exit(1);
+    }
+
+    ServerGS = ServerG.g_shm_pool->alloc(ServerG.g_shm_pool, sizeof(zanServerGS));
+    if (NULL == ServerGS)
+    {
+        printf("[Master] Fatal Error: alloc memory for ServerGS failed.");
+        exit(2);
+    }
+
+    //init global lock
+    if (ZAN_OK != zanLock_create(&ServerGS->master_lock, ZAN_MUTEX, 1))
+    {
+        printf("[Master] Fatal Error: zanLock_create ServerGS->lock failed.");
+        exit(3);
+    }
+
+    if (ZAN_OK !=  zanLock_create(&ServerGS->log_lock, ZAN_MUTEX, 1))
+    {
+        printf("[Master] Fatal Error: zanLock_create ServerGS->log_lock failed.");
+        exit(3);
+    }
+
+    /// 统计信息
+    ServerStatsG = ServerG.g_shm_pool->alloc(ServerG.g_shm_pool, sizeof(zanServerStats));
+    if (NULL == ServerStatsG)
+    {
+        exit(2);
+        printf("[Master] Fatal Error: alloc memory for SwooleStats failed.");
+    }
+
+    if (ZAN_OK != zanLock_create(&ServerStatsG->lock, ZAN_ATOMLOCK, 1))
+    {
+        printf("[Master] Fatal Error: zanLock_create  ServerStats->lock failed.");
+        exit(3);
+    }
+
+    zan_update_time();
+}
+
+void zan_clean(void)
+{
+    if (NULL != ServerG.g_shm_pool){
+        //free the global shm memory
+        ServerG.g_shm_pool->destroy(ServerG.g_shm_pool);
+        ServerG.g_shm_pool = NULL;
+    }
+
+    if (ServerG.timer.fd > 0)
+    {
+        swTimer_free(&ServerG.timer);
+    }
+
+    if (ServerG.main_reactor)
+    {
+        ServerG.main_reactor->free(ServerG.main_reactor);
+    }
+
+    bzero(&ServerG, sizeof(zanServerG));
+}
+
+void zan_update_time(void)
+{
+    time_t now = time(NULL);
+    if (now < 0)
+    {
+        swSysError("get time failed, errno=%d:%s", errno, strerror(errno));
+    }
+    else
+    {
+        ServerGS->now = now;
+    }
+}
+
+double get_microtime(void)
+{
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return (double) t.tv_sec + ((double) t.tv_usec / 1000000);
+}
+
+void zan_set_loglevel(int level)
+{
+    if (!ServerGS)
+    {
+        printf("set_log_level, ServerGS is null");
+        return ;
+    }
+
+    if (level < SW_LOG_DEBUG || level > SW_LOG_FATAL_ERROR)
+    {
+        printf("set_log_level, log_level=%d", level);
+        return ;
+    }
+
+    ServerGS->log_lock.lock(&ServerGS->log_lock);
+    ServerGS->log_level = level;
+    ServerGS->log_lock.unlock(&ServerGS->log_lock);
+}
+
+
 

@@ -25,8 +25,13 @@
 
 char zan_log_buffer[ZAN_MSG_SIZE] = {0};
 
-int zanLog_init(char *logfile,int port)
+void zanLog_init(char *logfile,int port)
 {
+    if (!logfile)
+    {
+        return;
+    }
+
 #ifdef SW_DEBUG_REMOTE_OPEN
     swClient log_client;
     swClient_create(&log_client, SW_SOCK_UDP, 0);
@@ -46,10 +51,7 @@ int zanLog_init(char *logfile,int port)
     if (SwooleG.log_fd < 0)
     {
         printf("open(%s) failed. Error: %s[%d]", logfile, strerror(errno), errno);
-        return ZAN_ERR;
     }
-
-    return ZAN_OK;
 }
 
 void zanLog_free(void)

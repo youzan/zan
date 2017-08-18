@@ -241,6 +241,20 @@ void swoole_update_time(void);
 double swoole_microtime(void);
 void set_log_level();
 
+//=============================
+//for test
+enum zanServer_mode
+{
+    ZAN_MODE_BASE          =  1,
+    ZAN_MODE_PROCESS       =  2,
+};
+
+void zan_init(void);
+void zan_clean(void);
+void zan_update_time(void);
+double zan_microtime(void);
+void zan_set_loglevel();
+
 #ifdef __cplusplus
 }
 #endif

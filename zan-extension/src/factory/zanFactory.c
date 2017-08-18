@@ -22,7 +22,9 @@
 #include "swExecutor.h"
 #include "swBaseOperator.h"
 
+
 #include "zanIpc.h"
+#include "zanWorkers.h"
 #include "zanLog.h"
 
 typedef struct _zanNotify_data
@@ -88,18 +90,9 @@ static int zanFactory_shutdown(zanFactory *factory)
         return ZAN_ERR;
     }
 
-    /*
-    if (swKill(SwooleGS->manager_pid, SIGTERM) < 0)
-    {
-        swSysError("kill(%d) failed.", SwooleGS->manager_pid);
-    }
+    ///TODO:::
+    ///....
 
-    int status = 0;
-    if (swWaitpid(SwooleGS->manager_pid, &status, 0) < 0)
-    {
-        swSysError("waitpid(%d) failed.", SwooleGS->manager_pid);
-    }
-    */
     zanWarn("factory shutdown.");
     return ZAN_OK;
 }
@@ -112,21 +105,12 @@ static int zanFactory_start(zanFactory *factory)
         return ZAN_ERR;
     }
 
-    //根据 serv->factory_mode 走不同启动流程，创建子进程，暂且只支持多进程模式
-    //swServer *serv = (swServer *)factory->ptr;
-    //zanWarn("serv->factory_mode=%d", serv->factory_mode);
-    /*if (zanWorkers_start(factory) < 0)
+    if (zanWorkers_start(factory) < 0)
     {
         swError("zanWorkers_start failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
-    */
 
-    //创建各个 worker 管理及通信需要的资源，然后依次 fork 进程
-    //注：要保证 net_work 最后启动???? 如何保证
-    //因为 net_worker 启动后就可以 accept client 连接
-
-    //
     factory->finish = swFactory_finish;
     return ZAN_OK;
 }
