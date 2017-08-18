@@ -21,12 +21,18 @@
 #define _ZAN_ZANGLOBAL_H_
 
 #include "swTimer.h"
-#include "swLock.h"
+//#include "swLock.h"
 #include "swPort.h"
 #include "swConnection.h"
 #include "swFactory.h"
 #include "swBaseData.h"
 #include "swStats.h"
+
+#include "zanAtomic.h"
+#include "zanMemory/zanShmPool.h"
+#include "zanProcess.h"
+#include "zanAsyncIo.h"
+#include "zanReactor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,15 +41,9 @@ extern "C" {
 //1. zanServerSet 中的所有属性都是通过 serv->set 设置的
 //2. 不在 zanServerSet 中的属性，在 swListenPort 中
 
-typedef struct _zanServer    zanServer;
-typedef struct _zanServerSet zanServerSet;
-
 //todo::: 将全局的相关的变量都放到 zanServerG 中
-struct _zanServer
+typedef struct _zanServer
 {
-    /**
-     * The number of pipe per reactor maintenance
-     */
     /// 每个reactor 所拥有的管道数量
     uint16_t reactor_pipe_num;      //todo::: net worker
 
@@ -69,10 +69,7 @@ struct _zanServer
      * Udisable notice when use SW_DISPATCH_ROUND and SW_DISPATCH_QUEUE
      */
     uint32_t disable_notify :1;
-    /**
-     * discard the timeout request
-     */
-    uint32_t discard_timeout_request :1;
+
     /**
      * parse x-www-form-urlencoded data
      */
@@ -129,7 +126,7 @@ struct _zanServer
     int (*onFinish)(swServer *serv, swEventData *data);
 
     int (*send)(swServer *, swSendData *);
-};
+} zanServer;
 
 typedef struct _zanServerGS
 {
@@ -188,11 +185,12 @@ typedef struct _zanServerSet
                             //        5. UID 分配
 
     /*task workers*/
-    uint8_t  task_ipc_mode;
-    uint32_t task_worker_num;
-    uint32_t task_max_request;
+    uint8_t   task_ipc_mode;
+    uint32_t  task_worker_num;
+    uint32_t  task_max_request;
     char     *task_tmpdir;
-    uint64_t message_queue_key;  //task_worker msgqueue key
+    uint16_t  task_tmpdir_len;
+    uint64_t  message_queue_key;  //task_worker msgqueue key
 
     /*log set*/
     char     *log_file;
@@ -203,7 +201,7 @@ typedef struct _zanServerSet
     char *user;
     char *group;
 
-    char *pid_file;         /* TODO::: pid file */
+    char *pid_file;                    /* TODO::: pid file */
 
     uint16_t heartbeat_idle_time;      //心跳存活时间
     uint16_t heartbeat_check_interval; //心跳定时侦测时间, 小于heartbeat_idle_time
@@ -211,7 +209,7 @@ typedef struct _zanServerSet
     uint32_t buffer_output_size;
     uint32_t buffer_input_size;
 
-    uint32_t socket_buffer_size;     /* Unix socket default buffer size*/
+    uint32_t socket_buffer_size;      /* Unix socket default buffer size*/
     uint32_t pipe_buffer_size;
 
     uint16_t daemonize :1;
@@ -220,8 +218,7 @@ typedef struct _zanServerSet
     uint16_t enable_unsafe_event :1;
     uint16_t discard_timeout_request :1;
     uint16_t enable_reuse_port :1;
-    uint16_t discard_timeout_request :1;
-};
+} zanServerSet;
 
 typedef struct _zanServerG
 {
@@ -229,6 +226,7 @@ typedef struct _zanServerG
     uint8_t running :1;
     uint8_t use_timerfd :1;
     uint8_t use_signalfd :1;
+    uint8_t reuse_port :1;
     uint8_t socket_dontwait :1;
     uint8_t disable_dns_cache :1;
     uint8_t dns_lookup_random: 1;
@@ -236,7 +234,7 @@ typedef struct _zanServerG
 
     uint8_t factory_mode;
     uint8_t process_type;
-    pid_t process_pid;
+    zan_pid_t process_pid;
 
     pthread_t heartbeat_tid;   ///TODO:::
 
@@ -252,13 +250,48 @@ typedef struct _zanServerG
 
     struct utsname uname;
 
-    zanServerSet serverSet;
-
-    zanServer  *serv;
-    swReactor  *main_reactor;     //for accept
-    zanFactory *factory;
-    zanShmPool *g_shm_pool;
+    zanServerSet  serverSet;
+    zanServer    *serv;
+    swReactor   *main_reactor;     //for accept
+    zanFactory   *factory;
+    zanShmPool   *g_shm_pool;
 } zanServerG;
+
+//==============================================================================
+typedef struct _zanWorkerStats
+{
+    time_t first_start_time;
+    time_t latest_start_time;
+    zan_atomic_t total_request_count;
+    zan_atomic_t request_count;
+    zan_atomic_t start_count;
+} zanWorkerStats;
+
+typedef struct _zanNetWorkerStat
+{
+    //...
+} zanNetWorkerStat;
+
+typedef struct _zanServerStats
+{
+    time_t              start_time;
+    time_t              last_reload;
+    zan_atomic_t        connection_count;
+    zan_atomic_t        accept_count;
+    zan_atomic_t        close_count;
+    zan_atomic_t        tasking_num;
+    zan_atomic_t        request_count;
+    zan_atomic_t        active_worker;
+    zan_atomic_t        active_task_worker;
+    zan_atomic_t        max_active_worker;
+    zan_atomic_t        max_active_task_worker;
+    zan_atomic_t        worker_normal_exit;
+    zan_atomic_t        worker_abnormal_exit;
+    zan_atomic_t        task_worker_normal_exit;
+    zan_atomic_t        task_worker_abnormal_exit;
+    zanWorkerStats      *workers;
+    zanLock             lock;
+} zanServerStats;
 
 //==============================================================================
 extern zanServerG   ServerG;              //Local Global Variable

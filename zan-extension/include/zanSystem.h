@@ -12,38 +12,31 @@
   | to obtain it through the world-wide-web, please send a note to       |
   | zan@zanphp.io so we can mail you a copy immediately.                 |
   +----------------------------------------------------------------------+
-  |         Zan Group   <zan@zanphp.io>                                  |
+  | Author: Zan Group   <zan@zanphp.io>                                  |
   +----------------------------------------------------------------------+
 */
 
-#ifndef _ZAN_ZANASYNCIO_H_
-#define _ZAN_ZANASYNCIO_H_
+#ifndef _ZAN_SYSTEM_H_
+#define _ZAN_SYSTEM_H_
 
-#include "zanIpc.h"
-#include "zanLog.h"
+#include <sys/utsname.h>
+#include "zanProcess.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//=========================================
-typedef struct _zanAsyncIO
-{
-    uint8_t  init;
-    uint8_t  thread_num;
-    uint32_t task_num;
-    uint32_t buf_max_len;
-    uint16_t current_id;
-    zanLock  mutexLock;
+//todo::跨平台
 
-    int (*read)(int fd, void *outbuf, size_t size, off_t offset);
-    int (*write)(int fd, void *inbuf, size_t size, off_t offset);
-    void (*callback)(swAio_event *aio_event);
-    void (*destroy)(void);
-} zanAsyncIO;
+zan_pid_t zan_getpid(void);
+zan_pid_t zan_getppid(void);
+long zan_sysconf(int name);
+int zan_uname(struct utsname *buf);
+int zan_getrlimit(int resource, struct rlimit *rlim);
 
-int  zanAio_init(void);
-void zanAio_free(void);
-int  zanAio_dns_lookup(int type,void *hostname, void *ip_addr, size_t size);
+#ifdef __cplusplus
+}
+#endif
 
-#endif  //_ZAN_ZANASYNCIO_H_
+
+#endif

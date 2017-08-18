@@ -16,34 +16,32 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef _ZAN_ZANASYNCIO_H_
-#define _ZAN_ZANASYNCIO_H_
+#include "zanSystem.h"
 
-#include "zanIpc.h"
-#include "zanLog.h"
+//todo::: 跨平台
+//错误处理
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//=========================================
-typedef struct _zanAsyncIO
+zan_pid_t zan_getpid(void)
 {
-    uint8_t  init;
-    uint8_t  thread_num;
-    uint32_t task_num;
-    uint32_t buf_max_len;
-    uint16_t current_id;
-    zanLock  mutexLock;
+    return getpid();
+}
 
-    int (*read)(int fd, void *outbuf, size_t size, off_t offset);
-    int (*write)(int fd, void *inbuf, size_t size, off_t offset);
-    void (*callback)(swAio_event *aio_event);
-    void (*destroy)(void);
-} zanAsyncIO;
+zan_pid_t zan_getppid(void)
+{
+    return getppid();
+}
 
-int  zanAio_init(void);
-void zanAio_free(void);
-int  zanAio_dns_lookup(int type,void *hostname, void *ip_addr, size_t size);
+long zan_sysconf(int name)
+{
+    return sysconf(name);
+}
 
-#endif  //_ZAN_ZANASYNCIO_H_
+int zan_uname(struct utsname *buf)
+{
+    return uname(buf);
+}
+
+int zan_getrlimit(int resource, struct rlimit *rlim)
+{
+    return getrlimit(resource, rlim);
+}
