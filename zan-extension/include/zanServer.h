@@ -12,38 +12,32 @@
   | to obtain it through the world-wide-web, please send a note to       |
   | zan@zanphp.io so we can mail you a copy immediately.                 |
   +----------------------------------------------------------------------+
-  |         Zan Group   <zan@zanphp.io>                                  |
+  | Author: Zan Group   <zan@zanphp.io>                                  |
   +----------------------------------------------------------------------+
 */
 
-#ifndef _ZAN_ZANASYNCIO_H_
-#define _ZAN_ZANASYNCIO_H_
 
-#include "zanIpc.h"
-#include "zanLog.h"
+#ifndef _ZAN_SERVER_H_
+#define _ZAN_SERVER_H_
+
+#include "zanGlobalDef.h"
+
+#ifdef SW_USE_OPENSSL
+#include "swProtocol/ssl.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//=========================================
-typedef struct _zanAsyncIO
-{
-    uint8_t  init;
-    uint8_t  thread_num;
-    uint32_t task_num;
-    uint32_t buf_max_len;
-    uint16_t current_id;
-    zanLock  mutexLock;
+//========== TODO:::
+void zanServer_init(zanServer *serv);
+int zanServer_create(zanServer *serv);
+int zanServer_start(zanServer *serv);
+void zanServer_clean(zanServer *serv);
 
-    int (*read)(int fd, void *outbuf, size_t size, off_t offset);
-    int (*write)(int fd, void *inbuf, size_t size, off_t offset);
-    void (*callback)(swAio_event *aio_event);
-    void (*destroy)(void);
-} zanAsyncIO;
+#ifdef __cplusplus
+}
+#endif
 
-int  zanAio_init(void);
-void zanAio_free(void);
-int  zanAio_dns_lookup(int type,void *hostname, void *ip_addr, size_t size);
-
-#endif  //_ZAN_ZANASYNCIO_H_
+#endif /* _ZAN_SERVER_H_ */

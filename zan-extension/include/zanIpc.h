@@ -75,6 +75,12 @@ typedef struct _zanPipe
 int zanPipe_create(zanPipe *pPipe, enum ZAN_PIPE_TYPE pipe_type, int isNonBlock, int protocpl);
 
 //=======================zanMsg=================================================
+enum zanIPCMode
+{
+    ZAN_IPC_UNSOCK   = 1,
+    ZAN_IPC_MSGQUEUE = 2,
+};
+
 typedef struct _zanQueue_Data
 {
     long mtype;

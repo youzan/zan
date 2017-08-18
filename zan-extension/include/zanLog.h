@@ -41,6 +41,8 @@ enum zanLog_level
 #define ZAN_MSG_SIZE      512
 extern char zan_log_buffer[ZAN_MSG_SIZE];
 extern void zanLog_put(int level, char *cnt);
+void zanLog_init(char *logfile,int port);
+
 
 #define zanDebug(str,...)          do {if (SwooleGS && SwooleGS->log_level <= ZAN_LOG_DEBUG)  {\
 SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
