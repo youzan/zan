@@ -19,6 +19,7 @@
 #ifndef _ZAN_SYSTEM_H_
 #define _ZAN_SYSTEM_H_
 
+#include <sys/resource.h>
 #include <sys/utsname.h>
 #include "zanProcess.h"
 
