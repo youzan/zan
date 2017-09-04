@@ -20,7 +20,7 @@
 
 ///TODO:::socket 操作，设置，send 及 recv 相关操作；
 
-int zan_nonblocking(int fd, int isNonblock)
+int zan_set_nonblocking(int fd, int isNonblock)
 {
     int opts, ret;
     opts = ret = 0;
@@ -49,7 +49,7 @@ int zan_nonblocking(int fd, int isNonblock)
     return ZAN_OK;
 }
 
-int zanSocket_set_buffer_size(int fd, int buffer_size)
+int zan_socket_set_buffersize(int fd, int buffer_size)
 {
     if (-1 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size)))
     {

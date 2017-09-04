@@ -36,14 +36,53 @@
 extern "C" {
 #endif
 
-///TODO::: 包装一些 socket 的接口
-///具体接口形式应该是什么样的？封装哪些接口?
+///TODO:::
 
-//make socket, send, recv 之类的？
+enum zanSocketType
+{
+    ZAN_SOCK_UNKNOW       =  0,
+    ZAN_SOCK_TCP          =  1,
+    ZAN_SOCK_UDP          =  2,
+    ZAN_SOCK_TCP6         =  3,
+    ZAN_SOCK_UDP6         =  4,
+    ZAN_SOCK_UNIX_DGRAM   =  5,  //unix sock dgram
+    ZAN_SOCK_UNIX_STREAM  =  6,  //unix sock stream
+};
 
 
-int zan_nonblocking(int fd, int isNonBlock);
-int zanSocket_set_buffer_size(int fd, int buffer_size);
+int zan_set_nonblocking(int fd, int isNonBlock);
+int zan_socket_set_buffersize(int fd, int buffer_size);
+
+static inline int zanSocket_is_dgram(uint8_t type)
+{
+    return (type == ZAN_SOCK_UDP || type == ZAN_SOCK_UDP6 || type == ZAN_SOCK_UNIX_DGRAM);
+}
+
+static inline int zanSocket_is_udpDgram(uint8_t type)
+{
+    return (type == ZAN_SOCK_UDP || type == ZAN_SOCK_UDP6);
+}
+
+static inline int zanSocket_is_stream(uint8_t type)
+{
+    return (type == ZAN_SOCK_TCP || type == ZAN_SOCK_TCP6 || type == ZAN_SOCK_UNIX_STREAM);
+}
+
+static inline int zanSocket_is_tcpStream(uint8_t type)
+{
+    return (type == ZAN_SOCK_TCP || type == ZAN_SOCK_TCP6);
+}
+
+static inline int zanSocket_is_NET6(uint8_t type)
+{
+    return (type == ZAN_SOCK_TCP6 || type == ZAN_SOCK_UDP6);
+}
+
+static inline int zanSocket_is_NET(uint8_t type)
+{
+    return (type == ZAN_SOCK_TCP || type == ZAN_SOCK_UDP);
+}
+
 
 #ifdef __cplusplus
 }

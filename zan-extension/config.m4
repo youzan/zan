@@ -272,21 +272,21 @@ if test "$PHP_ZAN" != "no"; then
     fi
 
     swoole_source_file="swoole.c \
-        swoole_server.c \
-        swoole_server_port.c \
-        swoole_connpool.c \
+        swoole_server1.c \
+        swoole_server_port1.c \
+dnl        swoole_connpool.c \
         swoole_client.c \
         swoole_event.c \
         swoole_timer.c \
         swoole_async.c \
         swoole_process.c \
         swoole_buffer.c \
-        swoole_http_server.c \
-        swoole_http_v2_server.c \
-        swoole_websocket_server.c \
-        swoole_http_client.c \
-        swoole_mysql.c \
-        swoole_redis.c \
+dnl        swoole_http_server.c \
+dnl        swoole_http_v2_server.c \
+dnl        swoole_websocket_server.c \
+dnl        swoole_http_client.c \
+dnl        swoole_mysql.c \
+dnl        swoole_redis.c \
         swoole_nova.c \
         swoole_stats.c \
         src/Base.c \
@@ -347,6 +347,7 @@ if test "$PHP_ZAN" != "no"; then
         src/network/Socket.c \
         src/network/TaskWorker.c \
         src/network/Worker.c \
+        src/network/zanConnection.c \
         src/network/zanSocket.c \
         src/network/zanServer.c \
         src/protocol/Base.c \
@@ -378,6 +379,8 @@ if test "$PHP_ZAN" != "no"; then
         src/aio/zanAio.c \
         src/timer/Timer.c \
         src/workers/zanWorker.c \
+        src/workers/zanNetWorker.c \
+        src/workers/zanTaskWorker.c \
         src/workers/zanMaster.c"
 
 
