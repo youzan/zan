@@ -16,8 +16,8 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef _ZAN_ZANFACTORY_H_
-#define _ZAN_ZANFACTORY_H_
+#ifndef _ZAN_CONNECTION_H_
+#define _ZAN_CONNECTION_H_
 
 #include "swoole.h"
 #include "swPipe.h"
@@ -27,53 +27,12 @@
 extern "C" {
 #endif
 
-/*
- * -----------------------------------Factory--------------------------------------------
- */
-enum zanDispatchMode
-{
-    ZAN_DISPATCH_ROUND  = 1,      //轮循模式
-    ZAN_DISPATCH_FDMOD  = 2,      //固定模式，根据连接的文件描述符分配worker
-    ZAN_DISPATCH_QUEUE  = 3,      //抢占模式
-    ZAN_DISPATCH_IPMOD  = 4,      //对 client IP 取模，分配给一个固定 worker
-    ZAN_DISPATCH_UIDMOD = 5,      //UID 分配
-};
 
-typedef struct
-{
-    long target_worker_id;
-    //zanEventData data;
-    swEventData data;
-} zanDispatchData;
-
-typedef struct _zanSendData
-{
-    swDataHead info;
-    /**
-     * for big package
-     */
-    uint32_t length;
-    char *data;
-} zanSendData;
-
-typedef struct _zanFactory
-{
-    //void *pPipe;           //zanPipe[worker_num]
-    //void *pServ;
-
-    int (*start)(struct _zanFactory *);
-    int (*shutdown)(struct _zanFactory *);
-    int (*dispatch)(struct _zanFactory *, swDispatchData *);
-    int (*finish)(struct _zanFactory *, swSendData *);
-    int (*notify)(struct _zanFactory *, swDataHead *);
-    int (*end)(struct _zanFactory *, int fd);
-} zanFactory;
-
-int zanFactory_create(zanFactory *factory);
-
+int zan_net_onAccept(swReactor *reactor, swEvent *event);
+void zan_net_enableAccept(swReactor *reactor);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif   //_ZAN_ZANFACTORY_H_
+#endif   //_ZAN_CONNECTION_H_

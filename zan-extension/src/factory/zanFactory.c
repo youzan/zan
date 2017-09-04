@@ -22,9 +22,9 @@
 #include "swExecutor.h"
 #include "swBaseOperator.h"
 
-
-#include "zanIpc.h"
+#include "zanGlobalDef.h"
 #include "zanWorkers.h"
+#include "zanFactory.h"
 #include "zanLog.h"
 
 typedef struct _zanNotify_data
@@ -63,16 +63,18 @@ int zanFactory_create(zanFactory *factory)
         return ZAN_ERR;
     }
 
+#if 0
     //swFactoryProcess *object;
     //object = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swFactoryProcess));
-    zanPipe *object = (zanPipe *)zan_malloc(sizeof(zanPipe));
+    zanPipe *object = (zanPipe *)zan_calloc(ServerG.servSet.worker_num, sizeof(zanPipe));
     if (!object)
     {
         swFatalError("malloc[zanPipe*] failed, errno=%d:%s", errno, strerror(errno));
         return ZAN_ERR;
     }
+#endif
 
-    factory->object   = object;
+    //factory->pPipe    = object;
     factory->start    = zanFactory_start;
     factory->end      = zanFactory_end;
     factory->notify   = zanFactory_notify;
@@ -105,13 +107,15 @@ static int zanFactory_start(zanFactory *factory)
         return ZAN_ERR;
     }
 
-    if (zanWorkers_start(factory) < 0)
+    if (zan_start_worker_processes() < 0)
     {
-        swError("zanWorkers_start failed.");
+        zanError("zan_start_worker_processes failed.");
         return ZAN_ERR;
     }
 
-    factory->finish = swFactory_finish;
+    ////TODO::::
+    ////factory->finish = swFactory_finish;
+
     return ZAN_OK;
 }
 
@@ -192,7 +196,6 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
 static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 {
     int ret, sendn, fd;
-    swServer *serv;
 
     if (!factory || !resp)
     {
@@ -201,7 +204,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
     }
 
     //todo:::
-    serv = factory->ptr;
+    swServer *serv = (swServer *)ServerG.serv; //factory->pServ; ///TODO:::
     fd = resp->info.fd;
     swConnection *conn = swServer_connection_verify(serv, fd);
     if (!conn)
@@ -279,7 +282,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 //2. SW_EVENT_CLOSE 事件
 static int zanFactory_end(zanFactory *factory, int fd)
 {
-    swServer *serv = (swServer *)factory->ptr;
+    swServer *serv = (swServer *)ServerG.serv; //factory->pServ; ///TODO:::
     swSendData _send;
     swDataHead info;
 

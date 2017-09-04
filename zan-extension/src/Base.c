@@ -259,7 +259,7 @@ void zan_update_time(void)
     }
     else
     {
-        ServerGS->now = now;
+        ServerGS->server_time = now;
     }
 }
 
@@ -283,10 +283,7 @@ void zan_set_loglevel(int level)
         printf("set_log_level, log_level=%d", level);
         return ;
     }
-
-    ServerGS->log_lock.lock(&ServerGS->log_lock);
     ServerGS->log_level = level;
-    ServerGS->log_lock.unlock(&ServerGS->log_lock);
 }
 
 

@@ -16,6 +16,8 @@
   +----------------------------------------------------------------------+
 */
 
+#include "stdlib.h"
+#include "string.h"
 #include "zanSystem.h"
 
 //todo::: 跨平台
@@ -45,3 +47,4 @@ int zan_getrlimit(int resource, struct rlimit *rlim)
 {
     return getrlimit(resource, rlim);
 }
+

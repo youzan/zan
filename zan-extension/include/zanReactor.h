@@ -100,11 +100,8 @@ typedef struct _zanEventData
 typedef struct _zanReactor
 {
     void *object;
-    void *ptr;    //reserve
 
-    /**
-     * last signal number
-     */
+    //last signal number
     int singal_no;
 
     uint32_t event_num;
@@ -113,21 +110,15 @@ typedef struct _zanReactor
     uint32_t check_timer :1;
     uint32_t running :1;
 
-    /**
-     * disable accept new connection
-     */
+    //disable accept new connection
     uint32_t disable_accept :1;
 
     uint32_t check_signalfd :1;
 
-    /**
-     * multi-thread reactor, cannot realloc sockets.
-     */
+    //multi-thread reactor, cannot realloc sockets.
     uint32_t thread :1;
 
-    /**
-     * reactor->wait timeout (millisecond) or -1
-     */
+    //reactor->wait timeout (millisecond) or -1
     int32_t timeout_msec;
 
     uint16_t reactor_id;    //Reactor ID
@@ -135,14 +126,10 @@ typedef struct _zanReactor
 
     uint32_t max_socket;
 
-    /**
-     * for thread
-     */
+    //for thread
     swConnection *socket_list;
 
-    /**
-     * for process
-     */
+    //for process
     swArray *socket_array;
 
     zanDefer_callback *defer_callback_list;
@@ -194,7 +181,7 @@ int zanReactorKqueue_create(zanReactor *reactor, int max_event_num);
 int zanReactorSelect_create(zanReactor *reactor);
 */
 
-static sw_inline int zanEventData_is_stream(uint8_t type)
+static inline int zanEventData_is_stream(uint8_t type)
 {
     switch (type)
     {
@@ -212,7 +199,7 @@ static sw_inline int zanEventData_is_stream(uint8_t type)
     }
 }
 
-static sw_inline int zanEventData_is_dgram(uint8_t type)
+static inline int zanEventData_is_dgram(uint8_t type)
 {
     switch (type)
     {
@@ -225,27 +212,27 @@ static sw_inline int zanEventData_is_dgram(uint8_t type)
     }
 }
 
-static sw_inline int zanReactor_is_read_event(int fdtype)
+static inline int zanReactor_is_read_event(int fdtype)
 {
     return (fdtype < ZAN_EVENT_DEAULT) || (fdtype & ZAN_EVENT_READ);
 }
 
-static sw_inline int zanReactor_is_write_event(int fdtype)
+static inline int zanReactor_is_write_event(int fdtype)
 {
     return fdtype & ZAN_EVENT_WRITE;
 }
 
-static sw_inline int zanReactor_is_error_event(int fdtype)
+static inline int zanReactor_is_error_event(int fdtype)
 {
     return fdtype & ZAN_EVENT_ERROR;
 }
 
-static sw_inline int zanReactor_get_fdtype(int fdtype)
+static inline int zanReactor_get_fdtype(int fdtype)
 {
     return fdtype & (~ZAN_EVENT_READ) & (~ZAN_EVENT_WRITE) & (~ZAN_EVENT_ERROR);
 }
 
-static sw_inline int zanReactor_get_events_type(int fdtype)
+static inline int zanReactor_get_events_type(int fdtype)
 {
     int events = 0;
     if (zanReactor_is_read_event(fdtype))
