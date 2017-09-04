@@ -29,6 +29,13 @@ extern "C" {
 
 //todo::跨平台
 
+#define  NGX_OK          0
+#define  NGX_ERROR      -1
+#define NGX_SETPROCTITLE_PAD       '\0'
+
+typedef int                 ngx_int_t;
+typedef unsigned int        ngx_uint_t;
+
 zan_pid_t zan_getpid(void);
 zan_pid_t zan_getppid(void);
 long zan_sysconf(int name);

@@ -50,14 +50,14 @@ int zanUnSock_create(zanPipe *pPipe, int isNonBlock, int protocol)
 
     //Nonblock
     if (isNonBlock) {
-        zan_nonblocking(object->fds[0], 1);
-        zan_nonblocking(object->fds[1], 1);
+        zan_set_nonblocking(object->fds[0], 1);
+        zan_set_nonblocking(object->fds[1], 1);
     }
 
     ///TODO:::
     int sbsize = SwooleG.socket_buffer_size;
-    zanSocket_set_buffer_size(object->fds[0], sbsize);
-    zanSocket_set_buffer_size(object->fds[1], sbsize);
+    zan_socket_set_buffersize(object->fds[0], sbsize);
+    zan_socket_set_buffersize(object->fds[1], sbsize);
 
     pPipe->object      = object;
     pPipe->is_nonblock = isNonBlock;

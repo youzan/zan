@@ -55,6 +55,13 @@ enum ZAN_PIPE_TYPE
     ZAN_UNSOCK = 1,
 };
 
+enum zanWorkerPipeType
+{
+    ZAN_PIPE_WORKER   = 0,
+    ZAN_PIPE_MASTER   = 1,
+    ZAN_PIPE_NONBLOCK = 2,
+};
+
 typedef struct _zanPipeFd
 {
     int fds[2];

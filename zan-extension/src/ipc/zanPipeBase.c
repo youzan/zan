@@ -47,8 +47,8 @@ int zanPipeBase_create(zanPipe *pPipe, int isNonBlock)
     }
 
     if (isNonBlock) {
-        zan_nonblocking(object->fds[0], 1);
-        zan_nonblocking(object->fds[1], 1);
+        zan_set_nonblocking(object->fds[0], 1);
+        zan_set_nonblocking(object->fds[1], 1);
     }
 
     pPipe->object      = (void *)object;
