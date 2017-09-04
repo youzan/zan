@@ -33,7 +33,7 @@ int zan_set_nonblocking(int fd, int isNonblock)
     {
         zanSysError("fcntl(%d, GETFL) failed.", fd);
         //opts = (isNonblock)? 0:1;
-		return ZAN_ERR;
+	return ZAN_ERR;
     }
     opts = (isNonblock)? (opts | O_NONBLOCK):(opts & ~O_NONBLOCK);
 
