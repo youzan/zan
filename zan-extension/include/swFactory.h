@@ -233,7 +233,6 @@ int swFactory_check_callback(swFactory *factory);
 int swFactoryProcess_create(swFactory *factory, int worker_num);
 int swFactoryThread_create(swFactory *factory, int writer_num);
 
-
 /*----------------------------Process Pool-------------------------------*/
 int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, key_t msgqueue_key, int nopipe);
 int swProcessPool_wait(swProcessPool *pool);
