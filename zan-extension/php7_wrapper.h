@@ -158,10 +158,10 @@ static sw_inline int sw_convert_to_string(zval* val)
 {
     int type = Z_TYPE_P(val);
     if (type <= IS_STRING && IS_ARRAY != type && IS_OBJECT != type){
-		convert_to_string(val);
-    		return SW_OK;
+        convert_to_string_ex(val);
+            return SW_OK;
     } else {
-    		return SW_ERR;
+            return SW_ERR;
     }
 }
 
@@ -307,12 +307,12 @@ static sw_inline int sw_call_user_function_ex(HashTable *function_table, zval** 
 
 static sw_inline int sw_convert_to_string(zval* val)
 {
-	if (Z_TYPE_P(val) <= IS_STRING){
-		convert_to_string(val);
-		return SW_OK;
-	} else {
-		return SW_ERR;
-	}
+    if (Z_TYPE_P(val) <= IS_STRING){
+        convert_to_string_ex(val);
+        return SW_OK;
+    } else {
+        return SW_ERR;
+    }
 }
 
 static sw_inline zval* sw_zval_dup(zval *val)

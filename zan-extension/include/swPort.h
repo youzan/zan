@@ -124,6 +124,9 @@ void swPort_free(swListenPort *port);
 void swPort_set_protocol(swListenPort *ls);
 int swPort_set_option(swListenPort *ls);
 
+//test
+int zanPort_set_ListenOption(swListenPort *ls);
+
 #ifdef __cplusplus
 }
 #endif

@@ -16,34 +16,25 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef _ZAN_ZANASYNCIO_H_
-#define _ZAN_ZANASYNCIO_H_
+#ifndef _ZAN_EXECUTOR_H_
+#define _ZAN_EXECUTOR_H_
 
-#include "zanIpc.h"
-#include "swAsyncIO.h"
+#include "swReactor.h"
+
+#include "zanGlobalDef.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//=========================================
-typedef struct _zanAsyncIO
-{
-    uint8_t  init;
-    uint8_t  thread_num;
-    uint32_t task_num;
-    uint32_t buf_max_len;
-    uint16_t current_id;
-    zanLock  mutexLock;
+////
+int zan_reactor_tcp_setup(swReactor *reactor, zanServer *serv);
+int zanReactorThread_send2worker(void *data, int len, uint16_t target_worker_id);
+int zanReactorThread_onClose(swReactor *reactor, swEvent *event);
 
-    int (*read)(int fd, void *outbuf, size_t size, off_t offset);
-    int (*write)(int fd, void *inbuf, size_t size, off_t offset);
-    void (*callback)(swAio_event *aio_event);
-    void (*destroy)(void);
-} zanAsyncIO;
 
-int  zanAio_init(void);
-void zanAio_free(void);
-int  zanAio_dns_lookup(int type,void *hostname, void *ip_addr, size_t size);
+#ifdef __cplusplus
+}
+#endif
 
-#endif  //_ZAN_ZANASYNCIO_H_
+#endif

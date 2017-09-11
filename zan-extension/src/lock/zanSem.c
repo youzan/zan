@@ -16,8 +16,9 @@
   +----------------------------------------------------------------------+
 */
 
-#include "zanLock.h"
 #include <sys/sem.h>
+#include "zanLock.h"
+#include "zanLog.h"
 
 static int zanSem_lock(zanLock *lock);
 static int zanSem_unlock(zanLock *lock);

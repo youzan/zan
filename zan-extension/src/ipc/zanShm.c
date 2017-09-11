@@ -17,6 +17,7 @@
 */
 
 #include "zanIpc.h"
+#include "zanLog.h"
 
 void* zan_shm_malloc(size_t size)
 {

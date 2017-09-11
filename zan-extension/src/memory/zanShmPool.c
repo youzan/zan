@@ -16,9 +16,10 @@
   +----------------------------------------------------------------------+
 */
 
-#include "zanMemory/zanShmPool.h"
 #include "zanIpc.h"
 #include "zanLog.h"
+#include "zanMemory/zanShmPool.h"
+
 
 #define ZAN_SHM_PAGE_SIZE  256
 

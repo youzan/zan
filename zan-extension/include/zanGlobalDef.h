@@ -26,10 +26,11 @@
 #include "swBaseData.h"
 #include "swStats.h"
 
+#include "zanIpc.h"
 #include "zanAtomic.h"
 #include "zanMemory/zanShmPool.h"
 #include "zanProcess.h"
-#include "zanAsyncIo.h"
+//#include "zanAsyncIo.h"
 #include "zanReactor.h"
 #include "zanFactory.h"
 #include "zanWorkers.h"
@@ -119,7 +120,7 @@ typedef struct _zanServerGS
 
     uint32_t     session_round;          //????
 
-    zanLock      master_lock;
+    zanLock      lock;
     zanLock      log_lock;
     uint8_t      log_level;
     zan_atomic_t spinlock;
@@ -272,18 +273,6 @@ typedef struct _zanServerStats
     zanWorkerStats      *workers_state;
     zanLock             lock;
 } zanServerStats;
-
-//==============================================================================
-extern zanServerG   ServerG;              //Local Global Variable
-extern zanServerGS *ServerGS;             //Share Memory Global Variable
-extern zanWorkerG   ServerWG;             //Worker Global Variable
-extern __thread zanThreadG ServerTG;      //Thread Global Variable
-extern zanServerStats *ServerStatsG;
-
-extern zanAsyncIO ZanAIO;
-
-#define ZAN_CPU_NUM           (SwooleG.cpu_num)
-#define ZAN_REACTOR_NUM       ZAN_CPU_NUM
 
 #ifdef __cplusplus
 }

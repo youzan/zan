@@ -17,6 +17,7 @@
 */
 
 #include "zanLock.h"
+#include "zanLog.h"
 
 static int zanFileLock_lock_rd(zanLock *lock);
 static int zanFileLock_lock_rw(zanLock *lock);
