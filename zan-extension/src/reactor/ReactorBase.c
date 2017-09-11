@@ -24,6 +24,8 @@
 #include "swAsyncIO.h"
 #include "list.h"
 
+#include "zanGlobalVar.h"
+
 static void swReactor_onTimeout_and_Finish(swReactor *reactor);
 static void swReactor_onTimeout(swReactor *reactor);
 static void swReactor_onFinish(swReactor *reactor);
@@ -163,7 +165,8 @@ static int swReactor_defer(swReactor *reactor, swCallback callback, void *data)
 
 swConnection* swReactor_get(swReactor *reactor, int fd)
 {
-    assert(fd < SwooleG.max_sockets);
+    //assert(fd < SwooleG.max_sockets);
+    assert(fd < ServerG.max_sockets);
 
     if (reactor->thread)
     {
@@ -186,7 +189,8 @@ swConnection* swReactor_get(swReactor *reactor, int fd)
 
 int swReactor_add(swReactor *reactor, int fd, int fdtype)
 {
-    assert (fd <= SwooleG.max_sockets);
+    //assert (fd <= SwooleG.max_sockets);
+    assert(fd < ServerG.max_sockets);
 
     swConnection *socket = swReactor_get(reactor, fd);
 
@@ -194,7 +198,7 @@ int swReactor_add(swReactor *reactor, int fd, int fdtype)
     socket->events |= swReactor_events(fdtype);
     socket->removed = 0;
 
-    swTrace("fd=%d, type=%d, events=%d", fd, socket->socket_type, socket->events);
+    swTrace("fd=%d, socket_type=%d, fdtype=%d, events=%d", fd, socket->socket_type, socket->fdtype, socket->events);
 
     return SW_OK;
 }
@@ -224,14 +228,17 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
         swTimer_select(&SwooleG.timer);
     }
     //server master
-    if (SwooleG.serv && SwooleTG.update_time)
+    //if (SwooleG.serv && SwooleTG.update_time)
+    if (ServerG.serv)
     {
-        swoole_update_time();
+        //swoole_update_time();
+        zan_update_time();
     }
 
     //defer callback
-	handle_defer_call(reactor);
+    handle_defer_call(reactor);
 
+#if 0
     //server worker
     swWorker *worker = SwooleWG.worker;
     if (worker != NULL && SwooleWG.reload)
@@ -243,9 +250,10 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
 			reactor->running = 0;
 		}
     }
+#endif
 
     //client
-    if (SwooleG.serv == NULL && SwooleG.timer.num <= 0 && !reactor->defer_callback_list)
+    if (ServerG.serv == NULL && ServerG.timer.num <= 0 && !reactor->defer_callback_list)
     {
         if (SwooleAIO.init && reactor->event_num == 1 && SwooleAIO.task_num == 0)
         {
@@ -256,9 +264,6 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
             reactor->running = 0;
         }
     }
-#ifdef SW_USE_MALLOC_TRIM
-    malloc_trim();
-#endif
 }
 
 static void swReactor_onTimeout(swReactor *reactor)
@@ -359,7 +364,8 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
 
     socket->fd = (socket->fd == 0)? fd:socket->fd;
 
-    socket->buffer_size = (socket->buffer_size == 0)? SwooleG.socket_buffer_size:socket->buffer_size;
+    //socket->buffer_size = (socket->buffer_size == 0)? SwooleG.socket_buffer_size:socket->buffer_size;
+    socket->buffer_size = (socket->buffer_size == 0)? ServerG.servSet.socket_buffer_size:socket->buffer_size;
 
     if (swBuffer_empty(buffer))
     {
@@ -436,7 +442,8 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
 
         if (buffer->length > socket->buffer_size)
         {
-            if (SwooleG.socket_dontwait)
+            //if (SwooleG.socket_dontwait)
+            if (ServerG.socket_dontwait)
             {
                 return SW_ERR;
             }

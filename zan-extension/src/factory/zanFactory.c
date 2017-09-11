@@ -17,14 +17,16 @@
 */
 
 #include "swWork.h"
-#include "swServer.h"
-#include "swFactory.h"
-#include "swExecutor.h"
-#include "swBaseOperator.h"
+//#include "swServer.h"
+//#include "swFactory.h"
+//#include "swExecutor.h"
+//#include "swBaseOperator.h"
 
 #include "zanGlobalDef.h"
+#include "zanServer.h"
 #include "zanWorkers.h"
 #include "zanFactory.h"
+#include "zanExecutor.h"
 #include "zanLog.h"
 
 typedef struct _zanNotify_data
@@ -63,18 +65,6 @@ int zanFactory_create(zanFactory *factory)
         return ZAN_ERR;
     }
 
-#if 0
-    //swFactoryProcess *object;
-    //object = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swFactoryProcess));
-    zanPipe *object = (zanPipe *)zan_calloc(ServerG.servSet.worker_num, sizeof(zanPipe));
-    if (!object)
-    {
-        swFatalError("malloc[zanPipe*] failed, errno=%d:%s", errno, strerror(errno));
-        return ZAN_ERR;
-    }
-#endif
-
-    //factory->pPipe    = object;
     factory->start    = zanFactory_start;
     factory->end      = zanFactory_end;
     factory->notify   = zanFactory_notify;
@@ -93,7 +83,7 @@ static int zanFactory_shutdown(zanFactory *factory)
     }
 
     ///TODO:::
-    ///....
+    //....
 
     zanWarn("factory shutdown.");
     return ZAN_OK;
@@ -144,19 +134,16 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
     uint32_t schedule_key = 0;
     uint32_t send_len     = 0;
     uint16_t to_worker_id = -1;
-    swServer *serv = SwooleG.serv;
+    zanServer *serv = ServerG.serv;
 
-    if (!factory || !task)
-    {
-        zanError("factory=%p or task=%p is null", factory, task);
-        return ZAN_ERR;
-    }
+    int fd = task->data.info.fd;
+    send_len = sizeof(task->data.info) + task->data.info.len;
 
     //1. get target_worker_id
     if (task->target_worker_id < 0)
     {
         schedule_key = task->data.info.fd;
-        to_worker_id = swServer_worker_schedule(serv, schedule_key);
+        to_worker_id = zanServer_worker_schedule(serv, schedule_key);
     }
     else
     {
@@ -167,35 +154,43 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
     //todo:::
     if (swEventData_is_stream(task->data.info.type))
     {
-        swConnection *conn = swServer_connection_get(serv, task->data.info.fd);
+        swConnection *conn = zanServer_get_connection(serv, task->data.info.fd);
         if (conn == NULL || conn->active == 0)
         {
-            swNotice("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
-            return SW_ERR;
+            zanWarn("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
+            return ZAN_ERR;
         }
         //conn active close, discard data.
         if (conn->closed)
         {
             if (!(task->data.info.type == SW_EVENT_CLOSE && conn->close_force))
             {
-                swNotice("dispatch[type=%d] failed, connection#%d[session_id=%d] is closed by server.",
+                zanWarn("dispatch[type=%d] failed, connection#%d[session_id=%d] is closed by server.",
                         task->data.info.type, task->data.info.fd, conn->session_id);
-                return SW_OK;
+                return ZAN_OK;
+            }
+            else
+            {
+                ///TODO:::??????
+                zanWarn("error: type=%d, fd=%d, session_id=%d", task->data.info.type, task->data.info.fd, conn->session_id);
+                return ZAN_ERR;
             }
         }
+
         //converted fd to session_id
         task->data.info.fd = conn->session_id;
         task->data.info.from_fd = conn->from_fd;
+        zanDebug("send2worker: fd=%d, session_id=%d, from_fd=%d, len=%d, worker_id=%d", fd, conn->session_id, conn->from_fd, send_len, to_worker_id);
     }
 
-    send_len = sizeof(task->data.info) + task->data.info.len;
-    return swReactorThread_send2worker((void *) &(task->data), send_len, to_worker_id);
+    return zanReactorThread_send2worker((void *) &(task->data), send_len, to_worker_id);
 }
 
 //send data to client
 static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 {
-    int ret, sendn, fd;
+    int ret, sendn, session_id;
+    zanServer *serv = (zanServer *)ServerG.serv;
 
     if (!factory || !resp)
     {
@@ -204,31 +199,32 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
     }
 
     //todo:::
-    swServer *serv = (swServer *)ServerG.serv; //factory->pServ; ///TODO:::
-    fd = resp->info.fd;
-    swConnection *conn = swServer_connection_verify(serv, fd);
+    session_id = resp->info.fd;
+    swConnection *conn = zanServer_verify_connection(serv, session_id);
     if (!conn)
     {
-        zanWarn("session#fd=%d does not exist.", fd);
+        zanWarn("session#fd=%d does not exist.", session_id);
         return ZAN_ERR;
     }
     else if ((conn->closed || conn->removed) && resp->info.type != SW_EVENT_CLOSE)
     {
         int _len = resp->length > 0 ? resp->length : resp->info.len;
-        zanWarn("send %d byte failed, because session#fd=%d is closed.", _len, fd);
+        zanWarn("send %d byte failed, because session#fd=%d is closed.", _len, session_id);
         return ZAN_ERR;
     }
     else if (conn->overflow)
     {
-        zanWarn("send failed, session#fd=%d output buffer has been overflowed.", fd);
+        zanWarn("send failed, session#fd=%d output buffer has been overflowed.", session_id);
         return ZAN_ERR;
     }
 
     swEventData ev_data;
     memset(&ev_data, 0, sizeof(ev_data));
-    ev_data.info.fd   = fd;
+    ev_data.info.fd   = session_id;
     ev_data.info.type = resp->info.type;
-    swWorker *worker  = swServer_get_worker(serv, SwooleWG.id);
+
+    ////TODO:::
+    zanWorker *worker  = zanServer_get_worker(serv, ServerWG.worker_id);
 
     /**
      * Big response, use shared memory
@@ -267,7 +263,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
     sendn = ev_data.info.len + sizeof(resp->info);
     zanTrace("[Worker] send: sendn=%d|type=%d|content=%s", sendn, resp->info.type, resp->data);
 
-    ret = swWorker_send2reactor(&ev_data, sendn, fd);
+    ret = zanWorker_send2reactor(&ev_data, sendn, session_id);
     if (ret < 0)
     {
         zanError("sendto to reactor failed.");
@@ -282,7 +278,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 //2. SW_EVENT_CLOSE 事件
 static int zanFactory_end(zanFactory *factory, int fd)
 {
-    swServer *serv = (swServer *)ServerG.serv; //factory->pServ; ///TODO:::
+    zanServer *serv = (zanServer *)ServerG.serv;
     swSendData _send;
     swDataHead info;
 
@@ -291,6 +287,10 @@ static int zanFactory_end(zanFactory *factory, int fd)
     _send.info.len  = 0;
     _send.info.type = SW_EVENT_CLOSE;
 
+    zanDebug("for test, todo.........");
+    return ZAN_OK;
+
+#if 0
     //1. get and verify connection, then close the conn
     swConnection *conn = swWorker_get_connection(serv, fd);
     if (conn == NULL || conn->active == 0)
@@ -327,4 +327,5 @@ static int zanFactory_end(zanFactory *factory, int fd)
         conn->closed = 1;
         return factory->finish(factory, &_send);
     }
+#endif
 }

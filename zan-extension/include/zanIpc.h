@@ -25,8 +25,9 @@
 
 #include "zanLock.h"
 #include "zanMemory/zanMemory.h"
-#include "zanSocket.h"
-#include "zanLog.h"
+//#include "zanSocket.h"
+#include "swReactor.h"
+
 
 #ifdef __cplusplus
 extern "C" {

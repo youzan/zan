@@ -225,13 +225,11 @@ const zend_function_entry zan_functions[] =
     PHP_FE(swoole_errno, arginfo_swoole_void)
     PHP_FE(swoole_get_local_ip, arginfo_swoole_void)
 
-#if 0
     PHP_FE(onClientClose,NULL)
     PHP_FE(onClientTimeout,NULL)
     PHP_FE(onClientConnect,NULL)
     PHP_FE(onClientRecieve,NULL)
     PHP_FE(onSubClientConnect,NULL)
-#endif
 
     PHP_FE_END /* Must be the last line in swoole_functions[] */
 };
@@ -424,16 +422,16 @@ PHP_MINIT_FUNCTION(zan)
     /**
      * mode type
      */
-    REGISTER_LONG_CONSTANT("SWOOLE_BASE", SW_MODE_SINGLE, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("SWOOLE_PROCESS", SW_MODE_PROCESS, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("SWOOLE_BASE", ZAN_MODE_BASE, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("SWOOLE_PROCESS", ZAN_MODE_PROCESS, CONST_CS | CONST_PERSISTENT);
 
     REGISTER_LONG_CONSTANT("SWOOLE_PACKET", SW_MODE_PACKET, CONST_CS | CONST_PERSISTENT);
 
     /**
      * ipc mode
      */
-    REGISTER_LONG_CONSTANT("SWOOLE_IPC_UNSOCK", SW_IPC_UNSOCK, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("SWOOLE_IPC_MSGQUEUE", SW_IPC_MSGQUEUE, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("SWOOLE_IPC_UNSOCK", ZAN_IPC_UNSOCK, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("SWOOLE_IPC_MSGQUEUE", ZAN_IPC_MSGQUEUE, CONST_CS | CONST_PERSISTENT);
 
     /**
      * socket type
@@ -461,8 +459,8 @@ PHP_MINIT_FUNCTION(zan)
     REGISTER_LONG_CONSTANT("SWOOLE_SOCK_SYNC", SW_SOCK_SYNC, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("SWOOLE_SOCK_ASYNC", SW_SOCK_ASYNC, CONST_CS | CONST_PERSISTENT);
 
-    REGISTER_LONG_CONSTANT("SWOOLE_SYNC", SW_FLAG_SYNC, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("SWOOLE_ASYNC", SW_FLAG_ASYNC, CONST_CS | CONST_PERSISTENT);
+    //REGISTER_LONG_CONSTANT("SWOOLE_SYNC", SW_FLAG_SYNC, CONST_CS | CONST_PERSISTENT);
+    //REGISTER_LONG_CONSTANT("SWOOLE_ASYNC", SW_FLAG_ASYNC, CONST_CS | CONST_PERSISTENT);
 
 	REGISTER_LONG_CONSTANT("SWOOLE_ASYNC_CONNECT_TIMEOUT", SW_CLIENT_CONNECT_TIMEOUT, CONST_CS | CONST_PERSISTENT);
 	REGISTER_LONG_CONSTANT("SWOOLE_ASYNC_RECV_TIMEOUT", SW_CLIENT_RECV_TIMEOUT, CONST_CS | CONST_PERSISTENT);
@@ -502,10 +500,9 @@ PHP_MINIT_FUNCTION(zan)
 
     REGISTER_STRINGL_CONSTANT("SWOOLE_VERSION", PHP_SWOOLE_VERSION, sizeof(PHP_SWOOLE_VERSION) - 1, CONST_CS | CONST_PERSISTENT);
 
-    //swoole init
+    //
     swoole_init();
 
-    ///TODO:::
     zan_init();
 
     swoole_server_init(module_number TSRMLS_CC);
@@ -513,34 +510,19 @@ PHP_MINIT_FUNCTION(zan)
     swoole_server_port_init(module_number TSRMLS_CC);
 
     swoole_timer_init(module_number TSRMLS_CC);
-    swoole_aio_init(module_number TSRMLS_CC);
+//    swoole_aio_init(module_number TSRMLS_CC);
     swoole_process_init(module_number TSRMLS_CC);
     swoole_buffer_init(module_number TSRMLS_CC);
+    swoole_connpool_init(module_number TSRMLS_CC);
 
 ///TOD:::
 ///#ifdef SW_USE_REDIS
 ///    swoole_redis_init(module_number TSRMLS_CC);
 ///#endif
-////    swoole_connpool_init(module_number TSRMLS_CC);
 ////    swoole_http_client_init(module_number TSRMLS_CC);
 ////    swoole_http_server_init(module_number TSRMLS_CC);
 ////    swoole_websocket_init(module_number TSRMLS_CC);
 ////    swoole_mysql_init(module_number TSRMLS_CC);
-
-    /// 初始化日志等级
-    if (SWOOLE_G(log_level) > 0)
-    {
-    		set_log_level(SWOOLE_G(log_level));
-    }
-
-    if (SWOOLE_G(socket_buffer_size) > 0)
-    {
-        SwooleG.socket_buffer_size = SWOOLE_G(socket_buffer_size);
-    }
-
-#ifdef __MACH__
-    SwooleG.socket_buffer_size = 256 * 1024;
-#endif
 
     if (SWOOLE_G(aio_thread_num) > 0)
     {
@@ -559,8 +541,6 @@ PHP_MINIT_FUNCTION(zan)
     swoole_objects.size = 65536;
     swoole_objects.array = calloc(swoole_objects.size, sizeof(void*));
 
-    /// 设置日志调试等级，方便调试使用，zan扩展自定义环境变量ZANEXT_DEBUG_LOG_LEVEL
-    set_log_level(get_env_log_level());
     return SUCCESS;
 }
 /* }}} */

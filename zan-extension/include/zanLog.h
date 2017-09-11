@@ -20,7 +20,7 @@
 #define _ZAN_ZANLOG_H_
 
 #include "swoole.h"
-#include "swGlobalVars.h"
+#include "zanGlobalVar.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,41 +44,41 @@ extern void zanLog_put(int level, char *cnt);
 void zanLog_init(char *logfile,int port);
 
 
-#define zanDebug(str,...)          do {if (SwooleGS && SwooleGS->log_level <= ZAN_LOG_DEBUG)  {\
-SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
+#define zanDebug(str,...)          do {if (ServerGS && ServerGS->log_level <= ZAN_LOG_DEBUG)  {\
+ServerGS->log_lock.lock(&ServerGS->log_lock);\
 snprintf(zan_log_buffer,ZAN_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
 zanLog_put(ZAN_LOG_DEBUG, zan_log_buffer);\
-SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
+ServerGS->log_lock.unlock(&ServerGS->log_lock);}}while(0)
 
-#define zanTrace(str,...)        do {if (SwooleGS && SwooleGS->log_level <= ZAN_LOG_TRACE)    {\
-SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
+#define zanTrace(str,...)        do {if (ServerGS && ServerGS->log_level <= ZAN_LOG_TRACE)    {\
+ServerGS->log_lock.lock(&ServerGS->log_lock);\
 snprintf(zan_log_buffer,ZAN_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
 zanLog_put(ZAN_LOG_TRACE, zan_log_buffer);\
-SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
+ServerGS->log_lock.unlock(&ServerGS->log_lock);}}while(0)
 
-#define zanWarn(str,...)        do { if (SwooleGS && SwooleGS->log_level <= ZAN_LOG_WARNING) {\
-SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
+#define zanWarn(str,...)        do { if (ServerGS && ServerGS->log_level <= ZAN_LOG_WARNING) {\
+ServerGS->log_lock.lock(&ServerGS->log_lock);\
 snprintf(zan_log_buffer,ZAN_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
 zanLog_put(ZAN_LOG_WARNING, zan_log_buffer);\
-SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
+ServerGS->log_lock.unlock(&ServerGS->log_lock);}}while(0)
 
-#define zanError(str,...)       do{ if(SwooleGS && SwooleGS->log_level <= ZAN_LOG_ERROR)  {\
-SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
+#define zanError(str,...)       do{ if(ServerGS && ServerGS->log_level <= ZAN_LOG_ERROR)  {\
+ServerGS->log_lock.lock(&ServerGS->log_lock);\
 snprintf(zan_log_buffer, ZAN_MSG_SIZE,"%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
 zanLog_put(ZAN_LOG_ERROR, zan_log_buffer);\
-SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
+ServerGS->log_lock.unlock(&ServerGS->log_lock);}}while(0)
 
-#define zanSysError(str,...)    do{ if(SwooleGS && SwooleGS->log_level <= ZAN_LOG_ERROR)  {\
-SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
+#define zanSysError(str,...)    do{ if(ServerGS && ServerGS->log_level <= ZAN_LOG_ERROR)  {\
+ServerGS->log_lock.lock(&ServerGS->log_lock);\
 snprintf(zan_log_buffer,ZAN_MSG_SIZE,"%s(:%d): "str" Error: %s[%d].",__func__,__LINE__,##__VA_ARGS__,strerror(errno),errno);\
 zanLog_put(ZAN_LOG_ERROR, zan_log_buffer);\
-SwooleGS->log_lock.unlock(&SwooleGS->log_lock);}}while(0)
+ServerGS->log_lock.unlock(&ServerGS->log_lock);}}while(0)
 
-#define zanFatalError(str,...)   do{ if(SwooleGS && SwooleGS->log_level <= ZAN_LOG_FATAL_ERROR)   {\
-SwooleGS->log_lock.lock(&SwooleGS->log_lock);\
+#define zanFatalError(str,...)   do{ if(ServerGS && ServerGS->log_level <= ZAN_LOG_FATAL_ERROR)   {\
+ServerGS->log_lock.lock(&ServerGS->log_lock);\
 snprintf(zan_log_buffer, ZAN_MSG_SIZE, "%s(:%d): "str,__func__,__LINE__,##__VA_ARGS__);\
 zanLog_put(ZAN_LOG_FATAL_ERROR, zan_log_buffer);\
-SwooleGS->log_lock.unlock(&SwooleGS->log_lock);exit(1);}}while(0)
+ServerGS->log_lock.unlock(&ServerGS->log_lock);exit(1);}}while(0)
 
 #ifdef __cplusplus
 }

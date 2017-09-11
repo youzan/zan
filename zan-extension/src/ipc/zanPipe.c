@@ -17,6 +17,7 @@
 */
 
 #include "zanIpc.h"
+#include "zanLog.h"
 
 extern int zanPipeBase_create(zanPipe *pPipe, int isBlocking);
 extern int zanUnSock_create(zanPipe *pPipe, int isBlocking, int protocol);

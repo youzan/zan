@@ -53,12 +53,12 @@ int zan_socket_set_buffersize(int fd, int buffer_size)
 {
     if (-1 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size)))
     {
-        zanSysError("setsockopt(fd=%d,size=%d) failed, errno=%d:%s", fd, buffer_size, errno, strerror(errno));
+        zanError("setsockopt(SO_SNDBUF,fd=%d,size=%d) failed, errno=%d:%s", fd, buffer_size, errno, strerror(errno));
         return ZAN_ERR;
     }
     if (-1 == setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &buffer_size, sizeof(buffer_size)))
     {
-        zanSysError("setsockopt(fd=%d,size=%d) failed, errno=%d:%s", fd, buffer_size, errno, strerror(errno));
+        zanError("setsockopt(SO_RCVBUF,fd=%d,size=%d) failed, errno=%d:%s", fd, buffer_size, errno, strerror(errno));
         return ZAN_ERR;
     }
     return ZAN_OK;

@@ -17,6 +17,8 @@
 */
 
 #include "zanIpc.h"
+#include "zanSocket.h"
+#include "zanLog.h"
 
 ///TODO:::read or write argument
 
@@ -55,7 +57,7 @@ int zanUnSock_create(zanPipe *pPipe, int isNonBlock, int protocol)
     }
 
     ///TODO:::
-    int sbsize = SwooleG.socket_buffer_size;
+    int sbsize = ServerG.servSet.socket_buffer_size;
     zan_socket_set_buffersize(object->fds[0], sbsize);
     zan_socket_set_buffersize(object->fds[1], sbsize);
 

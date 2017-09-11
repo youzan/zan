@@ -17,6 +17,7 @@
 */
 
 #include "zanLock.h"
+#include "zanLog.h"
 
 #ifdef HAVE_RWLOCK
 static int zanRWLock_lock_rd(zanLock *lock);
