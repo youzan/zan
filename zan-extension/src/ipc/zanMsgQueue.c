@@ -17,6 +17,7 @@
 */
 
 #include "zanIpc.h"
+#include "zanLog.h"
 
 int zanMsgQueue_push(zanMsgQueue *pMq, zanQueue_Data *in, int length);
 int zanMsgQueue_pop(zanMsgQueue *pMq, zanQueue_Data *out, int length);

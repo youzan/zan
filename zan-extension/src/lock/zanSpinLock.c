@@ -17,6 +17,7 @@
 */
 
 #include "zanLock.h"
+#include "zanLock.h"
 
 #ifdef HAVE_SPINLOCK
 static int zanSpinLock_lock(zanLock *lock);

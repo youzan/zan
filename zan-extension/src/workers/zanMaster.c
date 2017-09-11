@@ -160,6 +160,7 @@ static int zan_spawn_child_process(void)
         return ZAN_ERR;
     }
 
+#if 0
     //fork task_workes
     if (ZAN_OK != zan_spawn_task_process(&ServerGS->task_workers))
     {
@@ -173,6 +174,7 @@ static int zan_spawn_child_process(void)
         zanError("zan_spawn_user_process failed");
         return ZAN_ERR;
     }
+#endif
 
     //fork net_workes
     if (ZAN_OK != zan_spawn_net_process(&ServerGS->net_workers))
@@ -202,7 +204,7 @@ static int zan_alloc_userworker_process(void)
     zanUserWorker_node *user_worker = NULL;
     LL_FOREACH(serv->user_worker_list, user_worker)
     {
-        if (zan_worker_init(user_worker->worker) < 0)
+        if (zanWorker_init(user_worker->worker) < 0)
         {
             zanError("init userworker failed, index=%d, user_worker_num=%d.", index, serv->user_worker_num);
             return ZAN_ERR;
@@ -273,16 +275,25 @@ int zan_master_process_loop(zanServer *serv)
 {
     int status = 0;
     zan_pid_t pid = -1;
+
+    if (serv->onStart)
+    {
+        //zanWarn("call server onStart");
+        serv->onStart(serv);
+    }
+
+
     while (ServerG.running > 0)
     {
-        zanWarn("ServerG.running=%d, process_type=%d, master_pid=%d", ServerG.running, ServerG.process_type, ServerGS->master_pid);
+        zanDebug("ServerG.running=%d, process_type=%d, master_pid=%d", ServerG.running, ServerG.process_type, ServerGS->master_pid);
         pid = zan_wait(&status);
         if (pid < 0)
         {
             zanWarn("wait error, pid=%d", pid);
+            sleep(3);
             continue;
         }
-        zanWarn("wait success, child pid=%d exit, status=%d", pid, status);
+        zanDebug("wait success, child pid=%d exit, status=%d", pid, status);
     }
 
     return ZAN_ERR;

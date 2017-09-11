@@ -18,8 +18,9 @@
 
 #include "swDNS.h"
 #include "zanAsyncIo.h"
+#include "zanLog.h"
 
-static zanAsyncIO ZanAIO;
+zanAsyncIO ZanAIO;
 static zanPipe zan_aio_pipe;
 static swThreadPool zanAioBase_thread_pool;
 
@@ -41,7 +42,7 @@ int zanAio_init(void)
         return ZAN_OK;
     }
 
-    if (!SwooleG.main_reactor)
+    if (!ServerG.main_reactor)
     {
         zanError("No eventloop, cannot init ZanAIO");
         return ZAN_ERR;
@@ -121,9 +122,9 @@ static int zanAioBase_init(int max_aio_events)
     }
 
     pipe_read_fd = zan_aio_pipe.getFd(&zan_aio_pipe, 0);
-    SwooleG.main_reactor->add(SwooleG.main_reactor, pipe_read_fd, SW_FD_AIO);
-    SwooleG.main_reactor->setHandle(SwooleG.main_reactor, SW_FD_AIO, zanAioBase_onFinish);
-    SwooleG.main_reactor->setHandle(SwooleG.main_reactor,SW_FD_AIO | SW_EVENT_ERROR, zanAioBase_onError);
+    ServerG.main_reactor->add(ServerG.main_reactor, pipe_read_fd, SW_FD_AIO);
+    ServerG.main_reactor->setHandle(ServerG.main_reactor, SW_FD_AIO, zanAioBase_onFinish);
+    ServerG.main_reactor->setHandle(ServerG.main_reactor,SW_FD_AIO | SW_EVENT_ERROR, zanAioBase_onError);
 
     zanAioBase_thread_pool.onTask = zanAioBase_thread_onTask;
     if (swThreadPool_run(&zanAioBase_thread_pool) < 0)

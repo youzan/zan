@@ -27,11 +27,10 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include "zanFactory.h"
 #include "zanSystem.h"
-#include "zanGlobalDef.h"
 #include "zanServer.h"
 #include "zanWorkers.h"
+#include "zanSocket.h"
 #include "zanLog.h"
 
 ///TODO::: swoole_server
@@ -42,9 +41,9 @@ zanWorkerG   ServerWG;             //Worker Global Variable
 __thread zanThreadG ServerTG;      //Thread Global Variable
 zanServerStats *ServerStatsG = NULL;
 
-static void zan_init_serv_set(void);
-static int zan_server_start_check(zanServer *);
-//static int zan_server_send1(zanServer *, swSendData *);
+static void zan_server_set_init(void);
+static int zanServer_start_check(zanServer *);
+static int zanServer_send(zanServer *serv, swSendData *resp);
 static int zan_daemonize(void);
 
 /* initializing server config*/
@@ -53,35 +52,21 @@ void zanServer_init(zanServer *serv)
     bzero(serv, sizeof(zanServer));
 
     //init ServerG
-    ServerG.factory_mode    = ZAN_MODE_PROCESS;
-    ServerG.running         = 1;
-    ServerG.log_fd          = STDOUT_FILENO;
-    ServerG.cpu_num         = zan_sysconf(_SC_NPROCESSORS_ONLN);
-    ServerG.pagesize        = zan_sysconf(_SC_PAGESIZE);
-    ServerG.process_pid     = zan_getpid();
-    SwooleG.use_timer_pipe  = 1;                 //////////////////////////////
-
-    zan_uname(&ServerG.uname);
-
-    struct rlimit rlmt;
-    SwooleG.max_sockets = (zan_getrlimit(RLIMIT_NOFILE, &rlmt) < 0) ?
-                           1024:(uint32_t) rlmt.rlim_cur;
-
-#if defined(HAVE_REUSEPORT) && defined(HAVE_EPOLL)
-    if (swoole_version_compare(ServerG.uname.release, "3.9.0") >= 0)
-    {
-        ServerG.reuse_port = 1;
-    }
-#endif
+    ServerG.serv = serv;
 
     //init ServerG.servSet
-    zan_init_serv_set();
+    zan_server_set_init();
 
-    ServerG.serv = serv;
+    int level = ServerG.servSet.log_level;
+    if (get_env_log_level() > 0)
+    {
+        level = get_env_log_level();
+    }
+    zan_set_loglevel(level);
 }
 
 //init server:set
-void zan_init_serv_set(void)
+void zan_server_set_init(void)
 {
     zanServerSet *servSet = &ServerG.servSet;
 
@@ -89,7 +74,7 @@ void zan_init_serv_set(void)
     servSet->worker_num         = 1; //ZAN_CPU_NUM;
     servSet->net_worker_num     = 1; //ZAN_CPU_NUM;
     servSet->dispatch_mode      = SW_DISPATCH_FDMOD;
-    servSet->max_connection     = SwooleG.max_sockets;
+    servSet->max_connection     = ServerG.max_sockets;
 
     //just for test
     servSet->task_worker_num    = 1;
@@ -102,7 +87,12 @@ void zan_init_serv_set(void)
     servSet->buffer_input_size  = SW_BUFFER_INPUT_SIZE;
     servSet->buffer_output_size = SW_BUFFER_OUTPUT_SIZE;
     servSet->pipe_buffer_size   = SW_PIPE_BUFFER_SIZE;
+
+#ifdef __MACH__
+    ServerG.servSet.socket_buffer_size = 256 * 1024;
+#else
     servSet->socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
+#endif
 
     servSet->heartbeat_idle_time      = SW_HEARTBEAT_IDLE;
     servSet->heartbeat_check_interval = SW_HEARTBEAT_CHECK;
@@ -110,7 +100,7 @@ void zan_init_serv_set(void)
     servSet->http_parse_post = 1;
 }
 
-//TODO::: zanServer 参数待确定
+//TODO:::
 int zanServer_create(zanServer *serv)
 {
     ServerG.factory = &serv->factory;
@@ -141,8 +131,9 @@ int zanServer_create(zanServer *serv)
 
 int zanServer_start(zanServer *serv)
 {
-    if (zan_server_start_check(serv) < 0)
+    if (zanServer_start_check(serv) < 0)
     {
+        zanError("zan_server_start_check failed.");
         return ZAN_ERR;
     }
 
@@ -150,7 +141,7 @@ int zanServer_start(zanServer *serv)
 
     if (ZAN_OK != zan_daemonize())
     {
-        zanError("zan_daemonize error.");
+        zanError("zan_daemonize failed.");
         return ZAN_ERR;
     }
 
@@ -161,15 +152,16 @@ int zanServer_start(zanServer *serv)
     ServerStatsG->start_time = ServerGS->server_time;
 
     ///TODO:::
-    //serv->send = zanServer_send1;
+    serv->send = zanServer_send;
 
     //set listen socket options
     swListenPort *ls = NULL;
     LL_FOREACH(serv->listen_list, ls)
     {
-        if (swPort_set_option(ls) < 0)
+        zanDebug("ls->port=%d, ls->host=%s, ls->sock=%d", ls->port, ls->host, ls->sock);
+        if (zanPort_set_ListenOption(ls) < 0)
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
     }
 
@@ -231,12 +223,71 @@ int zan_daemonize(void)
 }
 
 //TODO:::
-static int zan_server_start_check(zanServer *serv)
+static int zanServer_start_check(zanServer *serv)
 {
+    zanServerSet *servSet = &ServerG.servSet;
+
+    if (serv->onReceive == NULL && serv->onPacket == NULL)
+    {
+        zanError("onReceive and onPacket event callback must be set.");
+        return ZAN_ERR;
+    }
+
+    if (serv->have_tcp_sock && serv->onReceive == NULL)
+    {
+        zanError("Tcp Server: onReceive event callback must be set.");
+        return ZAN_ERR;
+    }
+
+    //UDP
+    if (serv->have_udp_sock && !serv->onPacket)
+    {
+        zanWarn("Udp Server, no onPacket callback, set to onReceive.");
+        serv->onPacket = serv->onReceive;
+    }
+
+    ///TODO:::
+    //disable notice when use SW_DISPATCH_ROUND and SW_DISPATCH_QUEUE
+    if (servSet->dispatch_mode == SW_DISPATCH_ROUND || servSet->dispatch_mode == SW_DISPATCH_QUEUE)
+    {
+        if (!servSet->enable_unsafe_event)
+        {
+            serv->onConnect = NULL;
+            serv->onClose = NULL;
+            serv->disable_notify = 1;
+        }
+    }
+
+#if 0
+    //AsyncTask  ///TODO:::
+    if (servSet->task_worker_num > 0)
+    {
+        if (serv->onTask == NULL || serv->onFinish == NULL)
+        {
+            zanError("task_worker_num=%d, onTask or onFinsh is null", servSet->task_worker_num);
+            return ZAN_ERR;
+        }
+    }
+#endif
+
+    if (ServerG.max_sockets > 0 && servSet->max_connection > ServerG.max_sockets)
+    {
+        zanWarn("serv->max_connection is exceed the maximum value[%d].", ServerG.max_sockets);
+        servSet->max_connection = ServerG.max_sockets;
+    }
+
+    if (servSet->max_connection < (servSet->worker_num + servSet->task_worker_num) * 2 + 32)
+    {
+        zanWarn("serv->max_connection is too small.");
+        servSet->max_connection = ServerG.max_sockets;
+    }
+
+    ServerGS->session_round = 1;
+
     return ZAN_OK;
 }
 
-uint32_t zan_server_worker_schedule(zanServer *serv, uint32_t conn_fd)
+uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t conn_fd)
 {
     int      index = 0;
     uint32_t target_worker_id = 0;
@@ -254,7 +305,7 @@ uint32_t zan_server_worker_schedule(zanServer *serv, uint32_t conn_fd)
     }
     else if (servSet->dispatch_mode == ZAN_DISPATCH_IPMOD) //Using the IP touch access to hash
     {
-        swConnection *conn = zanServer_connection_get(serv, conn_fd);
+        swConnection *conn = zanServer_get_connection(serv, conn_fd);
         if (!conn || SW_SOCK_TCP == conn->socket_type) //UDP or tcp ipv4
         {
             target_worker_id = (!conn)? conn_fd % servSet->worker_num :
@@ -272,9 +323,17 @@ uint32_t zan_server_worker_schedule(zanServer *serv, uint32_t conn_fd)
     }
     else if (servSet->dispatch_mode == SW_DISPATCH_UIDMOD)
     {
-        swConnection *conn = zanServer_connection_get(serv, conn_fd);
-        target_worker_id = (!conn)? (conn_fd % servSet->worker_num):
-                           ((conn->uid)? conn->uid % servSet->worker_num:conn_fd % servSet->worker_num);
+        swConnection *conn = zanServer_get_connection(serv, conn_fd);
+        uint32_t uid = 0;
+        if (conn == NULL || conn->uid == 0)
+        {
+            uid = conn_fd;
+        }
+        else
+        {
+            uid = conn->uid;
+        }
+        target_worker_id = uid % servSet->worker_num;
     }
     else //空闲 worker
     {
@@ -338,7 +397,7 @@ zanWorker* zanServer_get_worker(zanServer *serv, uint16_t worker_id)
     }
 
     //Unkown worker_id
-    zanWarn("worker#%d is not exist.", worker_id);
+    zanError("error, worker#%d is not exist.", worker_id);
     return NULL;
 }
 
@@ -355,7 +414,7 @@ swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port
         return NULL;
     }
 
-    swListenPort *ls = ServerG.g_shm_pool->alloc(ServerG.g_shm_pool, sizeof(swListenPort));
+    swListenPort *ls = zan_shm_calloc(1, sizeof(swListenPort));
     if (ls == NULL)
     {
         zanError("alloc failed");
@@ -387,7 +446,7 @@ swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port
     }
 
     //create server socket
-    int sock = swSocket_create(ls->type,NULL,NULL);
+    int sock = swSocket_create(ls->type, NULL, NULL);
     if (sock < 0)
     {
         zanError("create socket failed.");
@@ -451,9 +510,141 @@ int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId)
         return ZAN_ERR;
     }
 
+    ///TODO:::
     int ret = //(ServerG.main_reactor)?
               ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_worker, &ev_data, sendn);
               //swSocket_write_blocking(worker->pipe_worker, &ev_data, sendn);
 
     return ret;
+}
+
+void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id)
+{
+    swDataHead connect_event;
+    connect_event.type = SW_EVENT_CONNECT;
+    connect_event.from_id = reactor_id;
+    connect_event.fd = fd;
+
+    if (serv->factory.notify(&serv->factory, &connect_event) < 0)
+    {
+        zanWarn("send notification SW_EVENT_CONNECT, [fd=%d] failed.", fd);
+    }
+}
+
+static int zanServer_send(zanServer *serv, swSendData *resp)
+{
+    return swWrite(resp->info.fd, resp->data, resp->info.len);
+}
+
+int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length)
+{
+    swSendData _send;
+    zanFactory   *factory = &(serv->factory);
+    zanServerSet *servSet = &ServerG.servSet;
+
+    //More than the output buffer
+    if (length >= servSet->buffer_output_size)
+    {
+        zanWarn("More than the output buffer size[%d], please use the sendfile.", servSet->buffer_output_size);
+        return ZAN_ERR;
+    }
+
+    _send.info.fd = fd;
+    _send.info.type = SW_EVENT_TCP;
+    _send.data = data;
+
+    if (length >= SW_IPC_MAX_SIZE - sizeof(swDataHead))
+    {
+        _send.length = length;
+    }
+    else
+    {
+        _send.info.len = length;
+        _send.length = 0;
+    }
+    return factory->finish(factory, &_send);
+}
+
+void zanServer_store_listen_socket(zanServer *serv)
+{
+    int index  = -1;
+    int sockfd = 0;
+    swListenPort *ls = NULL;
+
+    LL_FOREACH(serv->listen_list, ls)
+    {
+        index++;
+        sockfd = ls->sock;
+        if (sockfd <= 0)
+        {
+            zanError("sockfd=%d, sock_type=%d, port=%d, index=%d", sockfd, ls->type, ls->port, index);
+            continue;
+        }
+
+        //save server socket to connection_list
+        serv->connection_list[sockfd].fd = sockfd;
+        //socket type
+        serv->connection_list[sockfd].socket_type = ls->type;
+        //save listen_host object
+        serv->connection_list[sockfd].object = ls;
+
+        if (swSocket_is_dgram(ls->type))
+        {
+            if (ls->type == SW_SOCK_UDP)
+            {
+                serv->connection_list[sockfd].info.addr.inet_v4.sin_port = htons(ls->port);
+            }
+            else if (ls->type == SW_SOCK_UDP6)
+            {
+                ServerG.serv->udp_socket_ipv6 = sockfd;
+                serv->connection_list[sockfd].info.addr.inet_v6.sin6_port = htons(ls->port);
+            }
+        }
+        else
+        {
+            //IPv4
+            if (ls->type == SW_SOCK_TCP)
+            {
+                serv->connection_list[sockfd].info.addr.inet_v4.sin_port = htons(ls->port);
+            }
+            //IPv6
+            else if (ls->type == SW_SOCK_TCP6)
+            {
+                serv->connection_list[sockfd].info.addr.inet_v6.sin6_port = htons(ls->port);
+            }
+        }
+
+        if (sockfd > swServer_get_maxfd(serv))
+        {
+            swServer_set_maxfd(serv, sockfd);
+        }
+
+        if (sockfd < swServer_get_minfd(serv) || 0 == swServer_get_minfd(serv))
+        {
+            swServer_set_minfd(serv, sockfd);
+        }
+    }
+}
+
+swConnection *zanServer_verify_connection(zanServer *serv, int session_id)
+{
+    swSession *session = zanServer_get_session(serv, session_id);
+    int fd = session->fd;
+    swConnection *conn = zanServer_get_connection(serv, fd);
+    if (!conn || conn->active == 0)
+    {
+        return NULL;
+    }
+    if (session->id != session_id || conn->session_id != session_id)
+    {
+        return NULL;
+    }
+#ifdef SW_USE_OPENSSL
+    if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
+    {
+        zanError("SSL not ready");
+        return NULL;
+    }
+#endif
+    return conn;
 }

@@ -28,8 +28,8 @@ extern "C" {
 #endif
 
 
-int zan_net_onAccept(swReactor *reactor, swEvent *event);
-void zan_net_enableAccept(swReactor *reactor);
+int zanReactor_onAccept(swReactor *reactor, swEvent *event);
+void zanReactor_enableAccept(swReactor *reactor);
 
 #ifdef __cplusplus
 }

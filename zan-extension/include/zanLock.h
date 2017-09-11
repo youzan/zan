@@ -23,7 +23,6 @@
 
 #include "swoole.h"
 #include "zanAtomic.h"
-#include "zanLog.h"
 
 #ifdef __cplusplus
 extern "C" {

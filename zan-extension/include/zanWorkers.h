@@ -52,10 +52,10 @@ enum zanProcessType
 {
     ZAN_PROCESS_UNKNOWN    = 0,
     ZAN_PROCESS_MASTER     = 1,
-    ZAN_PROCESS_NETWORKER  = 2,
-    ZAN_PROCESS_WORKER     = 3,
-    ZAN_PROCESS_TASKWORKER = 4,
-    ZAN_PROCESS_USERWORKER = 5,
+    ZAN_PROCESS_WORKER     = 2,
+    ZAN_PROCESS_TASKWORKER = 3,
+    ZAN_PROCESS_USERWORKER = 4,
+    ZAN_PROCESS_NETWORKER  = 5,
 };
 
 #define is_unknown_process()  (ServerG.process_type == ZAN_PROCESS_UNKNOWN)
@@ -115,11 +115,12 @@ typedef struct _zanUserWorker_node
 
 /*---------------------init and free worker struct-----------------------*/
 ///TODO:::: delete or replace
-int zan_worker_init(zanWorker *worker);
-void zan_worker_free(zanWorker *worker);
+int zanWorker_init(zanWorker *worker);
+void zanWorker_free(zanWorker *worker);
 
 //networker<--->worker<--->task_worker
-int zan_worker_send2worker(zanWorker *dst_worker, void *buf, int n, int flag);
+int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int n, int flag);
+int zanWorker_send2reactor(swEventData *ev_data, size_t sendn, int fd);
 
 ////////////////////////////////////////////////////////////////////////////////
 //worker pool

@@ -120,7 +120,7 @@ int zan_pool_alloc_taskworker(zanProcessPool *pool)
     //init every task_worker
     for (index = 0; index < worker_num; index++)
     {
-        if (zan_worker_init((&pool->workers[index])) < 0)
+        if (zanWorker_init((&pool->workers[index])) < 0)
         {
             zanError("create taskworker failed.");
             return ZAN_ERR;
@@ -176,7 +176,7 @@ int zan_pool_dispatch_to_taskworker(zanProcessPool *pool, swEventData *data, int
     worker = zan_pool_get_worker(pool, *dst_worker_id);
     int sendn = sizeof(data->info) + data->info.len;
 
-    int ret = zan_worker_send2worker(worker, data, sendn, ZAN_PIPE_MASTER | ZAN_PIPE_NONBLOCK);
+    int ret = zanWorker_send2worker(worker, data, sendn, ZAN_PIPE_MASTER | ZAN_PIPE_NONBLOCK);
     if (ret < 0)
     {
         zanWarn("worker send %d bytes to taskworker#%d failed.", sendn, *dst_worker_id);
@@ -373,13 +373,13 @@ static void zan_taskworker_onStart(zanProcessPool *pool, zanWorker *worker)
     zanServer *serv = ServerG.serv;
 
     ServerG.process_pid  = zan_getpid();
-    ServerG.process_type = ZAN_PROCESS_WORKER;
+    ServerG.process_type = ZAN_PROCESS_TASKWORKER;
     ServerWG.worker_id   = worker->worker_id;
 
     //
     if (serv->onWorkerStart)
     {
-        zanWarn("taskworker: call user worker onStart function");
+        //zanWarn("taskworker: call worker onStart, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
         serv->onWorkerStart(serv, worker->worker_id);
     }
 }
@@ -389,8 +389,8 @@ static void zan_taskworker_onStop(zanProcessPool *pool, zanWorker *worker)
     zanServer *serv = ServerG.serv;
     if (serv->onWorkerStop)
     {
-        zanWarn("taskworker: call user worker onStop function");
+        //zanWarn("taskworker: call user worker onStop, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
         serv->onWorkerStop(serv, worker->worker_id);
     }
-    zan_worker_free(worker);
+    zanWorker_free(worker);
 }
