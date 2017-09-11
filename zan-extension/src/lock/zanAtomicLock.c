@@ -19,6 +19,7 @@
 //#include "zanBaseOperator.h"
 #include "swBaseOperator.h"    ///todo:replace
 #include "zanLock.h"
+#include "zanLog.h"
 
 static int zanAtomicLock_lock(zanLock *lock);
 static int zanAtomicLock_unlock(zanLock *lock);

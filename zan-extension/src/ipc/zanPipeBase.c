@@ -17,6 +17,8 @@
 */
 
 #include "zanIpc.h"
+#include "zanSocket.h"
+#include "zanLog.h"
 
 static int zanPipeBase_read(zanPipe *pPipe, void *buffer, int length);
 static int zanPipeBase_write(zanPipe *pPipe, void *buffer, int length);

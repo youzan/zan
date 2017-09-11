@@ -17,7 +17,7 @@
 */
 
 #include "zanLog.h"
-#include "swWork.h"
+#include "zanWorkers.h"
 #include "swBaseOperator.h"
 
 #define ZAN_LOG_BUFFER_SIZE 1024
@@ -38,17 +38,17 @@ void zanLog_init(char *logfile,int port)
 
     if (log_client.connect(&log_client, logfile, port, -1, 1) < 0)
     {
-        SwooleG.log_fd = STDOUT_FILENO;
+        ServerG.log_fd = STDOUT_FILENO;
         printf("connect to remote log server[%s:%d] failed.", logfile, port);
     }
     else
     {
-        SwooleG.log_fd = log_client.socket->fd;
+        ServerG.log_fd = log_client.socket->fd;
     }
 #else
-    SwooleG.log_fd = open(logfile, O_APPEND| O_RDWR | O_CREAT, 0666);
+    ServerG.log_fd = open(logfile, O_APPEND| O_RDWR | O_CREAT, 0666);
 #endif
-    if (SwooleG.log_fd < 0)
+    if (ServerG.log_fd < 0)
     {
         printf("open(%s) failed. Error: %s[%d]", logfile, strerror(errno), errno);
     }
@@ -56,13 +56,13 @@ void zanLog_init(char *logfile,int port)
 
 void zanLog_free(void)
 {
-    if (SwooleG.log_fd > STDOUT_FILENO)
+    if (ServerG.log_fd > STDOUT_FILENO)
     {
-        close(SwooleG.log_fd);
-        SwooleG.log_fd = 0;
+        close(ServerG.log_fd);
+        ServerG.log_fd = 0;
     }
 
-    sw_free(SwooleG.log_addr);
+    zan_free(ServerG.servSet.log_file);
 }
 
 void zanLog_put(int level, char *cnt)
@@ -96,35 +96,35 @@ void zanLog_put(int level, char *cnt)
     time_t t = time(NULL);
     struct tm *p = localtime(&t);
     snprintf(date_str, ZAN_LOG_DATE_STRLEN, "%d-%02d-%02d %02d:%02d:%02d",
-            p->tm_year + 1900, p->tm_mon + 1, p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);
+             p->tm_year + 1900, p->tm_mon + 1, p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);
 
     char process_flag = '@';
     int process_id = 0;
 
-    switch(SwooleG.process_type)
+    switch(ServerG.process_type)
     {
-    case SW_PROCESS_MASTER:        ///TODO:::
-        process_flag = '#';
-        process_id = SwooleTG.id;
+    case ZAN_PROCESS_MASTER:
+        process_flag = 'm';
+        process_id = ServerTG.thread_id;
         break;
-    case SW_PROCESS_MANAGER:
-        process_flag = '$';
+    case ZAN_PROCESS_WORKER:
+        process_flag = 'w';
+        process_id = ServerWG.worker_id;
         break;
-    case SW_PROCESS_WORKER:
-        process_flag = '*';
-        process_id = SwooleWG.id;
+    case ZAN_PROCESS_TASKWORKER:
+        process_flag = 't';
+        process_id = ServerWG.worker_id;
         break;
-    case SW_PROCESS_TASKWORKER:
-        process_flag = '^';
-        process_id = SwooleWG.id;
+    case ZAN_PROCESS_NETWORKER:
+        process_flag = 'n';
         break;
     default:
         break;
     }
 
     int n = snprintf(log_str, ZAN_LOG_BUFFER_SIZE,
-            "[%s %c%d.%d]\t%s\t%s\n", date_str, process_flag, SwooleG.pid, process_id, level_str, cnt);
-    if (write(SwooleG.log_fd, log_str, n) < 0)
+            "[%s %c.%d.%d]\t%s\t%s\n", date_str, process_flag, ServerG.process_pid, process_id, level_str, cnt);
+    if (write(ServerG.log_fd, log_str, n) < 0)
     {
         return;
     }

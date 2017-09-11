@@ -16,11 +16,9 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swWork.h"
-#include "swFactory.h"
-#include "swServer.h"
-#include "swBaseOperator.h"
-#include "swExecutor.h"
+#include "list.h"
+#include "zanServer.h"
+#include "zanExecutor.h"
 
 #include "zanGlobalDef.h"
 #include "zanWorkers.h"
@@ -61,11 +59,11 @@ int zan_pool_alloc_networker(zanProcessPool *pool)
     for (index = 0; index < servSet->net_worker_num; index++)
     {
         zanWorker *worker = &(pool->workers[index]);
-        if (zan_worker_init(worker) < 0)
+        if (zanWorker_init(worker) < 0)
         {
             zan_shm_free(pool->workers);
             zan_free(pool->pipes);
-            zanWarn("zan_worker_init failed.");
+            zanWarn("zanWorker_init failed.");
             return ZAN_ERR;
         }
 
@@ -144,20 +142,17 @@ static void zan_networker_onStart(zanProcessPool *pool, zanWorker *worker)
 static void zan_networker_onStop(zanProcessPool *pool, zanWorker *worker)
 {
     ///TODO:::
-    zanWarn("networker onStop....");
+    //zanWarn("networker onStop, worker_id=%d, process_types=%d", worker->worker_id, worker->process_type);
 }
 
 
 int zan_networker_process_loop(zanWorker *worker)
 {
-    zanServer *serv = ServerG.serv;
+    zanServer    *serv    = ServerG.serv;
+    zanServerSet *servSet = &ServerG.servSet;
 
     ServerG.process_pid  = zan_getpid();
     ServerG.process_type = ZAN_PROCESS_NETWORKER;
-
-    //worker_id
-    ServerWG.worker_id     = worker->worker_id;
-    ServerWG.request_count = 0;
 
     swReactor *main_reactor = (swReactor *)zan_malloc(sizeof(swReactor));
     if (swReactor_init(main_reactor, SW_REACTOR_MAXEVENTS) < 0)
@@ -167,31 +162,39 @@ int zan_networker_process_loop(zanWorker *worker)
     }
     ServerG.main_reactor = main_reactor;
 
-    ///TODO:::
-    //swServer_store_listen_socket(serv);
-
     //main_reactor accept/recv/send....
-    main_reactor->thread = 1;
-    main_reactor->socket_list = serv->connection_list;
-    main_reactor->disable_accept = 0;
-    main_reactor->enable_accept = zan_net_enableAccept;
-
-    main_reactor->id  = worker->worker_id;
     main_reactor->ptr = serv;
-    main_reactor->setHandle(main_reactor, SW_FD_LISTEN, zan_net_onAccept);
+    main_reactor->thread = 1;                  ///////???????????????????
+    main_reactor->id  = worker->worker_id;
+    main_reactor->disable_accept = 0;
+    main_reactor->socket_list = serv->connection_list;
+    main_reactor->max_socket  = servSet->max_connection;
+    main_reactor->enable_accept = zanReactor_enableAccept;
 
-    if (serv->onStart)
+    zanServer_store_listen_socket(serv);
+    main_reactor->setHandle(main_reactor, SW_FD_LISTEN | SW_EVENT_READ, zanReactor_onAccept);
+
+    //listen UDP
+
+    //TCP
+    if (ZAN_OK != zan_reactor_tcp_setup(main_reactor, serv))
     {
-        zanWarn("call server onStart");
-        serv->onStart(serv);
+        zanWarn("reactor tcp setup failed.");
+        return ZAN_ERR;
     }
-
-    zanWarn("networker loop in: worker_id=%d, process_type=%d, pid=%d", worker->worker_id, ServerG.process_type, ServerG.process_pid);
+    zanDebug("networker loop in: worker_id=%d, process_type=%d, pid=%d", worker->worker_id, ServerG.process_type, ServerG.process_pid);
 
     struct timeval tmo;
     tmo.tv_sec  = 1;
     tmo.tv_usec = 0;
-    return main_reactor->wait(main_reactor, &tmo);
+    int ret = main_reactor->wait(main_reactor, &tmo);
+
+    main_reactor->free(main_reactor);
+
+    zanWarn("networker loop out: wait return ret=%d, worker_id=%d, process_type=%d, pid=%d",
+            ret, worker->worker_id, ServerG.process_type, ServerG.process_pid);
+
+    return ret;
 
 #if 0
     ///Test:::

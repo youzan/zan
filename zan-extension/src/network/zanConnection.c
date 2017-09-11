@@ -21,6 +21,7 @@
 #include "swSocket.h"
 #include "swPort.h"
 #include "swBaseOperator.h"
+#include "swServer.h"
 
 #include "zanServer.h"
 #include "zanAtomic.h"
@@ -31,10 +32,10 @@
 
 /////TODO:::Test.....
 
-static void zan_net_disable_accept(swReactor *reactor);
-//static swConnection* zan_connection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id);
+static void zanReactor_disableAccept(swReactor *reactor);
+static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id);
 
-void zan_net_enableAccept(swReactor *reactor)
+void zanReactor_enableAccept(swReactor *reactor)
 {
     swListenPort *ls = NULL;
     LL_FOREACH(ServerG.serv->listen_list, ls)
@@ -48,7 +49,7 @@ void zan_net_enableAccept(swReactor *reactor)
     }
 }
 
-static void zan_net_disable_accept(swReactor *reactor)
+static void zanReactor_disableAccept(swReactor *reactor)
 {
     swListenPort *ls = NULL;
 
@@ -62,7 +63,7 @@ static void zan_net_disable_accept(swReactor *reactor)
     }
 }
 
-int zan_net_onAccept(swReactor *reactor, swEvent *event)
+int zanReactor_onAccept(swReactor *reactor, swEvent *event)
 {
     zanServer    *serv    = ServerG.serv;
     zanServerSet *servSet = &ServerG.servSet;
@@ -70,11 +71,9 @@ int zan_net_onAccept(swReactor *reactor, swEvent *event)
     swListenPort *listen_host    = NULL;
     swSocketAddress client_addr;
 
-    //swReactor *sub_reactor = NULL;
     client_addrlen = sizeof(client_addr);
     listen_host    = serv->connection_list[event->fd].object;
 
-    //SW_ACCEPT_AGAIN
     int index = 0;
     for (index = 0; index < SW_ACCEPT_MAX_COUNT; index++)
     {
@@ -86,18 +85,22 @@ int zan_net_onAccept(swReactor *reactor, swEvent *event)
 #else
         new_fd = accept(event->fd, (struct sockaddr*)&client_addr, &client_addrlen);
 #endif
+
+        //zanWarn("accepted: new_fd = %d", new_fd);
         if (new_fd < 0)
         {
             switch (errno)
             {
                 case EAGAIN:
+                    //zanWarn("accept return EAGAIN");
                     return ZAN_OK;
                 case EINTR:
                     continue;
                 default:
                     if (errno == EMFILE || errno == ENFILE)
                     {
-                        zan_net_disable_accept(reactor);
+                        zanWarn("accept failed 0, errno=%d:%s", errno, strerror(errno));
+                        zanReactor_disableAccept(reactor);
                         reactor->disable_accept = 1;
                     }
                     zanWarn("accept failed, errno=%d:%s", errno, strerror(errno));
@@ -110,8 +113,7 @@ int zan_net_onAccept(swReactor *reactor, swEvent *event)
             zan_set_nonblocking(new_fd, 1);
         }
 #endif
-
-        //zanTrace("[NetWorker] Accept new connection. maxfd=%d|reactor_id=%d|new_fd=%d", swServer_get_maxfd(serv), reactor->id, new_fd);
+        zanDebug("[NetWorker] Accept new connection. maxfd=%d|reactor_id=%d|new_fd=%d", swServer_get_maxfd(serv), reactor->id, new_fd);
 
         //too many connection
         if (new_fd >= servSet->max_connection)
@@ -120,10 +122,9 @@ int zan_net_onAccept(swReactor *reactor, swEvent *event)
             close(new_fd);
             return ZAN_OK;
         }
-#if 0
+
         //add to connection_list
-        int reactor_id = reactor->id;//new_fd % serv->reactor_num;
-        swConnection *conn = zan_connection_create(serv, listen_host, new_fd, event->fd, reactor_id);
+        swConnection *conn = zanConnection_create(serv, listen_host, new_fd, event->fd, reactor->id);
         memcpy(&conn->info.addr, &client_addr, sizeof(client_addr));
         conn->socket_type = listen_host->type;
 
@@ -142,28 +143,25 @@ int zan_net_onAccept(swReactor *reactor, swEvent *event)
             conn->ssl = NULL;
         }
 #endif
-#endif
 
         //new_connection function must before reactor->add
-        int events;
+        int events = ZAN_EVENT_READ;
         if (serv->onConnect && !listen_host->ssl)
         {
-            zanWarn("new clinet connect, notify to worker, new_fd=%d", new_fd);
-            //conn->connect_notify = 1;
-            events = ZAN_EVENT_WRITE;
-        }
-        else
-        {
-            events = ZAN_EVENT_READ;
+            zanWarn("new clinet connect, set connect_notify=1, new_fd=%d", new_fd);
+            conn->connect_notify = 1;
+            events |= ZAN_EVENT_WRITE;
         }
 
         if (reactor->add(reactor, new_fd, SW_FD_TCP | events) < 0)
         {
-            zanError("reactor add new_fd=%d failed", new_fd);
-            //bzero(conn, sizeof(swConnection));
+            zanError("networker, reactor->add new_fd=%d failed, events=%d", new_fd, SW_FD_TCP | events);
+            bzero(conn, sizeof(swConnection));
             close(new_fd);
             return ZAN_OK;
         }
+
+        zanDebug("networker accept, reactor->add new_fd=%d, events=%d", new_fd, SW_FD_TCP | events);
 
 #ifdef SW_ACCEPT_AGAIN
         continue;
@@ -174,8 +172,7 @@ int zan_net_onAccept(swReactor *reactor, swEvent *event)
     return ZAN_OK;
 }
 
-#if 0
-static swConnection* zan_connection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id)
+static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id)
 {
     swConnection* connection = NULL;
 
@@ -184,7 +181,7 @@ static swConnection* zan_connection_create(zanServer *serv, swListenPort *ls, in
 
     if (fd > swServer_get_maxfd(serv))
     {
-        //swServer_set_maxfd(serv, fd);
+        swServer_set_maxfd(serv, fd);
     }
 
     connection = &(serv->connection_list[fd]);
@@ -213,8 +210,8 @@ static swConnection* zan_connection_create(zanServer *serv, swListenPort *ls, in
     connection->fd = fd;
     connection->from_id = reactor_id;
     connection->from_fd = from_fd;
-    connection->connect_time = ServerGS->now;
-    connection->last_time    = ServerGS->now;
+    connection->connect_time = ServerGS->server_time;
+    connection->last_time    = ServerGS->server_time;
     connection->active = 1;
 
 #ifdef SW_REACTOR_SYNC_SEND
@@ -254,4 +251,4 @@ static swConnection* zan_connection_create(zanServer *serv, swListenPort *ls, in
 #endif
     return connection;
 }
-#endif
+

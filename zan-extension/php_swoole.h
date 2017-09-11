@@ -306,6 +306,10 @@ PHP_METHOD(swoole_server, getClientInfo);
 PHP_METHOD(swoole_server, denyRequest);
 PHP_METHOD(swoole_server, exit);
 
+//test
+PHP_METHOD(swoole_server, getWorkerType);
+PHP_METHOD(swoole_server, getWorkerPid);
+
 #ifdef HAVE_PCRE
 PHP_METHOD(swoole_connection_iterator, count);
 PHP_METHOD(swoole_connection_iterator, rewind);
@@ -353,8 +357,6 @@ PHP_FUNCTION(swoole_timer_exists);
 PHP_FUNCTION(swoole_client_select);
 
 
-#if 0
-////TODO:::
 //---------------------------------------------------------
 //                  swoole_connpool callback api
 //---------------------------------------------------------
@@ -364,7 +366,6 @@ ZEND_FUNCTION(onClientClose);
 ZEND_FUNCTION(onClientTimeout);
 ZEND_FUNCTION(onClientRecieve);
 ZEND_FUNCTION(onSubClientConnect);
-#endif
 
 //---------------------------------------------------------
 //                 others global api

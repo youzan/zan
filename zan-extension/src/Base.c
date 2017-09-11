@@ -24,7 +24,7 @@
 #include "swBaseOperator.h"
 #include <sys/resource.h>
 
-#include "zanGlobalDef.h"
+#include "zanGlobalVar.h"
 
 void swoole_init(void)
 {
@@ -200,7 +200,7 @@ void zan_init(void)
     }
 
     //init global lock
-    if (ZAN_OK != zanLock_create(&ServerGS->master_lock, ZAN_MUTEX, 1))
+    if (ZAN_OK != zanLock_create(&ServerGS->lock, ZAN_MUTEX, 1))
     {
         printf("[Master] Fatal Error: zanLock_create ServerGS->lock failed.");
         exit(3);
@@ -225,6 +225,28 @@ void zan_init(void)
         printf("[Master] Fatal Error: zanLock_create  ServerStats->lock failed.");
         exit(3);
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    ServerG.factory_mode    = ZAN_MODE_PROCESS;
+    ServerG.running         = 1;
+    ServerG.log_fd          = STDOUT_FILENO;
+    ServerG.cpu_num         = zan_sysconf(_SC_NPROCESSORS_ONLN);
+    ServerG.pagesize        = zan_sysconf(_SC_PAGESIZE);
+    ServerG.process_pid     = zan_getpid();
+    ServerG.use_timer_pipe  = 1;                 //////////////////////////////
+
+    zan_uname(&ServerG.uname);
+
+    struct rlimit rlmt;
+    ServerG.max_sockets = (zan_getrlimit(RLIMIT_NOFILE, &rlmt) < 0) ?
+                          1024:(uint32_t) rlmt.rlim_cur;
+
+#if defined(HAVE_REUSEPORT) && defined(HAVE_EPOLL)
+    if (swoole_version_compare(ServerG.uname.release, "3.9.0") >= 0)
+    {
+        ServerG.reuse_port = 1;
+    }
+#endif
 
     zan_update_time();
 }

@@ -274,8 +274,8 @@ if test "$PHP_ZAN" != "no"; then
     swoole_source_file="swoole.c \
         swoole_server1.c \
         swoole_server_port1.c \
-dnl        swoole_connpool.c \
-        swoole_client.c \
+        swoole_connpool.c \
+        swoole_client1.c \
         swoole_event.c \
         swoole_timer.c \
         swoole_async.c \
@@ -285,8 +285,8 @@ dnl        swoole_http_server.c \
 dnl        swoole_http_v2_server.c \
 dnl        swoole_websocket_server.c \
 dnl        swoole_http_client.c \
-dnl        swoole_mysql.c \
-dnl        swoole_redis.c \
+        swoole_mysql.c \
+        swoole_redis.c \
         swoole_nova.c \
         swoole_stats.c \
         src/Base.c \
@@ -339,7 +339,7 @@ dnl        swoole_redis.c \
         src/network/Client.c \
         src/network/Connection.c \
         src/network/Manager.c \
-        src/network/Port.c \
+dnl        src/network/Port.c \
         src/network/ReactorAccept.c \
         src/network/ReactorProcess.c \
         src/network/ReactorThread.c \
@@ -350,6 +350,8 @@ dnl        swoole_redis.c \
         src/network/zanConnection.c \
         src/network/zanSocket.c \
         src/network/zanServer.c \
+        src/network/zanPort.c \
+        src/network/zanReactorThread.c \
         src/protocol/Base.c \
         src/protocol/Base64.c \
         src/protocol/Http.c \
