@@ -155,6 +155,8 @@ void zan_processpool_shutdown(zanProcessPool *pool);
 //
 void zan_stats_set_worker_status(zanWorker *worker, int status);
 void zan_worker_clean_pipe(void);
+int zan_worker_process_loop(zanWorker *worker);
+zan_pid_t zanTaskWorker_spawn(zanWorker *worker);
 
 static inline zanWorker* zan_pool_get_worker(zanProcessPool *pool, int worker_id)
 {

@@ -394,3 +394,46 @@ static void zan_taskworker_onStop(zanProcessPool *pool, zanWorker *worker)
     }
     zanWorker_free(worker);
 }
+
+zan_pid_t zanTaskWorker_spawn(zanWorker *worker)
+{
+    pid_t pid = fork();
+    zanProcessPool *pool = worker->pool;
+
+    switch (pid)
+    {
+		//child
+		case 0:
+    	{
+    		if (pool->onWorkerStart != NULL)
+			{
+				pool->onWorkerStart(pool, worker);
+			}
+			
+			int ret_code = pool->main_loop(pool, worker);
+			
+			if (pool->onWorkerStop != NULL)
+			{
+				pool->onWorkerStop(pool, worker);
+			}
+			exit(ret_code);
+			break;
+    	}
+		case -1:
+			zanSysError("fork failed.");
+			break;
+        //parent
+		default:
+			//remove old process
+			if (worker->worker_pid)
+			{
+				swHashMap_del_int(pool->map, worker->worker_pid);
+			}
+			worker->deleted = 0;
+			worker->worker_pid = pid;
+			//insert new process
+			swHashMap_add_int(pool->map, pid, worker);
+			break;
+    }
+    return pid;
+}

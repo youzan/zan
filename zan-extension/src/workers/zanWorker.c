@@ -33,7 +33,7 @@ static int zan_worker_onPipeReceive(swReactor *reactor, swEvent *event);
 static void zan_worker_onStart(zanProcessPool *pool, zanWorker *worker);
 static void zan_worker_onStop(zanProcessPool *pool, zanWorker *worker);
 static int zan_worker_onTask(zanFactory *factory, swEventData *task);
-static int zan_worker_process_loop(zanWorker *worker);
+
 
 int zanWorker_init(zanWorker *worker)
 {
@@ -132,12 +132,13 @@ int zan_worker_process_loop(zanWorker *worker)
     ServerG.main_reactor->setHandle(ServerG.main_reactor, SW_FD_PIPE | SW_FD_WRITE, swReactor_onWrite);  //????? SW_EVENT_WRITE
 
     zanWarn("worker, reactor->add fd=%d, event=%d", pipe_worker, SW_FD_PIPE | SW_EVENT_READ);
-
+    
+	
     zanProcessPool *pool = worker->pool;
     pool->onWorkerStart(pool, worker);
     zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
-
-    zanDebug("worker loop in: worker_id=%d, process_type=%d, pid=%d", worker->worker_id, ServerG.process_type, ServerG.process_pid);
+    zanWarn("worker_pid=%d, worker_id=%d ", worker->worker_pid, worker->worker_pid);
+    zanDebug("worker loop in: worker_pid=%d, worker_id=%d, process_type=%d, pid=%d", worker->worker_pid, worker->worker_id, ServerG.process_type, ServerG.process_pid);
 
     int ret = ServerG.main_reactor->wait(ServerG.main_reactor, NULL);
     zanWarn("worker wait return, ret=%d", ret);
