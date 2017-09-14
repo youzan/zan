@@ -20,8 +20,7 @@
 #define _ZAN_ZANFACTORY_H_
 
 #include "swoole.h"
-//#include "swPipe.h"
-//#include "swMemory/memoryPool.h"
+#include "swFactory.h"
 
 #ifdef __cplusplus
 extern "C" {

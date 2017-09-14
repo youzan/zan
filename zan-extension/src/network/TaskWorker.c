@@ -21,6 +21,7 @@
 #include "swWork.h"
 #include "swSignal.h"
 #include "swBaseOperator.h"
+#include "swLog.h"
 
 
 static swEventData *current_task;

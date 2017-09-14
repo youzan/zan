@@ -22,6 +22,7 @@
 #include "php_swoole.h"
 #include "swBaseOperator.h"
 #include "zanGlobalVar.h"
+#include "swLog.h"
 
 static char *callback[PHP_SERVER_PORT_CALLBACK_NUM] = {
         "Connect",

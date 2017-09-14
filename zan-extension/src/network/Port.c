@@ -28,6 +28,7 @@
 #include "swProtocol/websocket.h"
 #include "swProtocol/mqtt.h"
 #include "swPort.h"
+#include "swLog.h"
 
 static int swPort_onRead_raw(swReactor *reactor, swListenPort *lp, swEvent *event);
 static int swPort_onRead_check_length(swReactor *reactor, swListenPort *lp, swEvent *event);

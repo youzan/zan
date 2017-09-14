@@ -20,6 +20,7 @@
 #include "swFactory.h"
 #include "swServer.h"
 #include "swBaseOperator.h"
+#include "swLog.h"
 
 static int swProcessPool_worker_loop(swProcessPool *pool, swWorker *worker);
 static void swProcessPool_free(swProcessPool *pool);

@@ -155,10 +155,6 @@ if test "$PHP_ZAN" != "no"; then
         AC_DEFINE(SW_USE_SOCKETS, 1, [enable sockets support])
     fi
 
-    if test "$PHP_RINGBUFFER" = "yes"; then
-        AC_DEFINE(SW_USE_RINGBUFFER, 1, [enable ringbuffer support])
-    fi
-
     if test "$PHP_HTTP2" = "yes"; then
         AC_DEFINE(SW_USE_HTTP2, 1, [enable http2.0 support])
     fi
@@ -351,7 +347,6 @@ dnl        src/network/Port.c \
         src/network/zanSocket.c \
         src/network/zanServer.c \
         src/network/zanPort.c \
-        src/network/zanReactorThread.c \
         src/protocol/Base.c \
         src/protocol/Base64.c \
         src/protocol/Http.c \

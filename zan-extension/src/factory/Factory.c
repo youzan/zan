@@ -20,6 +20,8 @@
 #include "swFactory.h"
 #include "swServer.h"
 #include "swExecutor.h"
+#include "swGlobalVars.h"
+#include "swLog.h"
 
 static int swFactory_start(swFactory *factory);
 static int swFactory_dispatch(swFactory *factory, swDispatchData *task);

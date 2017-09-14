@@ -24,6 +24,7 @@
 #include "list.h"
 #include "swWork.h"
 #include "swExecutor.h"
+#include "swLog.h"
 
 static int swReactorProcess_loop(swProcessPool *pool, swWorker *worker);
 static int swReactorProcess_onPipeRead(swReactor *reactor, swEvent *event);

@@ -18,9 +18,6 @@
   +----------------------------------------------------------------------+
 */
 
-
-/* $Id$ */
-
 #ifndef PHP_SWOOLE_H
 #define PHP_SWOOLE_H
 
@@ -41,18 +38,18 @@
 #include <ext/standard/info.h>
 #include <ext/standard/php_array.h>
 
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "zanGlobalDef.h"
 #include "swoole.h"
 #include "swServer.h"
 #include "swClient.h"
 #include "swAsyncIO.h"
 
-#define PHP_SWOOLE_VERSION  "3.1.0"
+#include "zanGlobalVar.h"
+
+#include "php7_wrapper.h"
 
 /**
  * PHP5.2
@@ -65,7 +62,14 @@
 #define ZEND_MOD_END {NULL,NULL,NULL}
 #endif
 
-#define SW_HOST_SIZE  128
+#ifdef PHP_WIN32
+#   define PHP_SWOOLE_API __declspec(dllexport)
+#elif defined(__GNUC__) && __GNUC__ >= 4
+#   define PHP_SWOOLE_API __attribute__ ((visibility("default")))
+#else
+#   define PHP_SWOOLE_API
+#endif
+
 
 typedef struct
 {
@@ -75,34 +79,28 @@ typedef struct
 
 extern zend_module_entry zan_module_entry;
 
-#define phpext_swoole_ptr &zan_module_entry
-
-#ifdef PHP_WIN32
-#	define PHP_SWOOLE_API __declspec(dllexport)
-#elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_SWOOLE_API __attribute__ ((visibility("default")))
-#else
-#	define PHP_SWOOLE_API
-#endif
-
-#define SWOOLE_PROPERTY_MAX     32
-#define SWOOLE_OBJECT_MAX       10000000
-
 enum obj_swoole_property
 {
     swoole_property_common = 0,
     swoole_property_socket = 1,
-	swoole_connpool_object = 2,
-	swoole_property_nums
+    swoole_connpool_object = 2,
+    swoole_property_nums
 };
 
 typedef struct
 {
-    void **array;									/// object 数组
-    uint32_t size;									/// object 数组长度
-    void **property[swoole_property_nums];			/// object 属性数组
+    void **array;                                   /// object 数组
+    uint32_t size;                                  /// object 数组长度
+    void **property[swoole_property_nums];          /// object 属性数组
     uint32_t property_size[swoole_property_nums];
 } swoole_object_array;
+
+#define PHP_SWOOLE_VERSION  "3.1.0"
+#define SW_HOST_SIZE  128
+#define SWOOLE_PROPERTY_MAX     32
+#define SWOOLE_OBJECT_MAX       10000000
+#define phpext_swoole_ptr &zan_module_entry
+
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -144,8 +142,6 @@ extern swoole_object_array swoole_objects;
 #error "Enable http2 support, require openssl library."
 #endif
 #endif
-
-#include "php7_wrapper.h"
 
 #define PHP_CLIENT_CALLBACK_NUM             4
 //--------------------------------------------------------
@@ -353,14 +349,12 @@ PHP_FUNCTION(swoole_timer_exists);
 //---------------------------------------------------------
 //                  swoole_client api
 //---------------------------------------------------------
-
 PHP_FUNCTION(swoole_client_select);
 
 
 //---------------------------------------------------------
 //                  swoole_connpool callback api
 //---------------------------------------------------------
-
 ZEND_FUNCTION(onClientConnect);
 ZEND_FUNCTION(onClientClose);
 ZEND_FUNCTION(onClientTimeout);
@@ -431,21 +425,21 @@ static sw_inline void php_swoole_sha1(const char *str, int _len, unsigned char *
 
 static sw_inline int swoole_check_callable(zval *callback TSRMLS_DC)
 {
-	if (!callback || ZVAL_IS_NULL(callback))
-	{
-		return SW_ERR;
-	}
+    if (!callback || ZVAL_IS_NULL(callback))
+    {
+        return SW_ERR;
+    }
 
-	char *func_name = NULL;
-	int iRet = sw_zend_is_callable(callback, 0, &func_name TSRMLS_CC)? SW_OK:SW_ERR;
+    char *func_name = NULL;
+    int iRet = sw_zend_is_callable(callback, 0, &func_name TSRMLS_CC)? SW_OK:SW_ERR;
 
-	if (func_name)
-	{
-		if (iRet < 0) swoole_php_fatal_error(E_ERROR, "Function '%s' is not callable", func_name);
-		swoole_efree(func_name);
-	}
+    if (func_name)
+    {
+        if (iRet < 0) swoole_php_fatal_error(E_ERROR, "Function '%s' is not callable", func_name);
+        swoole_efree(func_name);
+    }
 
-	return iRet;
+    return iRet;
 }
 
 void swoole_set_object(zval *object, void *ptr);
@@ -459,7 +453,6 @@ php_socket *swoole_convert_to_socket(int sock);
 #endif
 
 void php_swoole_server_before_start(zanServer *serv, zval *zobject TSRMLS_DC);
-//void php_swoole_server_before_start(swServer *serv, zval *zobject TSRMLS_DC);
 int php_swoole_get_send_data(zval *zdata, char **str TSRMLS_DC);
 void php_swoole_get_recv_data(zval *zdata, swEventData *req, char *header, uint32_t header_length TSRMLS_DC);
 void php_swoole_onConnect(swServer *serv, swDataHead *);
@@ -474,7 +467,7 @@ void php_swoole_onWorkerError(swServer *serv, int worker_id, pid_t worker_pid, i
 
 ZEND_BEGIN_MODULE_GLOBALS(swoole)
     long aio_thread_num;
-	long log_level;
+    long log_level;
     zend_bool display_errors;
     zend_bool cli;
     zend_bool use_namespace;
@@ -498,4 +491,4 @@ extern ZEND_DECLARE_MODULE_GLOBALS(swoole);
         INIT_CLASS_ENTRY(ce, name, methods); \
     }
 
-#endif	/* PHP_SWOOLE_H */
+#endif  /* PHP_SWOOLE_H */

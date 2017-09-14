@@ -24,22 +24,22 @@
 #include "zanProcess.h"
 #include "zanGlobalDef.h"
 
-extern int zan_pool_alloc_taskworker(zanProcessPool *pool);
-extern int zan_pool_alloc_worker(zanProcessPool *pool);
-extern int zan_pool_alloc_networker(zanProcessPool *pool);
+static int zan_alloc_workers_rsc(void);
+extern int zanPool_worker_alloc(zanProcessPool *pool);
+extern int zanPool_taskworker_alloc(zanProcessPool *pool);
+extern int zanPool_networker_alloc(zanProcessPool *pool);
 
-extern int zan_pool_worker_init(zanProcessPool *pool);
-extern int zan_pool_taskworker_init(zanProcessPool *pool);
-extern int zan_pool_networker_init(zanProcessPool *pool);
+extern int zanPool_worker_init(zanProcessPool *pool);
+extern int zanPool_taskworker_init(zanProcessPool *pool);
+extern int zanPool_networker_init(zanProcessPool *pool);
 
 extern int zan_spawn_worker_process(zanProcessPool *);
 extern int zan_spawn_task_process(zanProcessPool *);
 extern int zan_spawn_net_process(zanProcessPool *);
 
-static int zan_alloc_workers_rsc(void);
+static int zan_spawn_child_process(void);
 static int zan_spawn_user_process(void);
 static int zan_alloc_userworker_process(void);
-static int zan_spawn_child_process(void);
 
 int zan_start_worker_processes(void)
 {
@@ -103,13 +103,13 @@ int zan_processpool_create(zanProcessPool *pool, int process_type)
     bzero(pool, sizeof(zanProcessPool));
     if (ZAN_PROCESS_WORKER == process_type)
     {
-        if (ZAN_OK != zan_pool_alloc_worker(pool))
+        if (ZAN_OK != zanPool_worker_alloc(pool))
         {
             zanError("alloc taskworker resource failed.");
             return ZAN_ERR;
         }
 
-        if (ZAN_OK != zan_pool_worker_init(pool))
+        if (ZAN_OK != zanPool_worker_init(pool))
         {
             zanError("init worker pool failed.");
             return ZAN_ERR;
@@ -117,13 +117,13 @@ int zan_processpool_create(zanProcessPool *pool, int process_type)
     }
     else if (ZAN_PROCESS_TASKWORKER == process_type && ServerG.servSet.task_worker_num > 0)
     {
-        if (ZAN_OK != zan_pool_alloc_taskworker(pool))
+        if (ZAN_OK != zanPool_taskworker_alloc(pool))
         {
             zanError("alloc taskworker resource failed.");
             return ZAN_ERR;
         }
 
-        if (ZAN_OK != zan_pool_taskworker_init(pool))
+        if (ZAN_OK != zanPool_taskworker_init(pool))
         {
             zanError("init taskworker pool failed.");
             return ZAN_ERR;
@@ -131,13 +131,13 @@ int zan_processpool_create(zanProcessPool *pool, int process_type)
     }
     else if (ZAN_PROCESS_NETWORKER == process_type)
     {
-        if (ZAN_OK != zan_pool_alloc_networker(pool))
+        if (ZAN_OK != zanPool_networker_alloc(pool))
         {
             zanError("alloc taskworker resource failed.");
             return ZAN_ERR;
         }
 
-        if (ZAN_OK != zan_pool_networker_init(pool))
+        if (ZAN_OK != zanPool_networker_init(pool))
         {
             zanError("init networker pool failed.");
             return ZAN_ERR;
@@ -160,7 +160,6 @@ static int zan_spawn_child_process(void)
         return ZAN_ERR;
     }
 
-#if 0
     //fork task_workes
     if (ZAN_OK != zan_spawn_task_process(&ServerGS->task_workers))
     {
@@ -174,7 +173,6 @@ static int zan_spawn_child_process(void)
         zanError("zan_spawn_user_process failed");
         return ZAN_ERR;
     }
-#endif
 
     //fork net_workes
     if (ZAN_OK != zan_spawn_net_process(&ServerGS->net_workers))
@@ -278,10 +276,9 @@ int zan_master_process_loop(zanServer *serv)
 
     if (serv->onStart)
     {
-        //zanWarn("call server onStart");
+        //zanDebug("call server onStart");
         serv->onStart(serv);
     }
-
 
     while (ServerG.running > 0)
     {
@@ -298,3 +295,4 @@ int zan_master_process_loop(zanServer *serv)
 
     return ZAN_ERR;
 }
+

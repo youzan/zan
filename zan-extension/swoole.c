@@ -17,15 +17,18 @@
   |         Zan Group   <zan@zanphp.io>                                  |
   +----------------------------------------------------------------------+
 */
-#include "php_swoole.h"
-#include "swWork.h"
-#include "swError.h"
-#include "swBaseOperator.h"
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <ifaddrs.h>
+
+#include "php_swoole.h"
+#include "swWork.h"
+#include "swError.h"
+#include "swBaseOperator.h"
+#include "swLog.h"
+
 
 #if PHP_MAJOR_VERSION < 7
 #include "ext/standard/php_smart_str.h"

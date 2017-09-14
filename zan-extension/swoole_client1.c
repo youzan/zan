@@ -22,6 +22,7 @@
 #include "php_swoole.h"
 #include "swWork.h"
 #include "swBaseOperator.h"
+#include "swLog.h"
 
 #include "ext/standard/basic_functions.h"
 

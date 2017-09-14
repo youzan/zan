@@ -24,6 +24,7 @@
 #include "swSendfile.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"
+#include "swLog.h"
 
 #ifdef SW_USE_OPENSSL
 #include "swProtocol/ssl.h"

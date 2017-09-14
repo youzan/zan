@@ -38,12 +38,11 @@
 zanServerG   ServerG;              //Local Global Variable
 zanServerGS *ServerGS = NULL;      //Share Memory Global Variable
 zanWorkerG   ServerWG;             //Worker Global Variable
-__thread zanThreadG ServerTG;      //Thread Global Variable
+//__thread zanThreadG ServerTG;      //Thread Global Variable
 zanServerStats *ServerStatsG = NULL;
 
 static void zan_server_set_init(void);
 static int zanServer_start_check(zanServer *);
-static int zanServer_send(zanServer *serv, swSendData *resp);
 static int zan_daemonize(void);
 
 /* initializing server config*/
@@ -57,7 +56,7 @@ void zanServer_init(zanServer *serv)
     //init ServerG.servSet
     zan_server_set_init();
 
-    int level = ServerG.servSet.log_level;
+    uint8_t level = ServerG.servSet.log_level;
     if (get_env_log_level() > 0)
     {
         level = get_env_log_level();
@@ -70,7 +69,7 @@ void zan_server_set_init(void)
 {
     zanServerSet *servSet = &ServerG.servSet;
 
-    servSet->reactor_num        = ZAN_REACTOR_NUM;    //todo:::delete or replaced with networker_num
+    //servSet->reactor_num        = ZAN_REACTOR_NUM;    //todo:::delete or replaced with networker_num
     servSet->worker_num         = 1; //ZAN_CPU_NUM;
     servSet->net_worker_num     = 1; //ZAN_CPU_NUM;
     servSet->dispatch_mode      = SW_DISPATCH_FDMOD;
@@ -131,28 +130,18 @@ int zanServer_create(zanServer *serv)
 
 int zanServer_start(zanServer *serv)
 {
-    if (zanServer_start_check(serv) < 0)
+    if (ZAN_OK != zanServer_start_check(serv))
     {
         zanError("zan_server_start_check failed.");
         return ZAN_ERR;
     }
 
     zanLog_init(ServerG.servSet.log_file, 0);
-
     if (ZAN_OK != zan_daemonize())
     {
         zanError("zan_daemonize failed.");
         return ZAN_ERR;
     }
-
-    //ServerGS
-    ServerGS->master_pid     = zan_getpid();
-    ServerGS->started        = 1;
-    ServerGS->server_time    = time(NULL);
-    ServerStatsG->start_time = ServerGS->server_time;
-
-    ///TODO:::
-    serv->send = zanServer_send;
 
     //set listen socket options
     swListenPort *ls = NULL;
@@ -165,7 +154,6 @@ int zanServer_start(zanServer *serv)
         }
     }
 
-    //alloc networker/worker/task_worker resources and fork child process
     zanFactory *factory = &(serv->factory);
     if (!factory || factory->start(factory) < 0)
     {
@@ -176,13 +164,8 @@ int zanServer_start(zanServer *serv)
     //init master process signal, TODO:::
     //
 
-    //master process
-    ServerG.process_pid  = ServerGS->master_pid;
-    ServerG.process_type = ZAN_PROCESS_MASTER;
-
     int ret = zan_master_process_loop(serv);
 
-    ///TODO:::
     exit(ret);
     ///swServer_free(serv);
 
@@ -282,7 +265,16 @@ static int zanServer_start_check(zanServer *serv)
         servSet->max_connection = ServerG.max_sockets;
     }
 
+    //ServerGS
+    ServerGS->master_pid     = zan_getpid();
+    ServerGS->started        = 1;
+    ServerGS->server_time    = time(NULL);
     ServerGS->session_round = 1;
+    ServerStatsG->start_time = ServerGS->server_time;
+
+    //master process
+    ServerG.process_pid  = ServerGS->master_pid;
+    ServerG.process_type = ZAN_PROCESS_MASTER;
 
     return ZAN_OK;
 }
@@ -294,7 +286,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t conn_fd)
     zanServerSet *servSet = &ServerG.servSet;
     zanProcessPool *event_pool = &ServerGS->event_workers;
 
-    //轮循或固定
+    //轮循: 多个 networker 进程情况下，这种轮循不正确。。。。
     if (servSet->dispatch_mode == ZAN_DISPATCH_ROUND)
     {
         target_worker_id = zan_atomic_fetch_add(&serv->worker_round_id, 1) % servSet->worker_num;
@@ -359,7 +351,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t conn_fd)
         if (++index > servSet->worker_num)
         {
             target_worker_id = 0;
-            swDebug("target_work_id is null %d", target_worker_id);
+            zanDebug("target_work_id is null %d", target_worker_id);
             break;
         }
     }
@@ -531,7 +523,7 @@ void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id)
     }
 }
 
-static int zanServer_send(zanServer *serv, swSendData *resp)
+int zanServer_send(zanServer *serv, swSendData *resp)
 {
     return swWrite(resp->info.fd, resp->data, resp->info.len);
 }
@@ -549,6 +541,7 @@ int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length)
         return ZAN_ERR;
     }
 
+    //fd: session_id
     _send.info.fd = fd;
     _send.info.type = SW_EVENT_TCP;
     _send.data = data;
@@ -647,4 +640,18 @@ swConnection *zanServer_verify_connection(zanServer *serv, int session_id)
     }
 #endif
     return conn;
+}
+
+int zanServer_getSocket(zanServer *serv, int port)
+{
+    swListenPort *ls;
+    LL_FOREACH(serv->listen_list, ls)
+    {
+        if (ls->port == port || port == 0)
+        {
+            return ls->sock;
+        }
+    }
+
+    return ZAN_ERR;
 }
