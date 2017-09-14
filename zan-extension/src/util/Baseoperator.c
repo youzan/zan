@@ -28,6 +28,7 @@
 #include "swAtomic.h"
 #include "swClient.h"
 #include "swBaseOperator.h"
+#include "swLog.h"
 
 #include <stdlib.h>
 
@@ -66,8 +67,8 @@ int swoole_mkdir_recursive(const char *dir)
     int len = strlen(dir);
     if (len + 1 > 1024)
     {
-    	swWarn("mkdir(%s) failed,Path exceeds %d characters limit.",dir,1023);
-    	return -1;
+        swWarn("mkdir(%s) failed,Path exceeds %d characters limit.",dir,1023);
+        return -1;
     }
 
     strncpy(tmp, dir, len);
@@ -126,14 +127,14 @@ char* swoole_dirname(char *file)
 
 int get_env_log_level()
 {
-	int level = SW_LOG_LEVEL_UNKNOW;
-	char* tmp = getenv("ZANEXT_DEBUG_LOG_LEVEL");
-	if (tmp)
-	{
-		level = strtol(tmp,NULL,0);
-	}
+    int level = SW_LOG_LEVEL_UNKNOW;
+    char* tmp = getenv("ZANEXT_DEBUG_LOG_LEVEL");
+    if (tmp)
+    {
+        level = strtol(tmp,NULL,0);
+    }
 
-	return level;
+    return level;
 }
 
 int swoole_type_size(char type)
@@ -252,14 +253,14 @@ int swoole_system_random(int min, int max)
 //replace src char to dst char
 void replaceChar(char* str,int length,char srcCh,char dstCh)
 {
-	int index;
-	for (index = 0; index < length; index++)
-	{
-		if (str[index] == srcCh)
-		{
-			str[index] = dstCh;
-		}
-	}
+    int index;
+    for (index = 0; index < length; index++)
+    {
+        if (str[index] == srcCh)
+        {
+            str[index] = dstCh;
+        }
+    }
 }
 
 int swoole_version_compare(char *version1, char *version2)
@@ -275,7 +276,7 @@ int swoole_version_compare(char *version1, char *version2)
         unsigned long ver2 = strtoul(version2, &tail2, 10);
 
         if (ver1 != ver2){
-        	result = (ver1 < ver2)? -1:result + 1;
+            result = (ver1 < ver2)? -1:result + 1;
         }
         else
         {
@@ -368,7 +369,7 @@ swString* swoole_file_get_contents(char *filename)
     int fd = open(filename, O_RDONLY);
     if (fd < 0)
     {
-    	swSysError("open(%s) failed.", filename);
+        swSysError("open(%s) failed.", filename);
         return NULL;
     }
 
@@ -394,10 +395,10 @@ swString* swoole_file_get_contents(char *filename)
             }
             else
             {
-				swSysError("pread() failed.");
-				swString_free(content);
-				close(fd);
-				return NULL;
+                swSysError("pread() failed.");
+                swString_free(content);
+                close(fd);
+                return NULL;
             }
         }
         readn += n;
@@ -460,11 +461,11 @@ void swoole_redirect_stdout(int new_fd)
 {
     if (dup2(new_fd, STDOUT_FILENO) < 0)
     {
-    	swSysError("dup2(STDOUT_FILENO) failed.");
+        swSysError("dup2(STDOUT_FILENO) failed.");
     }
     if (dup2(new_fd, STDERR_FILENO) < 0)
     {
-    	swSysError("dup2(STDERR_FILENO) failed.");
+        swSysError("dup2(STDERR_FILENO) failed.");
     }
 }
 
@@ -663,7 +664,7 @@ int swoole_daemon(int nochdir, int noclose)
 #ifndef HAVE_DAEMON
     if (!nochdir && chdir("/") != 0)
     {
-    	swSysError("chdir() failed.");
+        swSysError("chdir() failed.");
         return -1;
     }
 
@@ -672,7 +673,7 @@ int swoole_daemon(int nochdir, int noclose)
         int fd = open("/dev/null", O_RDWR);
         if (fd < 0)
         {
-        	swSysError("open() failed.");
+            swSysError("open() failed.");
             return -1;
         }
 
@@ -689,7 +690,7 @@ int swoole_daemon(int nochdir, int noclose)
     pid_t pid = fork();
     if (pid < 0)
     {
-    	swSysError("fork() failed.");
+        swSysError("fork() failed.");
         return -1;
     }
     if (pid > 0)
@@ -698,7 +699,7 @@ int swoole_daemon(int nochdir, int noclose)
     }
     if (setsid() < 0)
     {
-    	swSysError("setsid() failed.");
+        swSysError("setsid() failed.");
         return -1;
     }
 

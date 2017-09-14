@@ -20,6 +20,7 @@
 #include "swSignal.h"
 #include "swServer.h"
 #include "swWork.h"
+#include "swLog.h"
 
 #include <pwd.h>
 #include <grp.h>

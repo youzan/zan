@@ -559,7 +559,7 @@ static int mysql_read_columns(mysql_client *client)
         }
         else
         {
-            swWarn("mysql_decode_field failed, code=%d.", ret);
+            //swWarn("mysql_decode_field failed, code=%d.", ret);
             break;
         }
     }
@@ -619,7 +619,7 @@ static int mysql_decode_row(mysql_client *client, char *buf, int packet_len)
             return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
         }
 
-        swTrace("n=%d, fname=%s, name_length=%d\n", i, client->response.columns[i].name, client->response.columns[i].name_length);
+        //swTrace("n=%d, fname=%s, name_length=%d\n", i, client->response.columns[i].name, client->response.columns[i].name_length);
 
         if (nul == 1)
         {

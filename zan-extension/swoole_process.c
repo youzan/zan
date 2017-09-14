@@ -24,6 +24,7 @@
 #include "swBaseOperator.h"
 #include "php_streams.h"
 #include "php_network.h"
+#include "swLog.h"
 
 static PHP_METHOD(swoole_process, __construct);
 static PHP_METHOD(swoole_process, __destruct);

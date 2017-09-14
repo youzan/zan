@@ -16,15 +16,19 @@
   +----------------------------------------------------------------------+
 */
 
+#include <sys/resource.h>
+
 #include "swoole.h"
 #include "swSignal.h"
 #include "swError.h"
 #include "swAtomic.h"
 #include "swClient.h"
 #include "swBaseOperator.h"
-#include <sys/resource.h>
+#include "swGlobalVars.h"
+#include "swLog.h"
 
 #include "zanGlobalVar.h"
+#include "zanLog.h"
 
 void swoole_init(void)
 {
@@ -76,11 +80,11 @@ void swoole_init(void)
 
     //init global lock
     if (swMutex_create(&SwooleGS->lock, 1) < 0){
-    	exit(3);
+        exit(3);
     }
 
     if (swMutex_create(&SwooleGS->log_lock,1) < 0){
-    	exit(3);
+        exit(3);
     }
 
     /// 获取进程支持的最大文件描述符数
@@ -115,24 +119,24 @@ void swoole_init(void)
 
 void swoole_clean(void)
 {
-	if (SwooleG.memory_pool == NULL){
-		return ;
-	}
+    if (SwooleG.memory_pool == NULL){
+        return ;
+    }
 
     //free the global memory
-	SwooleG.memory_pool->destroy(SwooleG.memory_pool);
-	SwooleG.memory_pool = NULL;
-	if (SwooleG.timer.fd > 0)
-	{
-		swTimer_free(&SwooleG.timer);
-	}
+    SwooleG.memory_pool->destroy(SwooleG.memory_pool);
+    SwooleG.memory_pool = NULL;
+    if (SwooleG.timer.fd > 0)
+    {
+        swTimer_free(&SwooleG.timer);
+    }
 
-	if (SwooleG.main_reactor)
-	{
-		SwooleG.main_reactor->free(SwooleG.main_reactor);
-	}
+    if (SwooleG.main_reactor)
+    {
+        SwooleG.main_reactor->free(SwooleG.main_reactor);
+    }
 
-	bzero(&SwooleG, sizeof(SwooleG));
+    bzero(&SwooleG, sizeof(SwooleG));
 }
 
 void swoole_update_time(void)
@@ -157,22 +161,21 @@ double swoole_microtime(void)
 
 void set_log_level(int level)
 {
-	if (!SwooleGS)
-	{
-		return ;
-	}
+    if (!SwooleGS)
+    {
+        return ;
+    }
 
-	if (level < SW_LOG_DEBUG || level > SW_LOG_FATAL_ERROR)
-	{
-		return ;
-	}
+    if (level < SW_LOG_DEBUG || level > SW_LOG_FATAL_ERROR)
+    {
+        return ;
+    }
 
-	SwooleGS->log_lock.lock(&SwooleGS->log_lock);
-	SwooleGS->log_level = level;
-	SwooleGS->log_lock.unlock(&SwooleGS->log_lock);
+    SwooleGS->log_lock.lock(&SwooleGS->log_lock);
+    SwooleGS->log_level = level;
+    SwooleGS->log_lock.unlock(&SwooleGS->log_lock);
 }
 
-///TODO::: 待补充
 void zan_init(void)
 {
     if (ServerG.running)
@@ -277,7 +280,7 @@ void zan_update_time(void)
     time_t now = time(NULL);
     if (now < 0)
     {
-        swSysError("get time failed, errno=%d:%s", errno, strerror(errno));
+        zanError("get time failed, errno=%d:%s", errno, strerror(errno));
     }
     else
     {
@@ -292,7 +295,7 @@ double get_microtime(void)
     return (double) t.tv_sec + ((double) t.tv_usec / 1000000);
 }
 
-void zan_set_loglevel(int level)
+void zan_set_loglevel(uint8_t level)
 {
     if (!ServerGS)
     {
@@ -300,13 +303,11 @@ void zan_set_loglevel(int level)
         return ;
     }
 
-    if (level < SW_LOG_DEBUG || level > SW_LOG_FATAL_ERROR)
+    if (level < ZAN_LOG_DEBUG || level > ZAN_LOG_FATAL_ERROR)
     {
         printf("set_log_level, log_level=%d", level);
         return ;
     }
     ServerGS->log_level = level;
 }
-
-
 

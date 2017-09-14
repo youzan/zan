@@ -22,6 +22,7 @@
 
 #include "swGlobalDef.h"
 #include "swAsyncIO.h"
+#include "swStats.h"
 
 #ifdef __cplusplus
 extern "C" {

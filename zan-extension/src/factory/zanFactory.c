@@ -17,16 +17,11 @@
 */
 
 #include "swWork.h"
-//#include "swServer.h"
-//#include "swFactory.h"
-//#include "swExecutor.h"
-//#include "swBaseOperator.h"
 
 #include "zanGlobalDef.h"
 #include "zanServer.h"
 #include "zanWorkers.h"
 #include "zanFactory.h"
-#include "zanExecutor.h"
 #include "zanLog.h"
 
 typedef struct _zanNotify_data
@@ -35,27 +30,12 @@ typedef struct _zanNotify_data
     swDataHead _send;
 } zanNotify_data;
 
-//static __thread zanNotify_data zan_notify_data;
-
 static int zanFactory_start(zanFactory *factory);
 static int zanFactory_notify(zanFactory *factory, swDataHead *event);
 static int zanFactory_dispatch(zanFactory *factory, swDispatchData *buf);
 static int zanFactory_finish(zanFactory *factory, swSendData *data);
 static int zanFactory_shutdown(zanFactory *factory);
 static int zanFactory_end(zanFactory *factory, int fd);
-
-///TODO:::factory 的功能，要将消息分发抽离吗???
-/*
-  1. 根据用户配置的 server 运行模式，启动不同的模式，暂时只支持多进程
-     统一入口 start 接口，创建子进程及子进程资源
-
-  2. 运行模式和消息分发是相关联的
-     收到 client 的消息，net_worker 将消息分发给不同的 worker，分发机制可配置
-     worker 发送消息给 client，finish 接口，将消息发送到 reactor，再发送到 client
-     client connect、close，将消息通知给 worker
-
-  3. 需要精简 factory 功能吗?
-*/
 
 int zanFactory_create(zanFactory *factory)
 {
@@ -183,7 +163,7 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
         zanDebug("send2worker: fd=%d, session_id=%d, from_fd=%d, len=%d, worker_id=%d", fd, conn->session_id, conn->from_fd, send_len, to_worker_id);
     }
 
-    return zanReactorThread_send2worker((void *) &(task->data), send_len, to_worker_id);
+    return zanNetworker_send2worker((void *) &(task->data), send_len, to_worker_id);
 }
 
 //send data to client
@@ -241,7 +221,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 
         worker->lock.lock(&worker->lock);
         response.length = resp->length;
-        response.worker_id = SwooleWG.id;
+        response.worker_id = ServerWG.worker_id;
 
         zanDebug("BigPackage, length=%d|worker_id=%d", response.length, response.worker_id);
 
@@ -263,7 +243,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
     sendn = ev_data.info.len + sizeof(resp->info);
     zanTrace("[Worker] send: sendn=%d|type=%d|content=%s", sendn, resp->info.type, resp->data);
 
-    ret = zanWorker_send2reactor(&ev_data, sendn, session_id);
+    ret = zanWorker_send2networker(&ev_data, sendn, session_id);
     if (ret < 0)
     {
         zanError("sendto to reactor failed.");
@@ -278,9 +258,9 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 //2. SW_EVENT_CLOSE 事件
 static int zanFactory_end(zanFactory *factory, int fd)
 {
-    zanServer *serv = (zanServer *)ServerG.serv;
+    //zanServer *serv = (zanServer *)ServerG.serv;
     swSendData _send;
-    swDataHead info;
+    //swDataHead info;
 
     bzero(&_send, sizeof(_send));
     _send.info.fd   = fd;

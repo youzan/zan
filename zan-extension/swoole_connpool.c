@@ -19,6 +19,7 @@
 #include "php_swoole.h"
 #include "ext/standard/basic_functions.h"
 #include "Zend/zend_operators.h"
+#include "swLog.h"
 
 static zend_class_entry swoole_connpool_ce;
 zend_class_entry *swoole_connpool_class_entry_ptr = NULL;

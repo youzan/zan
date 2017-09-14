@@ -26,30 +26,29 @@
 #include "zanProcess.h"
 #include "zanGlobalDef.h"
 
-extern int zan_pool_alloc_taskworker(zanProcessPool *pool);
-extern int zan_pool_alloc_worker(zanProcessPool *pool);
-extern int zan_pool_alloc_networker(zanProcessPool *pool);
+static int zan_alloc_workers_rsc(void);
+extern int zanPool_worker_alloc(zanProcessPool *pool);
+extern int zanPool_taskworker_alloc(zanProcessPool *pool);
+extern int zanPool_networker_alloc(zanProcessPool *pool);
 
-extern int zan_pool_worker_init(zanProcessPool *pool);
-extern int zan_pool_taskworker_init(zanProcessPool *pool);
-extern int zan_pool_networker_init(zanProcessPool *pool);
+extern int zanPool_worker_init(zanProcessPool *pool);
+extern int zanPool_taskworker_init(zanProcessPool *pool);
+extern int zanPool_networker_init(zanProcessPool *pool);
 
 extern int zan_spawn_worker_process(zanProcessPool *);
 extern int zan_spawn_task_process(zanProcessPool *);
 extern int zan_spawn_net_process(zanProcessPool *);
 
-static int zan_alloc_workers_rsc(void);
+static int zan_spawn_child_process(void);
 static int zan_spawn_user_process(void);
 static int zan_alloc_userworker_process(void);
-static int zan_spawn_child_process(void);
 
 //new functions
-static void zanMaster_signal_handle(int sig);
-int zan_worker_free_create(int *reloadworker_index, zanWorker *reload_workers);
-static zan_pid_t zanMaster_spawnworker(zanWorker *workers);
-int zanMaster_wait_user_worker(zanProcessPool *pool, zan_pid_t pid);
+static void zanMaster_signalhandle(int sig);
+int zanworker_free(int *reloadworker_index, zanWorker *reload_workers);
+int zanMaster_waituserworker(zanProcessPool *pool, zan_pid_t pid);
 zan_pid_t zanMaster_spawnuserworker(zanServer *serv, zanWorker* worker);
-static void zanMaster_check_exit_status(zanServer *serv, int worker_id, zan_pid_t pid, int status);
+static void zanMaster_checkexitstatus(zanServer *serv, int worker_id, zan_pid_t pid, int status);
 
 typedef struct
 {
@@ -124,13 +123,13 @@ int zan_processpool_create(zanProcessPool *pool, int process_type)
     bzero(pool, sizeof(zanProcessPool));
     if (ZAN_PROCESS_WORKER == process_type)
     {
-        if (ZAN_OK != zan_pool_alloc_worker(pool))
+        if (ZAN_OK != zanPool_worker_alloc(pool))
         {
             zanError("alloc taskworker resource failed.");
             return ZAN_ERR;
         }
 
-        if (ZAN_OK != zan_pool_worker_init(pool))
+        if (ZAN_OK != zanPool_worker_init(pool))
         {
             zanError("init worker pool failed.");
             return ZAN_ERR;
@@ -138,13 +137,13 @@ int zan_processpool_create(zanProcessPool *pool, int process_type)
     }
     else if (ZAN_PROCESS_TASKWORKER == process_type && ServerG.servSet.task_worker_num > 0)
     {
-        if (ZAN_OK != zan_pool_alloc_taskworker(pool))
+        if (ZAN_OK != zanPool_taskworker_alloc(pool))
         {
             zanError("alloc taskworker resource failed.");
             return ZAN_ERR;
         }
 
-        if (ZAN_OK != zan_pool_taskworker_init(pool))
+        if (ZAN_OK != zanPool_taskworker_init(pool))
         {
             zanError("init taskworker pool failed.");
             return ZAN_ERR;
@@ -152,13 +151,13 @@ int zan_processpool_create(zanProcessPool *pool, int process_type)
     }
     else if (ZAN_PROCESS_NETWORKER == process_type)
     {
-        if (ZAN_OK != zan_pool_alloc_networker(pool))
+        if (ZAN_OK != zanPool_networker_alloc(pool))
         {
             zanError("alloc taskworker resource failed.");
             return ZAN_ERR;
         }
 
-        if (ZAN_OK != zan_pool_networker_init(pool))
+        if (ZAN_OK != zanPool_networker_init(pool))
         {
             zanError("init networker pool failed.");
             return ZAN_ERR;
@@ -180,7 +179,7 @@ static int zan_spawn_child_process(void)
         zanError("zan_spawn_worker_process failed");
         return ZAN_ERR;
     }
-	
+
     //fork task_workes
     if (ZAN_OK != zan_spawn_task_process(&ServerGS->task_workers))
     {
@@ -327,11 +326,11 @@ int zan_master_process_loop(zanServer *serv)
 	
 	//for reload
     swSignal_add(SIGHUP, NULL);
-    swSignal_add(SIGTERM, zanMaster_signal_handle);
-    swSignal_add(SIGUSR1, zanMaster_signal_handle);
-    swSignal_add(SIGUSR2, zanMaster_signal_handle);
+    swSignal_add(SIGTERM, zanMaster_signalhandle);
+    swSignal_add(SIGUSR1, zanMaster_signalhandle);
+    swSignal_add(SIGUSR2, zanMaster_signalhandle);
 #ifdef SIGRTMIN
-    swSignal_add(SIGRTMIN, zanMaster_signal_handle);
+    swSignal_add(SIGRTMIN, zanMaster_signalhandle);
 #endif
 	
 	if(ServerG.main_reactor != NULL)
@@ -366,7 +365,7 @@ int zan_master_process_loop(zanServer *serv)
                 reloadworker_index = 0;
                 MasterProcess.reload_event_worker = 0;
 				
-				result = zan_worker_free_create(&reloadworker_index, reload_workers);
+				result = zanworker_free(&reloadworker_index, reload_workers);
 				if(result < 0)
 				{
 					zanError("kill workers failed");
@@ -387,7 +386,7 @@ int zan_master_process_loop(zanServer *serv)
                 reloadworker_index = 0;
                 MasterProcess.reload_task_worker = 0;
 				
-				result = zan_worker_free_create(&reloadworker_index, reload_workers);
+				result = zanworker_free(&reloadworker_index, reload_workers);
 				if(result < 0)
 				{
 					zanError("kill task workers failed");
@@ -408,11 +407,11 @@ int zan_master_process_loop(zanServer *serv)
 				{
 					sw_stats_incr(status == 0 ? &ServerStatsG->worker_normal_exit
 								  : &ServerStatsG->worker_abnormal_exit);
-					zanMaster_check_exit_status(serv, index, pid, status);
+					zanMaster_checkexitstatus(serv, index, pid, status);
 					pid = 0;
 					while (1)
 					{
-						new_pid = zanMaster_spawnworker(&(ServerGS->event_workers.workers[index]));
+						new_pid = zanMaster_spawnworker(&ServerGS->event_workers, &(ServerGS->event_workers.workers[index]));
 						if (new_pid < 0)
 						{
 							usleep(100000);
@@ -436,7 +435,7 @@ int zan_master_process_loop(zanServer *serv)
 				{
 					sw_stats_incr(status == 0 ? &ServerStatsG->task_worker_normal_exit
 								  : &ServerStatsG->task_worker_abnormal_exit);
-					zanMaster_check_exit_status(serv, exit_worker->worker_id, pid, status);
+					zanMaster_checkexitstatus(serv, exit_worker->worker_id, pid, status);
 					if (exit_worker->deleted == 1)  //主动回收不重启
 					{
 						exit_worker->deleted = 0;
@@ -450,7 +449,7 @@ int zan_master_process_loop(zanServer *serv)
 			
 			if(serv->user_worker_map != NULL)
 			{
-				zanMaster_wait_user_worker(&(ServerGS->event_workers), pid);
+				zanMaster_waituserworker(&(ServerGS->event_workers), pid);
 			}
 		}
 		else
@@ -519,7 +518,7 @@ int zan_master_process_loop(zanServer *serv)
     return ZAN_ERR;
 }
 
-int zan_worker_free_create(int *reloadworker_index, zanWorker *reload_workers)
+int zanworker_free(int *reloadworker_index, zanWorker *reload_workers)
 {
 	if(reload_workers == NULL)
 	{
@@ -558,7 +557,7 @@ int zan_worker_free_create(int *reloadworker_index, zanWorker *reload_workers)
 	return ZAN_OK;
 }
 
-static void zanMaster_signal_handle(int sig)
+static void zanMaster_signalhandle(int sig)
 {
     switch (sig)
     {
@@ -591,7 +590,7 @@ static void zanMaster_signal_handle(int sig)
 	return;
 }
 
-static void zanMaster_check_exit_status(zanServer *serv, int worker_id, zan_pid_t pid, int status)
+static void zanMaster_checkexitstatus(zanServer *serv, int worker_id, zan_pid_t pid, int status)
 {
     if (status != 0)
     {
@@ -605,31 +604,7 @@ static void zanMaster_check_exit_status(zanServer *serv, int worker_id, zan_pid_
 	return;
 }
 
-//根据ID fork指定的worker
-static zan_pid_t zanMaster_spawnworker(zanWorker *workers)
-{
-    zan_pid_t pid = fork();
-    //fork() failed
-    if (pid < 0)
-    {
-        zanError("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
-        return ZAN_ERR;
-    }
-    //worker child processor
-    else if (pid == 0)
-    {
-    	int ret = zan_worker_process_loop(workers);
-        exit(ret);
-    }
-    //parent,add to writer
-    else
-    {
-        return pid;
-    }
-}
-
-
-int zanMaster_wait_user_worker(zanProcessPool *pool, zan_pid_t pid)
+int zanMaster_waituserworker(zanProcessPool *pool, zan_pid_t pid)
 {
     zanServer *serv = ServerG.serv;
     zanWorker *exit_worker = swHashMap_find_int(serv->user_worker_map, pid);

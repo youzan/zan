@@ -22,6 +22,7 @@
 #include "php_swoole.h"
 #include "php7_wrapper.h"
 #include "swoole_mysql.h"
+#include "swLog.h"
 
 
 static PHP_METHOD(swoole_mysql, __construct);

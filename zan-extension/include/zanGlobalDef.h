@@ -22,17 +22,10 @@
 #include "swTimer.h"
 #include "swPort.h"
 #include "swConnection.h"
-#include "swFactory.h"
-#include "swBaseData.h"
-#include "swStats.h"
 
-#include "zanIpc.h"
-#include "zanAtomic.h"
 #include "zanMemory/zanShmPool.h"
 #include "zanProcess.h"
-//#include "zanAsyncIo.h"
-#include "zanReactor.h"
-#include "zanFactory.h"
+//#include "zanReactor.h"
 #include "zanWorkers.h"
 
 #ifdef __cplusplus
@@ -45,12 +38,13 @@ extern "C" {
 //todo::: 将全局的相关的变量都放到 zanServerG 中
 typedef struct _zanServer
 {
-    sw_atomic_t worker_round_id;  //轮循分配模式时使用, TODO::::
+    zan_atomic_t worker_round_id;  //轮循分配模式时使用, TODO::::
 
     uint8_t dgram_port_num;
+    uint8_t listen_port_num;
 
-    int udp_socket_ipv4;
-    int udp_socket_ipv6;
+    uint32_t udp_socket_ipv4;
+    uint32_t udp_socket_ipv6;
 
     //have udp listen socket
     uint32_t have_udp_sock :1;
@@ -64,33 +58,25 @@ typedef struct _zanServer
     //packet mode
     uint32_t packet_mode :1;
 
-    int *cpu_affinity_available;
-    int  cpu_affinity_available_num;
+    uint32_t *cpu_affinity_available;
+    uint32_t  cpu_affinity_available_num;
 
-    uint8_t listen_port_num;
-
-#ifdef HAVE_PTHREAD_BARRIER
-    pthread_barrier_t barrier;
-#endif
 
     zanFactory factory;
 
     swListenPort *listen_list;
 
-    uint16_t      user_worker_num;       ///TODO::: GS
+    uint32_t      user_worker_num;       ///TODO::: GS
     zanWorker   **user_workers;
     swHashMap    *user_worker_map;
     zanUserWorker_node *user_worker_list;
-
-    //zanWorker  *workers;
-    //zanWorker  *networkers;
 
     swConnection *connection_list;
     swSession    *session_list;
 
     void *ptr2;
 
-    /**/
+    /*callback*/
     void (*onStart)(struct _zanServer *);
     void (*onShutdown)(struct _zanServer *);
     void (*onWorkerStart)(struct _zanServer *, int worker_id);
@@ -99,31 +85,31 @@ typedef struct _zanServer
     void (*onUserWorkerStart)(struct _zanServer *, zanWorker *);
     void (*onPipeMessage)(struct _zanServer *, swEventData *);    /*worker/task_worker pipe read*/
 
+    /* Task Worker event */
+    int (*onTask)(struct _zanServer *serv, swEventData *data);
+    int (*onFinish)(struct _zanServer *serv, swEventData *data);
+
     /* Client event */
     int (*onReceive)(struct _zanServer *, swEventData *);
     int (*onPacket)(struct _zanServer *, swEventData *);
     void (*onClose)(struct _zanServer *, swDataHead *);
     void (*onConnect)(struct _zanServer *, swDataHead *);
 
-    /* Task Worker event */
-    int (*onTask)(struct _zanServer *serv, swEventData *data);
-    int (*onFinish)(struct _zanServer *serv, swEventData *data);
-
     int (*send)(struct _zanServer *, swSendData *);
 } zanServer;
 
 typedef struct _zanServerGS
 {
-    pid_t        master_pid;
     uint8_t      started;
     time_t       server_time;
-
-    uint32_t     session_round;          //????
+    zan_pid_t    master_pid;
 
     zanLock      lock;
     zanLock      log_lock;
     uint8_t      log_level;
     zan_atomic_t spinlock;
+
+    uint32_t     session_round;          //????
 
     zanProcessPool event_workers;
     zanProcessPool task_workers;
@@ -147,41 +133,40 @@ typedef struct _zanWorkerG
 
     swString **buffer_input;
     swString **buffer_output;
-    swWorker *worker;
 } zanWorkerG;
 
+#if 0
 typedef struct _zanThreadG
 {
     uint16_t thread_id;
     uint8_t  thread_type;
 } zanThreadG;
+#endif
 
 typedef struct _zanServerSet
 {
-    uint16_t reactor_num;
-    uint16_t worker_num;
-    uint16_t net_worker_num;
+    uint32_t worker_num;
+    uint32_t net_worker_num;
 
     uint32_t max_connection;
     uint32_t max_request;
 
-    uint8_t dispatch_mode;
+    uint8_t  dispatch_mode;
 
     uint8_t   task_ipc_mode;
-    uint32_t  task_worker_num;
     uint32_t  task_max_request;
-    char     *task_tmpdir;
-    uint16_t  task_tmpdir_len;
+    uint32_t  task_worker_num;
+    uint32_t  task_tmpdir_len;
     uint64_t  message_queue_key;
+    char      *task_tmpdir;
 
-    char     *log_file;
     uint8_t   log_level;
+    char     *log_file;
+    char     *pid_file;
 
     char *chroot;
     char *user;
     char *group;
-
-    char *pid_file;
 
     uint16_t heartbeat_idle_time;
     uint16_t heartbeat_check_interval;
@@ -198,8 +183,7 @@ typedef struct _zanServerSet
     uint16_t cpu_affinity_ignore :1;
     uint16_t enable_unsafe_event :1;
     uint16_t discard_timeout_request :1;
-
-    uint32_t http_parse_post :1;
+    uint16_t http_parse_post :1;
 } zanServerSet;
 
 typedef struct _zanServerG
@@ -212,7 +196,7 @@ typedef struct _zanServerG
     uint8_t socket_dontwait :1;
     uint8_t disable_dns_cache :1;
     uint8_t dns_lookup_random: 1;
-    uint8_t use_timer_pipe :1;       /* Timer used pipe */
+    uint8_t use_timer_pipe :1;
 
     uint8_t   factory_mode;
     uint8_t   process_type;
@@ -221,7 +205,7 @@ typedef struct _zanServerG
     pthread_t heartbeat_tid;   ///TODO:::
 
     int error;
-    int signal_alarm;  //for timer with message queue
+    int signal_alarm;
     int log_fd;
     int null_fd;
 

@@ -22,6 +22,9 @@
 #include "swLog.h"
 #include "swError.h"
 #include <string.h>
+#include "swLog.h"
+
+#include "zanLog.h"
 
 #ifdef IDE_HELPER
 #ifdef HAVE_KQUEUE
@@ -65,7 +68,7 @@ int swReactorKqueue_create(swReactor *reactor, int max_event_num)
     swReactorKqueue *reactor_object = sw_malloc(sizeof(swReactorKqueue));
     if (reactor_object == NULL)
     {
-        swTrace("[swReactorKqueueCreate] malloc[0] fail\n");
+        zanTrace("[swReactorKqueueCreate] malloc[0] fail\n");
         return SW_ERR;
     }
     bzero(reactor_object, sizeof(swReactorKqueue));
@@ -76,7 +79,7 @@ int swReactorKqueue_create(swReactor *reactor, int max_event_num)
 
     if (reactor_object->events == NULL)
     {
-        swTrace("[swReactorKqueueCreate] malloc[1] fail\n");
+        zanTrace("[swReactorKqueueCreate] malloc[1] fail\n");
         sw_free(reactor_object);
         return SW_ERR;
     }
@@ -85,7 +88,7 @@ int swReactorKqueue_create(swReactor *reactor, int max_event_num)
     reactor_object->epfd = kqueue();
     if (reactor_object->epfd < 0)
     {
-        swTrace("[swReactorKqueueCreate] kqueue_create[0] fail\n");
+        zanTrace("[swReactorKqueueCreate] kqueue_create[0] fail\n");
         sw_free(reactor_object->events);
         sw_free(reactor_object);
         return SW_ERR;
@@ -154,7 +157,7 @@ static int swReactorKqueue_add(swReactor *reactor, int fd, int fdtype)
     }
 
     memcpy(&e.udata, &fd_, sizeof(swFd));
-    swTrace("[THREAD #%ld]EP=%d|FD=%d\n", (long)pthread_self(), this->epfd, fd);
+    zanTrace("[THREAD #%ld]EP=%d|FD=%d\n", (long)pthread_self(), this->epfd, fd);
     reactor->event_num++;
     return SW_OK;
 }
@@ -301,7 +304,7 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
         {
             if (swReactor_error(reactor) < 0)
             {
-            	swWarn("Kqueue[#%d].", reactor->id);
+                zanWarn("Kqueue[#%d].", reactor->id);
                 return SW_ERR;
             }
             else
@@ -335,10 +338,10 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
                     {
                         handle = swReactor_getHandle(reactor, SW_EVENT_READ, event.type);
                         ret = handle(reactor, &event);
-						if (ret < 0)
-						{
-							swSysError("kqueue event read socket#%d handler failed.", event.fd);
-						}
+                        if (ret < 0)
+                        {
+                            swSysError("kqueue event read socket#%d handler failed.", event.fd);
+                        }
                     }
                 }
                 //write
@@ -347,16 +350,16 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
                     if(!event.socket->removed)
                     {
                         handle = swReactor_getHandle(reactor, SW_EVENT_WRITE, event.type);
-						ret = handle(reactor, &event);
-						if (ret < 0)
-						{
-							swError("kqueue event write socket#%d handler failed.", event.fd);
-						}
+                        ret = handle(reactor, &event);
+                        if (ret < 0)
+                        {
+                            zanError("kqueue event write socket#%d handler failed.", event.fd);
+                        }
                     }
                 }
                 else
                 {
-                	swWarn("kqueue event unknow filter=%d", object->events[i].filter);
+                    zanWarn("kqueue event unknow filter=%d", object->events[i].filter);
                 }
             }
         }
