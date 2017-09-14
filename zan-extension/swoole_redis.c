@@ -20,6 +20,7 @@
 
 
 #include "php_swoole.h"
+#include "swLog.h"
 
 #ifdef SW_USE_REDIS
 #include "hiredis/hiredis.h"

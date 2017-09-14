@@ -21,10 +21,10 @@
 #define _SW_BASE_OPERATOR_H_
 
 #include "swoole.h"
-#include "swLog.h"
 #include "swBaseData.h"
-#include "swGlobalDef.h"
 #include "swAtomic.h"
+#include "swGlobalVars.h"
+//#include "swLog.h"
 
 ///
 #include "zanAtomic.h"
@@ -42,7 +42,7 @@ static sw_inline size_t get_filelen(int filefd)
     struct stat file_stat;
     if (fstat(filefd, &file_stat) < 0)
     {
-        swWarn("fstat() failed. Error: %s[%d]", strerror(errno), errno);
+        //swWarn("fstat() failed. Error: %s[%d]", strerror(errno), errno);
         return 0;
     }
 
@@ -54,7 +54,7 @@ static sw_inline size_t get_filelen_byname(const char* filename)
     struct stat file_stat;
     if (stat(filename, &file_stat) < 0)
     {
-        swWarn("stat(%s) failed.", filename);
+        //swWarn("stat(%s) failed.", filename);
         return 0;
     }
 

@@ -25,6 +25,7 @@
 #include "list.h"
 
 #include "zanGlobalVar.h"
+#include "zanLog.h"
 
 static void swReactor_onTimeout_and_Finish(swReactor *reactor);
 static void swReactor_onTimeout(swReactor *reactor);
@@ -189,7 +190,6 @@ swConnection* swReactor_get(swReactor *reactor, int fd)
 
 int swReactor_add(swReactor *reactor, int fd, int fdtype)
 {
-    //assert (fd <= SwooleG.max_sockets);
     assert(fd < ServerG.max_sockets);
 
     swConnection *socket = swReactor_get(reactor, fd);
@@ -198,7 +198,7 @@ int swReactor_add(swReactor *reactor, int fd, int fdtype)
     socket->events |= swReactor_events(fdtype);
     socket->removed = 0;
 
-    swTrace("fd=%d, socket_type=%d, fdtype=%d, events=%d", fd, socket->socket_type, socket->fdtype, socket->events);
+    zanTrace("fd=%d, socket_type=%d, fdtype=%d, events=%d", fd, socket->socket_type, socket->fdtype, socket->events);
 
     return SW_OK;
 }

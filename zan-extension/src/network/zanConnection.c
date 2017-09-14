@@ -19,9 +19,12 @@
 #include "swoole.h"
 #include "list.h"
 #include "swSocket.h"
-#include "swPort.h"
+//#include "swPort.h"
 #include "swBaseOperator.h"
 #include "swServer.h"
+#include "swStats.h"
+
+#include "zanReactor.h"
 
 #include "zanServer.h"
 #include "zanAtomic.h"
@@ -113,9 +116,9 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             zan_set_nonblocking(new_fd, 1);
         }
 #endif
-        zanDebug("[NetWorker] Accept new connection. maxfd=%d|reactor_id=%d|new_fd=%d", swServer_get_maxfd(serv), reactor->id, new_fd);
+        //zanDebug("[NetWorker] Accept new connection. maxfd=%d|networker_id/reactor_id=%d|new_fd=%d", swServer_get_maxfd(serv), reactor->id, new_fd);
 
-        //too many connection
+        //TODO::: too many connection; max_connection/networker_num
         if (new_fd >= servSet->max_connection)
         {
             zanWarn("Too many connections [now: %d], close it.", new_fd);
@@ -123,6 +126,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             return ZAN_OK;
         }
 
+        zanWarn("new_fd=%d, sockfd event->fd=%d, reactor->id=%d", new_fd, event->fd, reactor->id);
         //add to connection_list
         swConnection *conn = zanConnection_create(serv, listen_host, new_fd, event->fd, reactor->id);
         memcpy(&conn->info.addr, &client_addr, sizeof(client_addr));
@@ -148,7 +152,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         int events = ZAN_EVENT_READ;
         if (serv->onConnect && !listen_host->ssl)
         {
-            zanWarn("new clinet connect, set connect_notify=1, new_fd=%d", new_fd);
+            zanDebug("new clinet connect, set connect_notify=1, new_fd=%d", new_fd);
             conn->connect_notify = 1;
             events |= ZAN_EVENT_WRITE;
         }
@@ -160,8 +164,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             close(new_fd);
             return ZAN_OK;
         }
-
-        zanDebug("networker accept, reactor->add new_fd=%d, events=%d", new_fd, SW_FD_TCP | events);
+        //zanDebug("networker accept, reactor->add new_fd=%d, events=%d", new_fd, SW_FD_TCP | events);
 
 #ifdef SW_ACCEPT_AGAIN
         continue;
@@ -235,13 +238,15 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
             session_id = 1;
             ServerGS->session_round = 1;
         }
+        zanWarn("session_id=%d, index=%d", session_id, index);
         session = zanServer_get_session(serv, session_id);
 
         if (session->fd == 0)
         {
             session->fd = fd;
             session->id = session_id;
-            session->reactor_id = connection->from_id;
+            session->reactor_id   = reactor_id;
+            session->networker_id = reactor_id;
             break;
         }
     }

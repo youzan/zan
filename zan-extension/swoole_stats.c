@@ -16,8 +16,9 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swGlobalVars.h"
 #include "swWork.h"
+#include "swGlobalVars.h"
+#include "swLog.h"
 
 void sw_stats_set_worker_status(swWorker *worker, int status)
 {

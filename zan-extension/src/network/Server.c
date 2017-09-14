@@ -1127,3 +1127,56 @@ void swServer_set_callback_onClose(swServer *serv, void (*callback)(swServer *, 
     onClose_callback = callback;
     serv->onClose = swServer_scalar_onClose_callback;
 }
+
+
+//---------
+
+swConnection *swWorker_get_connection(swServer *serv, int session_id)
+{
+    int real_fd = swServer_get_fd(serv, session_id);
+    swConnection *conn = swServer_connection_get(serv, real_fd);
+    return conn;
+}
+
+swString *swWorker_get_buffer(swServer *serv, int worker_id)
+{
+    //input buffer
+    return (serv->factory_mode != SW_MODE_PROCESS)?
+           SwooleWG.buffer_input[0]:SwooleWG.buffer_input[worker_id];
+}
+
+swConnection *swServer_connection_verify(swServer *serv, int session_id)
+{
+    swSession *session = swServer_get_session(serv, session_id);
+    int fd = session->fd;
+    swConnection *conn = swServer_connection_get(serv, fd);
+    if (!conn || conn->active == 0)
+    {
+        return NULL;
+    }
+    if (session->id != session_id || conn->session_id != session_id)
+    {
+        return NULL;
+    }
+#ifdef SW_USE_OPENSSL
+    if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
+    {
+        //swNotice("SSL not ready");
+        return NULL;
+    }
+#endif
+    return conn;
+}
+
+void swServer_connection_ready(swServer *serv, int fd, int reactor_id)
+{
+    swDataHead connect_event;
+    connect_event.type = SW_EVENT_CONNECT;
+    connect_event.from_id = reactor_id;
+    connect_event.fd = fd;
+
+    if (serv->factory.notify(&serv->factory, &connect_event) < 0)
+    {
+        //swWarn("send notification [fd=%d] failed.", fd);
+    }
+}

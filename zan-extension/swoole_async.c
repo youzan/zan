@@ -25,6 +25,7 @@
 #include "swBaseData.h"
 #include "swBaseOperator.h"
 #include "swDNS.h"
+#include "swLog.h"
 
 #include "ext/standard/file.h"
 

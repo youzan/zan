@@ -217,6 +217,7 @@ typedef struct
     uint32_t id;
     uint32_t fd :24;
     uint32_t reactor_id :8;
+    uint8_t  networker_id;
 } swSession;
 
 typedef struct _swDataHead
@@ -242,6 +243,14 @@ double swoole_microtime(void);
 void set_log_level();
 
 //=============================
+typedef struct
+{
+    uint32_t session_id;
+    uint32_t accept_fd;
+    uint8_t  reactor_id;
+    uint8_t  networker_id;
+} zanSession;
+
 //for test
 enum zanServer_mode
 {
@@ -253,7 +262,7 @@ void zan_init(void);
 void zan_clean(void);
 void zan_update_time(void);
 double zan_microtime(void);
-void zan_set_loglevel();
+void zan_set_loglevel(uint8_t);
 
 #ifdef __cplusplus
 }

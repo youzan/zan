@@ -27,7 +27,6 @@
 #include "swConnection.h"
 #include "swFactory.h"
 #include "swBaseData.h"
-#include "swStats.h"
 
 #ifdef __cplusplus
 extern "C" {

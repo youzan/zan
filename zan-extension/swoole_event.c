@@ -21,6 +21,8 @@
 
 #include "php_swoole.h"
 #include "swSignal.h"
+#include "swLog.h"
+
 typedef struct
 {
 #if PHP_MAJOR_VERSION >= 7
