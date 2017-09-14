@@ -21,6 +21,7 @@
 
 #include <sys/time.h>
 #include "swAtomic.h"
+#include "swWork.h"
 
 typedef struct {
     time_t start_time;

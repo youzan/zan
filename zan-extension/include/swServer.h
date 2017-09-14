@@ -23,13 +23,14 @@
 #define SW_SERVER_H_
 
 #include "swoole.h"
-#include "swLog.h"
+//#include "swLog.h"
 #include "swBaseData.h"
 #include "swPort.h"
 #include "swError.h"
 #include "swMemory/buffer.h"
 #include "swConnection.h"
 #include "swFactory.h"
+#include "swGlobalDef.h"
 
 #ifdef SW_USE_OPENSSL
 #include "swProtocol/ssl.h"
@@ -110,7 +111,7 @@ static sw_inline swListenPort* swServer_get_port(swServer *serv, int fd)
 #if defined(__GNUC__)
     if (index > 0)
     {
-        swWarn("get port failed, count=%d. gcc version=%d.%d", index, __GNUC__, __GNUC_MINOR__);
+        //swWarn("get port failed, count=%d. gcc version=%d.%d", index, __GNUC__, __GNUC_MINOR__);
     }
 #endif
 
@@ -189,55 +190,12 @@ void swServer_set_callback_onConnect(swServer *serv, void (*callback)(swServer *
 void swServer_set_callback_onClose(swServer *serv, void (*callback)(swServer *, int, int));
 
 
-static sw_inline swConnection *swWorker_get_connection(swServer *serv, int session_id)
-{
-    int real_fd = swServer_get_fd(serv, session_id);
-    swConnection *conn = swServer_connection_get(serv, real_fd);
-    return conn;
-}
+swConnection *swWorker_get_connection(swServer *serv, int session_id);
 
-static sw_inline swString *swWorker_get_buffer(swServer *serv, int worker_id)
-{
-    //input buffer
-	return (serv->factory_mode != SW_MODE_PROCESS)?
-			SwooleWG.buffer_input[0]:SwooleWG.buffer_input[worker_id];
-}
+swString *swWorker_get_buffer(swServer *serv, int worker_id);
 
-static sw_inline swConnection *swServer_connection_verify(swServer *serv, int session_id)
-{
-    swSession *session = swServer_get_session(serv, session_id);
-    int fd = session->fd;
-    swConnection *conn = swServer_connection_get(serv, fd);
-    if (!conn || conn->active == 0)
-    {
-        return NULL;
-    }
-    if (session->id != session_id || conn->session_id != session_id)
-    {
-        return NULL;
-    }
-#ifdef SW_USE_OPENSSL
-    if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
-    {
-        swNotice("SSL not ready");
-        return NULL;
-    }
-#endif
-    return conn;
-}
-
-static sw_inline void swServer_connection_ready(swServer *serv, int fd, int reactor_id)
-{
-    swDataHead connect_event;
-    connect_event.type = SW_EVENT_CONNECT;
-    connect_event.from_id = reactor_id;
-    connect_event.fd = fd;
-
-    if (serv->factory.notify(&serv->factory, &connect_event) < 0)
-    {
-        swWarn("send notification [fd=%d] failed.", fd);
-    }
-}
+swConnection *swServer_connection_verify(swServer *serv, int session_id);
+void swServer_connection_ready(swServer *serv, int fd, int reactor_id);
 
 #ifdef __cplusplus
 }

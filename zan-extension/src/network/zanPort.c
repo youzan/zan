@@ -27,7 +27,6 @@
 #include "swPort.h"
 
 #include "zanGlobalVar.h"
-#include "zanExecutor.h"
 #include "zanLog.h"
 
 static int swPort_onRead_raw(swReactor *reactor, swListenPort *lp, swEvent *event);
@@ -163,12 +162,13 @@ void swPort_set_protocol(swListenPort *ls)
 
 static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *event)
 {
-    swServer *serv = reactor->ptr;
+    int ret = 0;
     swDispatchData task;
-    memset(&task, 0, sizeof(task));
+    zanServer *serv = ServerG.serv;
     swConnection *conn =  event->socket;
 
-    int ret = 0;
+    memset(&task, 0, sizeof(task));
+
     int n = swConnection_recv(conn, task.data.data, SW_BUFFER_SIZE, 0);
     if (n < 0)
     {
@@ -187,7 +187,7 @@ static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *ev
     else if (n == 0)
     {
         close_fd:
-            zanReactorThread_onClose(reactor, event);
+            zanNetworker_onClose(reactor, event);
         return SW_OK;
     }
     else
@@ -198,6 +198,7 @@ static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *ev
         task.data.info.type = SW_EVENT_TCP;
         task.target_worker_id = -1;
 
+        zanDebug("fd=%d, from_id=%d, dispatch", event->fd, event->from_id);
         ret = serv->factory.dispatch(&serv->factory, &task);
         return ret;
     }
@@ -220,8 +221,8 @@ static int swPort_onRead_check_length(swReactor *reactor, swListenPort *port, sw
 
     if (swProtocol_recv_check_length(protocol, conn, buffer) < 0)
     {
-        swTrace("Close Event.FD=%d|From=%d", event->fd, event->from_id);
-        swReactorThread_onClose(reactor, event);
+        zanTrace("Close Event.FD=%d|From=%d", event->fd, event->from_id);
+        zanNetworker_onClose(reactor, event);
     }
 
     return SW_OK;
@@ -276,7 +277,7 @@ static int swPort_onRead_http(swReactor *reactor, swListenPort *port, swEvent *e
         request->buffer = swString_new(SW_HTTP_HEADER_MAX_SIZE);
         if (!request->buffer)
         {
-            swReactorThread_onClose(reactor, event);
+            zanNetworker_onClose(reactor, event);
             return SW_ERR;
         }
     }
@@ -293,7 +294,7 @@ recv_data:
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-            swSysError("recv from connection#%d failed.", event->fd);
+            zanError("recv from connection#%d failed.", event->fd);
             return SW_OK;
         case SW_CLOSE:
             goto close_fd;
@@ -305,7 +306,7 @@ recv_data:
     {
         close_fd:
         swHttpRequest_free(conn);
-        swReactorThread_onClose(reactor, event);
+        zanNetworker_onClose(reactor, event);
         return SW_OK;
     }
     else
@@ -319,11 +320,11 @@ recv_data:
                 return SW_OK;
             }
 
-            swWarn("get protocol failed.");
+            zanWarn("get protocol failed.");
 #ifdef SW_HTTP_BAD_REQUEST
             if (swConnection_send(conn, SW_STRL(SW_HTTP_BAD_REQUEST) - 1, 0) < 0)
             {
-                swSysError("send() failed.");
+                zanError("send() failed.");
             }
 #endif
             goto close_fd;
@@ -339,7 +340,7 @@ recv_data:
                 {
                     if (buffer->size == buffer->length)
                     {
-                        swWarn("http header is too long.");
+                        zanWarn("http header is too long.");
                         goto close_fd;
                     }
                     else
@@ -362,7 +363,7 @@ recv_data:
                     }
                     else if (buffer->size == buffer->length)
                     {
-                        swWarn("http header is too long.");
+                        zanWarn("http header is too long.");
                         goto close_fd;
                     }
                     else
@@ -373,7 +374,7 @@ recv_data:
                 //content_length overflow
                 else if (request->content_length > (protocol->package_max_length - SW_HTTP_HEADER_MAX_SIZE))
                 {
-                    swWarn("Content-Length more than the package_max_length[%d].", protocol->package_max_length - SW_HTTP_HEADER_MAX_SIZE);
+                    zanWarn("Content-Length more than the package_max_length[%d].", protocol->package_max_length - SW_HTTP_HEADER_MAX_SIZE);
                     goto close_fd;
                 }
             }
@@ -416,13 +417,13 @@ recv_data:
                         }
                         else
                         {
-                            swWarn("send http header failed");
+                            zanWarn("send http header failed");
                         }
                     }
                 }
                 else
                 {
-                    swTrace("PostWait: request->content_length=%d, buffer->length=%zd, request->header_length=%d\n",
+                    zanTrace("PostWait: request->content_length=%d, buffer->length=%zd, request->header_length=%d\n",
                             request->content_length, buffer->length, request->header_length);
                 }
 #endif
@@ -447,7 +448,7 @@ recv_data:
 #endif
         else
         {
-            swWarn("method no support");
+            zanWarn("method no support");
             goto close_fd;
         }
     }
@@ -469,7 +470,7 @@ static int swPort_onRead_check_eof(swReactor *reactor, swListenPort *port, swEve
 
     if (swProtocol_recv_check_eof(protocol, conn, buffer) < 0)
     {
-        swReactorThread_onClose(reactor, event);
+        zanNetworker_onClose(reactor, event);
     }
 
     return SW_OK;

@@ -28,6 +28,7 @@
 #include "swProtocol/websocket.h"
 #include "swFactory.h"
 #include "swExecutor.h"
+#include "swLog.h"
 
 static int swUDPThread_start(swServer *serv);
 static int swReactorThread_loop_dgram(swThreadParam *param);

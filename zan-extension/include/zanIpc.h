@@ -25,7 +25,6 @@
 
 #include "zanLock.h"
 #include "zanMemory/zanMemory.h"
-//#include "zanSocket.h"
 #include "swReactor.h"
 
 

@@ -58,14 +58,14 @@ enum zanProcessType
     ZAN_PROCESS_NETWORKER  = 5,
 };
 
-#define is_unknown_process()  (ServerG.process_type == ZAN_PROCESS_UNKNOWN)
-#define is_master()           (ServerG.process_type == ZAN_PROCESS_MASTER)
-#define is_networker()        (ServerG.process_type == ZAN_PROCESS_NETWORKER)
-#define is_worker()           (ServerG.process_type == ZAN_PROCESS_WORKER)
-#define is_taskworker()       (ServerG.process_type == ZAN_PROCESS_TASKWORKER)
-#define is_userworker()       (ServerG.process_type == ZAN_PROCESS_USERWORKER)
+#define is_master()     (ServerG.process_type == ZAN_PROCESS_MASTER)
+#define is_networker()  (ServerG.process_type == ZAN_PROCESS_NETWORKER)
+#define is_worker()     (ServerG.process_type == ZAN_PROCESS_WORKER)
+#define is_taskworker() (ServerG.process_type == ZAN_PROCESS_TASKWORKER)
+#define is_userworker() (ServerG.process_type == ZAN_PROCESS_USERWORKER)
 
 
+/******************************************************************************/
 typedef struct _zanProcessPool zanProcessPool;
 
 typedef struct _zanWorker
@@ -113,14 +113,19 @@ typedef struct _zanUserWorker_node
     zanWorker *worker;
 } zanUserWorker_node;
 
-/*---------------------init and free worker struct-----------------------*/
-///TODO:::: delete or replace
 int zanWorker_init(zanWorker *worker);
 void zanWorker_free(zanWorker *worker);
 
 //networker<--->worker<--->task_worker
 int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int n, int flag);
-int zanWorker_send2reactor(swEventData *ev_data, size_t sendn, int fd);
+int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int fd);
+
+int zanNetworker_send2worker(void *data, int len, uint16_t target_worker_id);
+int zanNetworker_close_connection(swReactor *reactor, int fd);
+
+int zanNetworker_onClose(swReactor *reactor, swEvent *event);
+
+int zanTaskworker_finish(char *data, int data_len, int flags);
 
 ////////////////////////////////////////////////////////////////////////////////
 //worker pool
@@ -136,13 +141,11 @@ struct _zanProcessPool
     zanWorker   *workers;
     zanPipe     *pipes;
 
-    int (*onTask)(struct _zanProcessPool *pool, swEventData *task);
-
     void (*onWorkerStart)(struct _zanProcessPool *pool, zanWorker *worker);
     void (*onWorkerStop)(struct _zanProcessPool *pool, zanWorker *worker);
 
+    int (*onTask)(struct _zanProcessPool *pool, swEventData *task);
     int (*main_loop)(struct _zanProcessPool *pool, zanWorker *worker);
-    int (*onWorkerNotFound)(struct _zanProcessPool *pool, pid_t pid);
 };
 
 //create and start child workers
@@ -154,7 +157,9 @@ void zan_processpool_shutdown(zanProcessPool *pool);
 
 //
 void zan_stats_set_worker_status(zanWorker *worker, int status);
-void zan_worker_clean_pipe(void);
+void zanWorker_clean_pipe(void);
+
+int zanPool_dispatch_to_taskworker(zanProcessPool *pool, swEventData *data, int *dst_worker_id);
 
 static inline zanWorker* zan_pool_get_worker(zanProcessPool *pool, int worker_id)
 {

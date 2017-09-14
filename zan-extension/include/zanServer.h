@@ -41,6 +41,7 @@ void zanServer_init(zanServer *serv);
 int zanServer_create(zanServer *serv);
 int zanServer_start(zanServer *serv);
 void zanServer_clean(zanServer *serv);
+int zanServer_send(zanServer *serv, swSendData *resp);
 
 //master process loop
 int zan_master_process_loop(zanServer *serv);
@@ -59,6 +60,7 @@ void zanServer_store_listen_socket(zanServer *serv);
 void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id);
 swConnection *zanServer_verify_connection(zanServer *serv, int session_id);
 
+int zanServer_getSocket(zanServer *serv, int port);
 
 
 static inline swConnection* zanServer_get_connection(zanServer *serv, int fd)
@@ -86,7 +88,7 @@ static inline swSession* zanServer_get_session(zanServer *serv, uint32_t session
     return &serv->session_list[session_id % SW_SESSION_LIST_SIZE];
 }
 
-static inline int zanServer_get_session_id(zanServer *serv, uint32_t session_id)
+static inline int zanServer_getFd_bySession(zanServer *serv, uint32_t session_id)
 {
     return serv->session_list[session_id % SW_SESSION_LIST_SIZE].fd;
 }

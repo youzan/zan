@@ -21,6 +21,7 @@
 #include "swFactory.h"
 #include "swServer.h"
 #include "swBaseOperator.h"
+#include "swLog.h"
 
 static int swFactoryThread_dispatch(swFactory *factory, swDispatchData *buf);
 static int swFactoryThread_finish(swFactory *factory, swSendData *data);

@@ -21,6 +21,7 @@
 
 #include "php_swoole.h"
 #include "swWork.h"
+#include "swLog.h"
 
 
 typedef struct _swTimer_callback

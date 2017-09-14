@@ -18,6 +18,7 @@
 #include "php_swoole.h"
 #include "swProtocol/nova.h"
 #include "swBaseOperator.h"
+#include "swLog.h"
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
