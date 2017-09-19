@@ -536,3 +536,77 @@ int zanPool_dispatch_to_taskworker(zanProcessPool *pool, swEventData *data, int 
 
     return ret;
 }
+
+zan_pid_t zanTaskWorker_spawn(zanWorker *worker)
+{
+    pid_t pid = fork();
+    zanProcessPool *pool = worker->pool;
+
+    switch (pid)
+    {
+		//child
+		case 0:
+    	{
+    		if (pool->onWorkerStart != NULL)
+			{
+				pool->onWorkerStart(pool, worker);
+			}
+			
+			int ret_code = pool->main_loop(pool, worker);
+			
+			if (pool->onWorkerStop != NULL)
+			{
+				pool->onWorkerStop(pool, worker);
+			}
+			exit(ret_code);
+			break;
+    	}
+		case -1:
+			zanSysError("fork failed.");
+			break;
+        //parent
+		default:
+			//remove old process
+			if (worker->worker_pid)
+			{
+				swHashMap_del_int(pool->map, worker->worker_pid);
+			}
+			worker->deleted = 0;
+			worker->worker_pid = pid;
+			//insert new process
+			swHashMap_add_int(pool->map, pid, worker);
+			break;
+    }
+    return pid;
+}
+
+int zanTaskWorker_largepack(zanEventData *task, void *data, int data_len)
+{
+    zanPackage_task pkg;
+    bzero(&pkg, sizeof(pkg));
+
+    memcpy(pkg.tmpfile, ServerG.servSet.task_tmpdir, ServerG.servSet.task_tmpdir_len);
+
+    //create temp file
+    int tmp_fd = swoole_tmpfile(pkg.tmpfile);
+    if (tmp_fd < 0)
+    {
+        return ZAN_ERR;
+    }
+
+    //write to file
+    if (swoole_sync_writefile(tmp_fd, data, data_len) <= 0)
+    {
+        zanWarn("write to tmpfile failed.");
+        return ZAN_ERR;
+    }
+
+    task->info.len = sizeof(zanPackage_task);
+    //use tmp file
+    zanTask_type(task) |= ZAN_TASK_TMPFILE;
+
+    pkg.length = data_len;
+    memcpy(task->data, &pkg, sizeof(zanPackage_task));
+    close(tmp_fd);
+    return ZAN_OK;
+}

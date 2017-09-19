@@ -2482,18 +2482,17 @@ PHP_METHOD(swoole_server, task)
 
 PHP_METHOD(swoole_server, sendMessage)
 {
-#if 0
-    if (!SwooleGS->start)
+    if (!ServerGS->started)
     {
         swWarn("Server is not running.");
         RETURN_FALSE;
     }
-
+    zanWarn("send message");
     zval* zobject = getThis();
-    swServer *serv = swoole_get_object(zobject);
+    zanServer *serv = swoole_get_object(zobject);
     if (!serv)
     {
-        swWarn("not create servers.");
+        zanWarn("not create servers.");
         RETURN_FALSE;
     }
 
@@ -2505,34 +2504,34 @@ PHP_METHOD(swoole_server, sendMessage)
         return;
     }
 
-    if (worker_id == SwooleWG.id)
+    if (worker_id == ServerWG.worker_id)
     {
-        swWarn("cannot send message to self.");
+        zanWarn("cannot send message to self.");
         RETURN_FALSE;
     }
 
-    if (worker_id >= serv->worker_num + SwooleG.task_worker_num)
+    if (worker_id >= ServerG.servSet.worker_num + ServerG.servSet.task_worker_num)
     {
-        swWarn("worker_id[%d] is invalid.", (int) worker_id);
+        zanWarn("worker_id[%d] is invalid.", (int) worker_id);
         RETURN_FALSE;
     }
 
     if (!serv->onPipeMessage)
     {
-        swWarn("onPipeMessage is null, cannot use sendMessage.");
+        zanWarn("onPipeMessage is null, cannot use sendMessage.");
         RETURN_FALSE;
     }
 
-    swEventData buf;
-    buf.info.type = SW_EVENT_PIPE_MESSAGE;
-    buf.info.from_id = SwooleWG.id;
+    zanEventData buf;
+    buf.info.type = ZAN_EVENT_PIPE_MESSAGE;
+    buf.info.from_id = ServerWG.worker_id;
 
     //write to file
     if (msglen >= SW_IPC_MAX_SIZE - sizeof(buf.info))
     {
-        if (swTaskWorker_large_pack(&buf, msg, msglen) < 0)
+        if (zanTaskWorker_largepack(&buf, msg, msglen) < 0)
         {
-            swWarn("large task pack failed()");
+            zanWarn("large task pack failed()");
             RETURN_FALSE;
         }
     }
@@ -2543,10 +2542,8 @@ PHP_METHOD(swoole_server, sendMessage)
         buf.info.from_fd = 0;
     }
 
-    swWorker *to_worker = swServer_get_worker(serv, worker_id);
-    SW_CHECK_RETURN(swWorker_send2worker(to_worker, &buf, sizeof(buf.info) +
-                                    buf.info.len,SW_PIPE_MASTER | SW_PIPE_NONBLOCK));
-#endif
+    zanWorker *to_worker = zanServer_get_worker(serv, worker_id);
+    SW_CHECK_RETURN(zanWorker_send2worker(to_worker, &buf, sizeof(buf.info) +buf.info.len,ZAN_PIPE_MASTER | ZAN_PIPE_NONBLOCK));
 }
 
 PHP_METHOD(swoole_server, finish)

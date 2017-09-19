@@ -21,7 +21,9 @@
 #define _SW_BASE_OPERATOR_H_
 
 #include "swoole.h"
+#include "swLog.h"
 #include "swBaseData.h"
+#include "swGlobalDef.h"
 #include "swAtomic.h"
 #include "swGlobalVars.h"
 //#include "swLog.h"
