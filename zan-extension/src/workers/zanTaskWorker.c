@@ -579,3 +579,34 @@ zan_pid_t zanTaskWorker_spawn(zanWorker *worker)
     }
     return pid;
 }
+
+int zanTaskWorker_largepack(zanEventData *task, void *data, int data_len)
+{
+    zanPackage_task pkg;
+    bzero(&pkg, sizeof(pkg));
+
+    memcpy(pkg.tmpfile, ServerG.servSet.task_tmpdir, ServerG.servSet.task_tmpdir_len);
+
+    //create temp file
+    int tmp_fd = swoole_tmpfile(pkg.tmpfile);
+    if (tmp_fd < 0)
+    {
+        return ZAN_ERR;
+    }
+
+    //write to file
+    if (swoole_sync_writefile(tmp_fd, data, data_len) <= 0)
+    {
+        zanWarn("write to tmpfile failed.");
+        return ZAN_ERR;
+    }
+
+    task->info.len = sizeof(zanPackage_task);
+    //use tmp file
+    zanTask_type(task) |= ZAN_TASK_TMPFILE;
+
+    pkg.length = data_len;
+    memcpy(task->data, &pkg, sizeof(zanPackage_task));
+    close(tmp_fd);
+    return ZAN_OK;
+}

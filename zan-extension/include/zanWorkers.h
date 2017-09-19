@@ -21,6 +21,7 @@
 #include "zanSystem.h"
 #include "zanIpc.h"
 #include "zanFactory.h"
+#include "zanReactor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,6 +65,34 @@ enum zanProcessType
 #define is_taskworker() (ServerG.process_type == ZAN_PROCESS_TASKWORKER)
 #define is_userworker() (ServerG.process_type == ZAN_PROCESS_USERWORKER)
 
+#define zanTask_type(task)                  ((task)->info.from_fd)
+
+typedef struct
+{
+    int length;
+    char tmpfile[SW_TASK_TMPDIR_SIZE + sizeof(SW_TASK_TMP_FILE)];
+} zanPackage_task;
+
+#define zanTaskWorker_large_unpack(task, __malloc, _buf, _length)   zanPackage_task _pkg;\
+memcpy(&_pkg, task->data, sizeof(_pkg));\
+_length = _pkg.length;\
+    if (_length > ServerG.serv->listen_list->protocol.package_max_length) {\
+	zanWarn("task package[length=%d] is too big.", _length);\
+}\
+_buf = __malloc(_length + 1);\
+_buf[_length] = 0;\
+int tmp_file_fd = open(_pkg.tmpfile, O_RDONLY);\
+    if (tmp_file_fd < 0){\
+	zanSysError("open(%s) failed.", task->data);\
+	_length = -1;\
+    } else if (swoole_sync_readfile(tmp_file_fd, _buf, _length) > 0) {\
+	close(tmp_file_fd);\
+	unlink(_pkg.tmpfile);\
+    } else {\
+	_length = -1;\
+	close(tmp_file_fd); \
+	unlink(_pkg.tmpfile); \
+}
 
 /******************************************************************************/
 typedef struct _zanProcessPool zanProcessPool;
@@ -129,6 +158,8 @@ int zanNetworker_onClose(swReactor *reactor, swEvent *event);
 
 int zanTaskworker_finish(char *data, int data_len, int flags);
 zan_pid_t zanTaskWorker_spawn(zanWorker *worker);
+int zanTaskWorker_largepack(zanEventData *task, void *data, int data_len);
+
 ////////////////////////////////////////////////////////////////////////////////
 //worker pool
 struct _zanProcessPool
