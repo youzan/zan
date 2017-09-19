@@ -1564,7 +1564,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("daemonize"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean_ex(value);
+        convert_to_boolean(value);
         servSet->daemonize = (uint16_t)Z_BVAL_P(value);
     }
 
@@ -1572,7 +1572,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("worker_num"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->worker_num = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -1580,7 +1580,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("dispatch_mode"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->dispatch_mode = (uint8_t) Z_LVAL_P(value);
     }
 
@@ -1600,7 +1600,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("log_level"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->log_level = (uint8_t) Z_LVAL_P(value);
         zan_set_loglevel((uint8_t) Z_LVAL_P(value));
     }
@@ -1609,7 +1609,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("discard_timeout_request"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean_ex(value);
+        convert_to_boolean(value);
         servSet->discard_timeout_request = (uint16_t)Z_BVAL_P(value);
     }
 
@@ -1617,7 +1617,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("enable_unsafe_event"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean_ex(value);
+        convert_to_boolean(value);
         servSet->enable_unsafe_event = (uint16_t)Z_BVAL_P(value);
     }
 
@@ -1625,7 +1625,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("enable_reuse_port"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean_ex(value);
+        convert_to_boolean(value);
         servSet->enable_reuse_port = (uint16_t)Z_BVAL_P(value);
     }
 
@@ -1633,7 +1633,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("task_worker_num"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->task_worker_num = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -1641,7 +1641,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("task_ipc_mode"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->task_ipc_mode = (uint8_t) Z_LVAL_P(value);
     }
 
@@ -1672,7 +1672,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("task_max_request"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->task_max_request = (uint32_t) Z_LVAL_P(value);
     }
     //max_connection
@@ -1680,21 +1680,21 @@ PHP_METHOD(swoole_server, set)
     if (sw_zend_hash_find(vht, ZEND_STRS("max_connection"), (void **) &value) == SUCCESS ||
         sw_zend_hash_find(vht, ZEND_STRS("max_conn"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->max_connection = (uint32_t) Z_LVAL_P(value);
     }
     //heartbeat_check_interval
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("heartbeat_check_interval"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->heartbeat_check_interval = (uint16_t) Z_LVAL_P(value);
     }
     //heartbeat idle time
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("heartbeat_idle_time"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->heartbeat_idle_time = (uint16_t) Z_LVAL_P(value);
 
         if (servSet->heartbeat_check_interval > servSet->heartbeat_idle_time)
@@ -1711,14 +1711,14 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("max_request"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->max_request = (uint32_t) Z_LVAL_P(value);
     }
     //cpu affinity
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_cpu_affinity"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean_ex(value);
+        convert_to_boolean(value);
         servSet->open_cpu_affinity = (uint16_t)Z_BVAL_P(value);
     }
     //cpu affinity set
@@ -1762,7 +1762,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("buffer_input_size"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->buffer_input_size = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -1770,7 +1770,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("buffer_output_size"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->buffer_output_size = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -1778,7 +1778,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("pipe_buffer_size"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->pipe_buffer_size = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -1786,7 +1786,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("message_queue_key"), (void **) &value) == SUCCESS)
     {
-        convert_to_long_ex(value);
+        convert_to_long(value);
         servSet->message_queue_key = (uint64_t) Z_LVAL_P(value);
     }
 
@@ -1794,7 +1794,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("http_parse_post"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean_ex(value);
+        convert_to_boolean(value);
         servSet->http_parse_post = (uint16_t)Z_BVAL_P(value);
     }
 
@@ -1993,7 +1993,7 @@ PHP_METHOD(swoole_server, send)
     }
 
 convert:
-    convert_to_long_ex(zfd);
+    convert_to_long(zfd);
     uint32_t fd = (uint32_t) Z_LVAL_P(zfd);
 
     if (swServer_is_udp(fd))
@@ -2243,7 +2243,7 @@ PHP_METHOD(swoole_server, close)
         return;
     }
 
-    convert_to_long_ex(zfd);
+    convert_to_long(zfd);
 
     //Reset send buffer, Immediately close the connection.
     if (reset)
@@ -2687,7 +2687,7 @@ PHP_METHOD(swoole_server, getClientInfo)
     }
     else
     {
-        convert_to_long_ex(zfd);
+        convert_to_long(zfd);
         fd = Z_LVAL_P(zfd);
     }
 
