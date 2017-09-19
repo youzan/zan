@@ -23,7 +23,7 @@
 #define SW_SERVER_H_
 
 #include "swoole.h"
-//#include "swLog.h"
+#include "swLog.h"
 #include "swBaseData.h"
 #include "swPort.h"
 #include "swError.h"
@@ -111,7 +111,7 @@ static sw_inline swListenPort* swServer_get_port(swServer *serv, int fd)
 #if defined(__GNUC__)
     if (index > 0)
     {
-        //swWarn("get port failed, count=%d. gcc version=%d.%d", index, __GNUC__, __GNUC_MINOR__);
+        swWarn("get port failed, count=%d. gcc version=%d.%d", index, __GNUC__, __GNUC_MINOR__);
     }
 #endif
 

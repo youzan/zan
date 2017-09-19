@@ -547,3 +547,26 @@ void zan_stats_set_worker_status(zanWorker *worker, int status)
     }
     ServerStatsG->lock.unlock(&ServerStatsG->lock);
 }
+
+//根据ID fork指定的worker
+zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker)
+{
+    zan_pid_t pid = fork();
+    //fork() failed
+    if (pid < 0)
+    {
+        zanError("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
+        return ZAN_ERR;
+    }
+    //worker child processor
+    else if (pid == 0)
+    {
+    	int ret = zanWorker_loop(pool, worker);
+        exit(ret);
+    }
+    //parent,add to writer
+    else
+    {
+        return pid;
+    }
+}
