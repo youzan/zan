@@ -110,8 +110,8 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
                 return ZAN_ERR;
             }
 
-            pool->workers[index].pipe_master = pipe->getFd(pipe, ZAN_PIPE_MASTER);
             pool->workers[index].pipe_worker = pipe->getFd(pipe, ZAN_PIPE_WORKER);
+            pool->workers[index].pipe_master = pipe->getFd(pipe, ZAN_PIPE_MASTER);
             pool->workers[index].pipe_object = pipe;
         }
     }
@@ -123,11 +123,6 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
         {
             zanError("create taskworker failed.");
             return ZAN_ERR;
-        }
-        if (create_pipe)
-        {
-            ///TODO:::
-            //zanServer_store_pipe_fd(ServerG.serv, worker->pipe_object);
         }
     }
 

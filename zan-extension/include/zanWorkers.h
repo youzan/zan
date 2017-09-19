@@ -44,9 +44,9 @@ enum zanResponseType
 
 enum zanTaskType
 {
-    ZAN_TASK_TMPFILE    = 1,  //tmp file
-    ZAN_TASK_SERIALIZE  = 2,  //php serialize
-    ZAN_TASK_NONBLOCK   = 4,  //task
+    ZAN_TASK_TMPFILE    = 1,
+    ZAN_TASK_SERIALIZE  = 2,
+    ZAN_TASK_NONBLOCK   = 4,
 };
 
 enum zanProcessType

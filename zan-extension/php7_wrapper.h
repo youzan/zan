@@ -158,7 +158,7 @@ static sw_inline int sw_convert_to_string(zval* val)
 {
     int type = Z_TYPE_P(val);
     if (type <= IS_STRING && IS_ARRAY != type && IS_OBJECT != type){
-        convert_to_string_ex(val);
+        convert_to_string(val);
             return SW_OK;
     } else {
             return SW_ERR;

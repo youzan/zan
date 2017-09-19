@@ -75,7 +75,8 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
     swSocketAddress client_addr;
 
     client_addrlen = sizeof(client_addr);
-    listen_host    = serv->connection_list[event->fd].object;
+    int network_index = zanServer_get_networker_index(event->from_id);
+    listen_host    = serv->connection_list[network_index][event->fd].object;
 
     int index = 0;
     for (index = 0; index < SW_ACCEPT_MAX_COUNT; index++)
@@ -116,12 +117,14 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             zan_set_nonblocking(new_fd, 1);
         }
 #endif
-        //zanDebug("[NetWorker] Accept new connection. maxfd=%d|networker_id/reactor_id=%d|new_fd=%d", swServer_get_maxfd(serv), reactor->id, new_fd);
+
+        uint32_t connection_num = zanServer_get_connection_num(serv);
+        zanDebug("[NetWorker] Accept new connection. connection_num=%d|networker_id/reactor_id=%d|new_fd=%d", connection_num, reactor->id, new_fd);
 
         //TODO::: too many connection; max_connection/networker_num
-        if (new_fd >= servSet->max_connection)
+        if (connection_num >= servSet->max_connection)
         {
-            zanWarn("Too many connections [now: %d], close it.", new_fd);
+            zanWarn("Too many connections [now: %d], max_connection=%d, close it.", new_fd, servSet->max_connection);
             close(new_fd);
             return ZAN_OK;
         }
@@ -131,6 +134,9 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         swConnection *conn = zanConnection_create(serv, listen_host, new_fd, event->fd, reactor->id);
         memcpy(&conn->info.addr, &client_addr, sizeof(client_addr));
         conn->socket_type = listen_host->type;
+
+        zan_stats_incr(&ServerStatsG->accept_count);
+        zan_stats_incr(&ServerStatsG->connection_count);
 
 #ifdef SW_USE_OPENSSL
         if (listen_host->ssl)
@@ -179,16 +185,24 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
 {
     swConnection* connection = NULL;
 
-    sw_stats_incr(&ServerStatsG->accept_count);
-    sw_stats_incr(&ServerStatsG->connection_count);
-
-    if (fd > swServer_get_maxfd(serv))
+    int networker_id    = ServerWG.worker_id;
+    int networker_index = zanServer_get_networker_index(networker_id);
+    if (fd > zanServer_get_maxfd(serv, networker_index))
     {
-        swServer_set_maxfd(serv, fd);
+        zanServer_set_maxfd(serv, networker_index, fd);
     }
 
-    connection = &(serv->connection_list[fd]);
+    connection = &(serv->connection_list[networker_index][fd]);
     bzero(connection, sizeof(swConnection));
+
+    connection->fd = fd;
+    connection->active  = 1;
+    connection->from_id = reactor_id;
+    connection->from_fd = from_fd;                    //listen sockfd
+    connection->from_net_id  = networker_id;
+    connection->last_time    = ServerGS->server_time;
+    connection->connect_time = ServerGS->server_time;
+
     if (ls->open_tcp_nodelay)
     {
         int sockopt = 1;
@@ -210,13 +224,6 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     }
 #endif
 
-    connection->fd = fd;
-    connection->from_id = reactor_id;
-    connection->from_fd = from_fd;
-    connection->connect_time = ServerGS->server_time;
-    connection->last_time    = ServerGS->server_time;
-    connection->active = 1;
-
 #ifdef SW_REACTOR_SYNC_SEND
     if (!ls->ssl)
     {
@@ -224,9 +231,11 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     }
 #endif
 
+
+    ///TODO:::
 #ifdef SW_REACTOR_USE_SESSION
     uint32_t session_id = 1;
-    swSession *session = NULL;
+    zanSession *session = NULL;
 
     zan_spinlock(&ServerGS->spinlock);
     int index = 0;
@@ -241,12 +250,12 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
         zanWarn("session_id=%d, index=%d", session_id, index);
         session = zanServer_get_session(serv, session_id);
 
-        if (session->fd == 0)
+        if (session->accept_fd == 0)
         {
-            session->fd = fd;
-            session->id = session_id;
+            session->accept_fd    = fd;
+            session->session_id   = session_id;
             session->reactor_id   = reactor_id;
-            session->networker_id = reactor_id;
+            session->networker_id = networker_id;
             break;
         }
     }

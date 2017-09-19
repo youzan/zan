@@ -19,12 +19,7 @@
 #ifndef _ZAN_SERVER_H_
 #define _ZAN_SERVER_H_
 
-#include "swoole_config.h"
-#include "swPort.h"
-
-#include "zanAtomic.h"
-#include "zanGlobalVar.h"
-#include "zanLog.h"
+#include "zanGlobalDef.h"
 
 #ifdef SW_USE_OPENSSL
 #include "swProtocol/ssl.h"
@@ -34,9 +29,20 @@
 extern "C" {
 #endif
 
-uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t conn_fd);
 
-//========== TODO:::
+#define ZAN_SERVER_MAX_FD_INDEX          0 //max connection socket
+#define ZAN_SERVER_MIN_FD_INDEX          1 //min listen socket
+
+//使用connection_list[0]表示最大的FD
+#define zanServer_set_maxfd(serv, networker_index, maxfd) (serv->connection_list[networker_index][ZAN_SERVER_MAX_FD_INDEX].fd=maxfd)
+#define zanServer_get_maxfd(serv, networker_index) (serv->connection_list[networker_index][ZAN_SERVER_MAX_FD_INDEX].fd)
+
+//使用connection_list[1]表示最小的FD
+#define zanServer_set_minfd(serv, networker_index, maxfd) (serv->connection_list[networker_index][ZAN_SERVER_MIN_FD_INDEX].fd=maxfd)
+#define zanServer_get_minfd(serv, networker_index) (serv->connection_list[networker_index][ZAN_SERVER_MIN_FD_INDEX].fd)
+
+
+/**************************************************************/
 void zanServer_init(zanServer *serv);
 int zanServer_create(zanServer *serv);
 int zanServer_start(zanServer *serv);
@@ -55,78 +61,28 @@ int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId);
 int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length);
 
 
-void zanServer_store_listen_socket(zanServer *serv);
+uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint32_t conn_fd);
+
+void zanServer_store_listen_socket(zanServer *serv, int networker_id);
 
 void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id);
 swConnection *zanServer_verify_connection(zanServer *serv, int session_id);
 
 int zanServer_getSocket(zanServer *serv, int port);
 
+swString *zanWorker_get_buffer(zanServer *serv, int worker_id);
+zanSession* zanServer_get_session(zanServer *serv, uint32_t session_id);
+swListenPort* zanServer_get_port(zanServer *serv, int networker_id, int fd);
+swConnection* zanServer_get_connection(zanServer *serv, int networker_id, int fd);
+int zanServer_getFd_bySession(zanServer *serv, uint32_t session_id);
+void zanServer_free_connection_buffer(zanServer *serv, int networker_id, int fd);
+swConnection* zanServer_get_connection_by_sessionId(zanServer *serv, uint32_t session_id);
 
-static inline swConnection* zanServer_get_connection(zanServer *serv, int fd)
-{
-    if (fd > ServerG.servSet.max_connection || fd <= 2)
-    {
-        zanWarn("fd=%d, no connection.", fd);
-        return NULL;
-    }
-    else
-    {
-        return &serv->connection_list[fd];
-    }
-}
+int zanServer_get_networker_index(int net_worker_id);
 
-static inline swString *zanWorker_get_buffer(zanServer *serv, int worker_id)
-{
-    //input buffer
-    return ServerWG.buffer_input[worker_id];
-}
+uint32_t zanServer_get_connection_num(zanServer *serv);
 
-
-static inline swSession* zanServer_get_session(zanServer *serv, uint32_t session_id)
-{
-    return &serv->session_list[session_id % SW_SESSION_LIST_SIZE];
-}
-
-static inline int zanServer_getFd_bySession(zanServer *serv, uint32_t session_id)
-{
-    return serv->session_list[session_id % SW_SESSION_LIST_SIZE].fd;
-}
-
-static inline swListenPort* zanServer_get_port(zanServer *serv, int fd)
-{
-    zan_atomic_t server_fd = 0;
-    int index = 0;
-    for (index = 0;index < 128;index++)
-    {
-        server_fd = serv->connection_list[fd].from_fd;
-        if (server_fd > 0)
-        {
-            break;
-        }
-
-        swYield();
-    }
-
-#if defined(__GNUC__)
-    if (index > 0)
-    {
-        zanWarn("get port failed, count=%d. gcc version=%d.%d", index, __GNUC__, __GNUC_MINOR__);
-    }
-#endif
-
-    return serv->connection_list[server_fd].object;
-}
-
-static inline void zanServer_free_buffer(zanServer *serv, int fd)
-{
-    swString *buffer = serv->connection_list[fd].object;
-    if (buffer)
-    {
-        swString_free(buffer);
-        serv->connection_list[fd].object = NULL;
-    }
-}
+int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len);
 
 
 #ifdef __cplusplus

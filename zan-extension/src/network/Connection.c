@@ -392,6 +392,7 @@ void swConnection_clear_string_buffer(swConnection *conn)
     }
 }
 
+#if 0
 swBuffer_trunk* swConnection_get_in_buffer(swConnection *conn)
 {
     swBuffer_trunk *trunk = NULL;
@@ -424,6 +425,7 @@ swBuffer_trunk* swConnection_get_in_buffer(swConnection *conn)
     }
     return trunk;
 }
+#endif
 
 swBuffer_trunk* swConnection_get_out_buffer(swConnection *conn, uint32_t type)
 {

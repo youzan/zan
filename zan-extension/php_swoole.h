@@ -376,7 +376,8 @@ extern zval *php_sw_server_callbacks[PHP_SERVER_CALLBACK_NUM];
 extern zval _php_sw_server_callbacks[PHP_SERVER_CALLBACK_NUM];
 #endif
 
-extern zval *php_swoole_server_get_callback(zanServer *serv, int server_fd, int event_type);
+//extern zval *php_swoole_server_get_callback(zanServer *serv, int server_fd, int event_type);
+zval* php_swoole_server_get_callback(zanServer *serv, int server_fd, int net_worker_id, int event_type);
 
 void swoole_destroy_table(zend_resource *rsrc TSRMLS_DC);
 
