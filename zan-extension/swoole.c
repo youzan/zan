@@ -204,7 +204,7 @@ const zend_function_entry zan_functions[] =
     PHP_FE(swoole_event_add, arginfo_swoole_event_add)
     PHP_FE(swoole_event_set, arginfo_swoole_event_set)
     PHP_FE(swoole_event_del, arginfo_swoole_event_del)
-    PHP_FE(swoole_event_exit, arginfo_swoole_void)
+    //PHP_FE(swoole_event_exit, arginfo_swoole_void)
     PHP_FE(swoole_event_wait, arginfo_swoole_void)
     PHP_FE(swoole_event_write, arginfo_swoole_event_write)
     PHP_FE(swoole_event_defer, arginfo_swoole_event_defer)

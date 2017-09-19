@@ -33,8 +33,6 @@
 #include "zanSocket.h"
 #include "zanLog.h"
 
-///TODO::: swoole_server
-
 zanServerG   ServerG;              //Local Global Variable
 zanServerGS *ServerGS = NULL;      //Share Memory Global Variable
 zanWorkerG   ServerWG;             //Worker Global Variable
@@ -70,13 +68,13 @@ void zan_server_set_init(void)
     zanServerSet *servSet = &ServerG.servSet;
 
     //servSet->reactor_num        = ZAN_REACTOR_NUM;    //todo:::delete or replaced with networker_num
-    servSet->worker_num         = 1; //ZAN_CPU_NUM;
-    servSet->net_worker_num     = 1; //ZAN_CPU_NUM;
+    servSet->worker_num         = ZAN_CPU_NUM;
+    servSet->net_worker_num     = ZAN_CPU_NUM;
     servSet->dispatch_mode      = SW_DISPATCH_FDMOD;
     servSet->max_connection     = ServerG.max_sockets;
 
     //just for test
-    servSet->task_worker_num    = 1;
+    servSet->task_worker_num    = 0;
 
     servSet->log_level          = 5;
     servSet->task_ipc_mode      = ZAN_IPC_UNSOCK;
@@ -99,7 +97,6 @@ void zan_server_set_init(void)
     servSet->http_parse_post = 1;
 }
 
-//TODO:::
 int zanServer_create(zanServer *serv)
 {
     ServerG.factory = &serv->factory;
@@ -111,11 +108,13 @@ int zanServer_create(zanServer *serv)
         return ZAN_ERR;
     }
 
-    serv->connection_list = sw_shm_calloc(ServerG.servSet.max_connection, sizeof(swConnection));
-    if (!serv->connection_list)
+    zanServerSet *servSet = &ServerG.servSet;
+
+    serv->connection_list  = (swConnection**)sw_shm_calloc(servSet->net_worker_num, sizeof(swConnection*));
+    for (uint32_t index = 0; index < servSet->net_worker_num; index++)
     {
-        zanError("sw_shm_calloc(%ld) failed for connection_list", ServerG.servSet.max_connection * sizeof(swConnection));
-        return ZAN_ERR;
+        zanWarn("calloc connection_list: index=%d, networker_num=%d", index, servSet->net_worker_num);
+        serv->connection_list[index] = (swConnection*)sw_shm_calloc(ServerG.servSet.max_connection, sizeof(swConnection));
     }
 
     //create factry object
@@ -136,7 +135,6 @@ int zanServer_start(zanServer *serv)
         return ZAN_ERR;
     }
 
-    zanLog_init(ServerG.servSet.log_file, 0);
     if (ZAN_OK != zan_daemonize())
     {
         zanError("zan_daemonize failed.");
@@ -150,6 +148,7 @@ int zanServer_start(zanServer *serv)
         zanDebug("ls->port=%d, ls->host=%s, ls->sock=%d", ls->port, ls->host, ls->sock);
         if (zanPort_set_ListenOption(ls) < 0)
         {
+            zanError("setlistion failed: ls->port=%d, ls->host=%s, ls->sock=%d", ls->port, ls->host, ls->sock);
             return ZAN_ERR;
         }
     }
@@ -167,7 +166,7 @@ int zanServer_start(zanServer *serv)
     int ret = zan_master_process_loop(serv);
 
     exit(ret);
-    ///swServer_free(serv);
+    ///zanServer_free(serv);
 
     return SW_OK;
 }
@@ -209,12 +208,6 @@ int zan_daemonize(void)
 static int zanServer_start_check(zanServer *serv)
 {
     zanServerSet *servSet = &ServerG.servSet;
-
-    if (serv->onReceive == NULL && serv->onPacket == NULL)
-    {
-        zanError("onReceive and onPacket event callback must be set.");
-        return ZAN_ERR;
-    }
 
     if (serv->have_tcp_sock && serv->onReceive == NULL)
     {
@@ -279,7 +272,7 @@ static int zanServer_start_check(zanServer *serv)
     return ZAN_OK;
 }
 
-uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t conn_fd)
+uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint32_t conn_fd)
 {
     int      index = 0;
     uint32_t target_worker_id = 0;
@@ -297,7 +290,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t conn_fd)
     }
     else if (servSet->dispatch_mode == ZAN_DISPATCH_IPMOD) //Using the IP touch access to hash
     {
-        swConnection *conn = zanServer_get_connection(serv, conn_fd);
+        swConnection *conn = zanServer_get_connection(serv, networker_id, conn_fd);
         if (!conn || SW_SOCK_TCP == conn->socket_type) //UDP or tcp ipv4
         {
             target_worker_id = (!conn)? conn_fd % servSet->worker_num :
@@ -315,7 +308,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t conn_fd)
     }
     else if (servSet->dispatch_mode == SW_DISPATCH_UIDMOD)
     {
-        swConnection *conn = zanServer_get_connection(serv, conn_fd);
+        swConnection *conn = zanServer_get_connection(serv, networker_id, conn_fd);
         uint32_t uid = 0;
         if (conn == NULL || conn->uid == 0)
         {
@@ -558,11 +551,12 @@ int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length)
     return factory->finish(factory, &_send);
 }
 
-void zanServer_store_listen_socket(zanServer *serv)
+void zanServer_store_listen_socket(zanServer *serv, int networker_id)
 {
     int index  = -1;
     int sockfd = 0;
     swListenPort *ls = NULL;
+    int networker_index = zanServer_get_networker_index(networker_id);
 
     LL_FOREACH(serv->listen_list, ls)
     {
@@ -575,22 +569,22 @@ void zanServer_store_listen_socket(zanServer *serv)
         }
 
         //save server socket to connection_list
-        serv->connection_list[sockfd].fd = sockfd;
+        serv->connection_list[networker_index][sockfd].fd = sockfd;
         //socket type
-        serv->connection_list[sockfd].socket_type = ls->type;
+        serv->connection_list[networker_index][sockfd].socket_type = ls->type;
         //save listen_host object
-        serv->connection_list[sockfd].object = ls;
+        serv->connection_list[networker_index][sockfd].object = ls;
 
         if (swSocket_is_dgram(ls->type))
         {
             if (ls->type == SW_SOCK_UDP)
             {
-                serv->connection_list[sockfd].info.addr.inet_v4.sin_port = htons(ls->port);
+                serv->connection_list[networker_index][sockfd].info.addr.inet_v4.sin_port = htons(ls->port);
             }
             else if (ls->type == SW_SOCK_UDP6)
             {
                 ServerG.serv->udp_socket_ipv6 = sockfd;
-                serv->connection_list[sockfd].info.addr.inet_v6.sin6_port = htons(ls->port);
+                serv->connection_list[networker_index][sockfd].info.addr.inet_v6.sin6_port = htons(ls->port);
             }
         }
         else
@@ -598,37 +592,39 @@ void zanServer_store_listen_socket(zanServer *serv)
             //IPv4
             if (ls->type == SW_SOCK_TCP)
             {
-                serv->connection_list[sockfd].info.addr.inet_v4.sin_port = htons(ls->port);
+                serv->connection_list[networker_index][sockfd].info.addr.inet_v4.sin_port = htons(ls->port);
             }
             //IPv6
             else if (ls->type == SW_SOCK_TCP6)
             {
-                serv->connection_list[sockfd].info.addr.inet_v6.sin6_port = htons(ls->port);
+                serv->connection_list[networker_index][sockfd].info.addr.inet_v6.sin6_port = htons(ls->port);
             }
         }
 
-        if (sockfd > swServer_get_maxfd(serv))
+        if (sockfd > zanServer_get_maxfd(serv, networker_index))
         {
-            swServer_set_maxfd(serv, sockfd);
+            zanServer_set_maxfd(serv, networker_index, sockfd);
         }
 
-        if (sockfd < swServer_get_minfd(serv) || 0 == swServer_get_minfd(serv))
+        if (sockfd < zanServer_get_minfd(serv, networker_index) || 0 == zanServer_get_minfd(serv, networker_index))
         {
-            swServer_set_minfd(serv, sockfd);
+            zanServer_set_minfd(serv, networker_index, sockfd);
         }
     }
 }
 
 swConnection *zanServer_verify_connection(zanServer *serv, int session_id)
 {
-    swSession *session = zanServer_get_session(serv, session_id);
-    int fd = session->fd;
-    swConnection *conn = zanServer_get_connection(serv, fd);
+    zanSession *session = zanServer_get_session(serv, session_id);
+    int fd = session->accept_fd;
+    int networker_id = session->networker_id;
+
+    swConnection *conn = zanServer_get_connection(serv, networker_id, fd);
     if (!conn || conn->active == 0)
     {
         return NULL;
     }
-    if (session->id != session_id || conn->session_id != session_id)
+    if (session->session_id != session_id || conn->session_id != session_id)
     {
         return NULL;
     }
@@ -655,3 +651,148 @@ int zanServer_getSocket(zanServer *serv, int port)
 
     return ZAN_ERR;
 }
+
+swConnection* zanServer_get_connection(zanServer *serv, int networker_id, int fd)
+{
+    zanServerSet *servSet = &ServerG.servSet;
+    int networker_index = zanServer_get_networker_index(networker_id);
+
+    if (fd > servSet->max_connection || fd <= 2 ||
+        networker_index >= servSet->net_worker_num || networker_index < 0)
+    {
+        zanWarn("fd=%d, no connection, networker_index=%d", fd, networker_index);
+        return NULL;
+    }
+    else
+    {
+        return &serv->connection_list[networker_index][fd];
+    }
+}
+
+swString *zanWorker_get_buffer(zanServer *serv, int worker_id)
+{
+    zanWarn("TEST.....");
+    return NULL;
+}
+
+zanSession* zanServer_get_session(zanServer *serv, uint32_t session_id)
+{
+    return &serv->session_list[session_id % SW_SESSION_LIST_SIZE];
+}
+
+int zanServer_getFd_bySession(zanServer *serv, uint32_t session_id)
+{
+    return serv->session_list[session_id % SW_SESSION_LIST_SIZE].accept_fd;
+}
+
+swConnection* zanServer_get_connection_by_sessionId(zanServer *serv, uint32_t session_id)
+{
+    zanSession* session = zanServer_get_session(serv, session_id);
+    uint32_t accept_fd    = session->accept_fd;
+    uint32_t networker_id = session->networker_id;
+
+    return zanServer_get_connection(serv, networker_id, accept_fd);
+}
+
+swListenPort* zanServer_get_port(zanServer *serv, int networker_id, int fd)
+{
+    int network_index = zanServer_get_networker_index(networker_id);
+
+    zan_atomic_t server_fd = 0;
+    int index = 0;
+    for (index = 0;index < 128;index++)
+    {
+        server_fd = serv->connection_list[network_index][fd].from_fd;
+
+        if (server_fd > 0)
+        {
+            break;
+        }
+
+        swYield();
+    }
+
+#if defined(__GNUC__)
+    if (index > 0)
+    {
+        zanWarn("get port failed, count=%d. gcc version=%d.%d", index, __GNUC__, __GNUC_MINOR__);
+    }
+#endif
+
+    return serv->connection_list[network_index][server_fd].object;
+}
+
+void zanServer_free_connection_buffer(zanServer *serv, int networker_id, int fd)
+{
+    int network_index = zanServer_get_networker_index(networker_id);
+    swString *buffer = serv->connection_list[network_index][fd].object;
+    if (buffer)
+    {
+        swString_free(buffer);
+        serv->connection_list[network_index][fd].object = NULL;
+    }
+}
+
+int zanServer_get_networker_index(int net_worker_id)
+{
+    int index = net_worker_id - ServerG.servSet.worker_num - ServerG.servSet.task_worker_num;
+    return index;
+}
+
+uint32_t zanServer_get_connection_num(zanServer *serv)
+{
+    int index = 0;
+    int sum   = 0;
+    zanServerSet *servSet = &ServerG.servSet;
+
+    for (index = 0; index < servSet->net_worker_num; index++)
+    {
+        int minfd = zanServer_get_minfd(serv, index);
+        int maxfd = zanServer_get_maxfd(serv, index);
+        sum += maxfd - minfd + 1;
+        zanWarn("index=%d, minfd=%d, max_fd=%d, sum=%d", index, minfd, maxfd, sum);
+    }
+
+    return sum;
+}
+
+int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len)
+{
+#ifdef SW_USE_OPENSSL
+    swConnection *conn = zanServer_verify_connection(serv, fd);
+    if (conn && conn->ssl)
+    {
+        zanError("SSL session#%d cannot use sendfile().", fd);
+        return ZAN_ERR;
+    }
+#endif
+
+    swSendData send_data;
+    send_data.info.len = len;
+    char buffer[SW_BUFFER_SIZE] = {0};
+
+    //file name size
+    if (send_data.info.len > SW_BUFFER_SIZE - 1)
+    {
+        zanWarn("sendfile name too long. [MAX_LENGTH=%d]",(int) SW_BUFFER_SIZE - 1);
+        return ZAN_ERR;
+    }
+
+    //check file exists
+    if (access(filename, R_OK) < 0)
+    {
+        zanError("file[%s] not found.", filename);
+        return ZAN_ERR;
+    }
+
+    send_data.info.fd = fd;
+    send_data.info.type = SW_EVENT_SENDFILE;
+    memcpy(buffer, filename, send_data.info.len);
+    buffer[send_data.info.len] = 0;
+    send_data.info.len++;
+    send_data.length = 0;
+    send_data.data = buffer;
+
+    return serv->factory.finish(&serv->factory, &send_data);
+}
+

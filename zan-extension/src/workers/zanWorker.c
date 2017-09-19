@@ -153,36 +153,6 @@ int zanPool_worker_init(zanProcessPool *pool)
     pool->main_loop      = zanWorker_loop;
     pool->start_id       = 0;
 
-#if 0
-    zanServer *serv = ServerG.serv;
-    int buffer_input_size = (serv->listen_list->open_eof_check ||
-                             serv->listen_list->open_length_check ||
-                             serv->listen_list->open_http_protocol)?
-                            serv->listen_list->protocol.package_max_length:
-                            SW_BUFFER_SIZE_BIG;
-
-
-    ///TODO:::
-    int buffer_num = /*serv->reactor_num + */ serv->dgram_port_num;
-    ServerWG.buffer_input = zan_malloc(sizeof(swString*) * buffer_num);
-    if (!SwooleWG.buffer_input)
-    {
-        zanError("malloc for ServerWG.buffer_input failed.");
-        return ZAN_ERR;
-    }
-
-    int index = 0;
-    for (index = 0; index < buffer_num; index++)
-    {
-        ServerWG.buffer_input[index] = swString_new(buffer_input_size);
-        if (!ServerWG.buffer_input[index])
-        {
-            zanError("buffer_input init failed.");
-            return ZAN_ERR;
-        }
-    }
-#endif
-
     return ZAN_OK;
 }
 
@@ -463,7 +433,7 @@ int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int session_id)
 {
     int ret = -1;
     zanServer *serv = ServerG.serv;
-    swSession *session = zanServer_get_session(serv, session_id);
+    zanSession *session = zanServer_get_session(serv, session_id);
     zanWorker *worker = zanServer_get_worker(serv, session->networker_id);
 
     zanDebug("session_id=%d, sendn=%d, networker_id=%d", session_id, (int)sendn, session->networker_id);
