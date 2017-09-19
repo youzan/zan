@@ -26,7 +26,6 @@
 #include "zanProcess.h"
 #include "zanGlobalDef.h"
 
-static int zan_alloc_workers_rsc(void);
 extern int zanPool_worker_alloc(zanProcessPool *pool);
 extern int zanPool_taskworker_alloc(zanProcessPool *pool);
 extern int zanPool_networker_alloc(zanProcessPool *pool);
@@ -39,6 +38,7 @@ extern int zan_spawn_worker_process(zanProcessPool *);
 extern int zan_spawn_task_process(zanProcessPool *);
 extern int zan_spawn_net_process(zanProcessPool *);
 
+static int zan_alloc_workers_rsc(void);
 static int zan_spawn_child_process(void);
 static int zan_spawn_user_process(void);
 static int zan_alloc_userworker_process(void);
@@ -252,13 +252,6 @@ static int zan_spawn_user_process(void)
         worker->process_type = ZAN_PROCESS_USERWORKER;
         worker->worker_id    = servSet->worker_num + servSet->task_worker_num +
                                servSet->net_worker_num + index++;
-
-        //store the pipe object
-        if (worker->pipe_object)
-        {
-            ///TODO:::
-            /////zanServer_store_pipe_fd(serv, worker->pipe_object);
-        }
 
         pid = zan_fork();
         if (pid < 0)

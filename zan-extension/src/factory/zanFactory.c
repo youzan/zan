@@ -123,7 +123,7 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
     if (task->target_worker_id < 0)
     {
         schedule_key = task->data.info.fd;
-        to_worker_id = zanServer_worker_schedule(serv, schedule_key);
+        to_worker_id = zanServer_worker_schedule(serv, task->data.info.from_id, schedule_key);
     }
     else
     {
@@ -134,7 +134,7 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
     //todo:::
     if (swEventData_is_stream(task->data.info.type))
     {
-        swConnection *conn = zanServer_get_connection(serv, task->data.info.fd);
+        swConnection *conn = zanServer_get_connection(serv, task->data.info.from_id, task->data.info.fd);
         if (conn == NULL || conn->active == 0)
         {
             zanWarn("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);

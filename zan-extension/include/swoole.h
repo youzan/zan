@@ -91,16 +91,6 @@ typedef unsigned long ulong_t;
 #define CLOCK_REALTIME 0
 #endif
 
-#if !defined(__GNUC__) || __GNUC__ < 3
-#define __builtin_expect(x, expected_value) (x)
-#endif
-#ifndef likely
-#define likely(x)        __builtin_expect(!!(x), 1)
-#endif
-#ifndef unlikely
-#define unlikely(x)      __builtin_expect(!!(x), 0)
-#endif
-
 #define SW_START_LINE  "-------------------------START----------------------------"
 #define SW_END_LINE    "-------------------------END------------------------------"
 #define SW_SPACE       ' '
@@ -108,9 +98,6 @@ typedef unsigned long ulong_t;
 /*----------------------------------------------------------------------------*/
 
 #include "swoole_config.h"
-
-#define SW_TIMEO_SEC           0
-#define SW_TIMEO_USEC          3000000
 
 #define SW_MAX_UINT            4294967295
 #define SW_MAX_INT             2147483647
@@ -125,11 +112,11 @@ typedef unsigned long ulong_t;
 #define SW_STRL(s)             s, sizeof(s)
 #define SW_START_SLEEP         usleep(100000)  //sleep 1s,wait fork and pthread_create
 
-#define METHOD_DEF(class,name,...)  class##_##name(class *object, ##__VA_ARGS__)
-#define METHOD(class,name,...)      class##_##name(object, ##__VA_ARGS__)
+//#define METHOD_DEF(class,name,...)  class##_##name(class *object, ##__VA_ARGS__)
+//#define METHOD(class,name,...)      class##_##name(object, ##__VA_ARGS__)
 
 //-------------------------------------------------------------------------------
-#define SW_ASYNCERR			   1
+#define SW_ASYNCERR            1
 #define SW_OK                  0
 #define SW_ERR                -1
 #define SW_AGAIN              -2
@@ -250,6 +237,17 @@ typedef struct
     uint8_t  reactor_id;
     uint8_t  networker_id;
 } zanSession;
+
+typedef struct _zanDataHead
+{
+    uint32_t accept_fd;    //文件描述符:::todo????
+    uint32_t len;          //长度
+    uint8_t  reactor_id;   //Reactor Id
+    uint8_t  networker_id;
+    uint8_t  type;         //类型
+    uint8_t  from_fd;
+    uint16_t worker_id;
+} zanDataHead;
 
 //for test
 enum zanServer_mode
