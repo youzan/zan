@@ -147,7 +147,7 @@ zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker);
 
 //networker<--->worker<--->task_worker
 int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int n, int flag);
-int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int fd);
+int zanWorker_send2networker(zanEventData *ev_data, size_t sendn, int fd);
 
 int zanNetworker_send2worker(void *data, int len, uint16_t target_worker_id);
 int zanNetworker_close_connection(swReactor *reactor, int fd);

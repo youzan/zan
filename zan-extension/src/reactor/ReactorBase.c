@@ -376,6 +376,7 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
 
         do_send:
         ret = swConnection_send(socket, buf, n, 0);
+		swWarn("ret=%d,errno=%d,error=%s", ret, errno, strerror(errno));
         if (ret > 0)
         {
             if (n == ret)
