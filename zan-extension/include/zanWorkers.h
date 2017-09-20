@@ -44,9 +44,9 @@ enum zanResponseType
 
 enum zanTaskType
 {
-    ZAN_TASK_TMPFILE    = 1,  //tmp file
-    ZAN_TASK_SERIALIZE  = 2,  //php serialize
-    ZAN_TASK_NONBLOCK   = 4,  //task
+    ZAN_TASK_TMPFILE    = 1,
+    ZAN_TASK_SERIALIZE  = 2,
+    ZAN_TASK_NONBLOCK   = 4,
 };
 
 enum zanProcessType
@@ -93,8 +93,6 @@ int tmp_file_fd = open(_pkg.tmpfile, O_RDONLY);\
 	close(tmp_file_fd); \
 	unlink(_pkg.tmpfile); \
 }
-
-/******************************************************************************/
 typedef struct _zanProcessPool zanProcessPool;
 
 typedef struct _zanWorker
@@ -157,6 +155,7 @@ int zanNetworker_close_connection(swReactor *reactor, int fd);
 int zanNetworker_onClose(swReactor *reactor, swEvent *event);
 
 int zanTaskworker_finish(char *data, int data_len, int flags);
+
 zan_pid_t zanTaskWorker_spawn(zanWorker *worker);
 int zanTaskWorker_largepack(zanEventData *task, void *data, int data_len);
 

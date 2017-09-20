@@ -26,6 +26,7 @@
 #include "swPipe.h"
 #include "swFactory.h"
 #include "swSendfile.h"
+#include "swLog.h"
 
 #ifdef __cplusplus
 extern "C" {

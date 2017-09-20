@@ -116,6 +116,8 @@ typedef struct _swConnection
      */
     uint8_t from_fd;
 
+    uint8_t from_net_id;  //networker_id
+
     /**
      * socket address
      */
@@ -180,7 +182,7 @@ int swConnection_buffer_send(swConnection *conn);
 swString* swConnection_get_string_buffer(swConnection *conn);
 void swConnection_clear_string_buffer(swConnection *conn);
 swBuffer_trunk* swConnection_get_out_buffer(swConnection *conn, uint32_t type);
-swBuffer_trunk* swConnection_get_in_buffer(swConnection *conn);
+//swBuffer_trunk* swConnection_get_in_buffer(swConnection *conn);
 
 int swConnection_sendfile_sync(swConnection *conn, char *filename, double timeout);
 int swConnection_sendfile_async(swConnection *conn, char *filename);

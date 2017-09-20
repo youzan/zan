@@ -42,7 +42,7 @@ extern "C" {
 
 #define SW_HEARTBEAT_IDLE          0   //心跳存活最大时间
 #define SW_HEARTBEAT_CHECK         0   //心跳定时侦测时间
-    
+
 
 //------------------------------------Server-------------------------------------------
 enum swServer_callback_type
@@ -95,18 +95,18 @@ static sw_inline void swServer_free_buffer(swServer *serv, int fd)
 
 static sw_inline swListenPort* swServer_get_port(swServer *serv, int fd)
 {
-	sw_atomic_t server_fd = 0;
-	int index = 0;
-	for (index = 0;index < 128;index++)
-	{
-		server_fd = serv->connection_list[fd].from_fd;
-		if (server_fd > 0)
-		{
-			break;
-		}
+    sw_atomic_t server_fd = 0;
+    int index = 0;
+    for (index = 0;index < 128;index++)
+    {
+        server_fd = serv->connection_list[fd].from_fd;
+        if (server_fd > 0)
+        {
+            break;
+        }
 
-		swYield();
-	}
+        swYield();
+    }
 
 #if defined(__GNUC__)
     if (index > 0)

@@ -43,14 +43,11 @@ typedef struct _zanServer
     uint8_t dgram_port_num;
     uint8_t listen_port_num;
 
+    uint32_t have_tcp_sock :1;
+
+    uint32_t have_udp_sock :1;
     uint32_t udp_socket_ipv4;
     uint32_t udp_socket_ipv6;
-
-    //have udp listen socket
-    uint32_t have_udp_sock :1;
-
-    //have tcp listen socket
-    uint32_t have_tcp_sock :1;
 
     //Udisable notice when use SW_DISPATCH_ROUND and SW_DISPATCH_QUEUE
     uint32_t disable_notify :1;
@@ -66,13 +63,13 @@ typedef struct _zanServer
 
     swListenPort *listen_list;
 
-    uint32_t      user_worker_num;       ///TODO::: GS
+    uint32_t      user_worker_num;       ///TODO:::GS
     zanWorker   **user_workers;
     swHashMap    *user_worker_map;
     zanUserWorker_node *user_worker_list;
 
-    swConnection *connection_list;
-    swSession    *session_list;
+    zanSession     *session_list;
+    swConnection   **connection_list;
 
     void *ptr2;
 
@@ -131,17 +128,9 @@ typedef struct _zanWorkerG
     uint8_t in_client :1;
     uint8_t shutdown :1;
 
-    swString **buffer_input;
-    swString **buffer_output;
+    //swString **buffer_input;
+    //swString **buffer_output;
 } zanWorkerG;
-
-#if 0
-typedef struct _zanThreadG
-{
-    uint16_t thread_id;
-    uint8_t  thread_type;
-} zanThreadG;
-#endif
 
 typedef struct _zanServerSet
 {
@@ -164,9 +153,9 @@ typedef struct _zanServerSet
     char     *log_file;
     char     *pid_file;
 
-    char *chroot;
-    char *user;
-    char *group;
+    char     *user;
+    char     *chroot;
+    char     *group;
 
     uint16_t heartbeat_idle_time;
     uint16_t heartbeat_check_interval;
@@ -202,18 +191,18 @@ typedef struct _zanServerG
     uint8_t   process_type;
     zan_pid_t process_pid;
 
-    pthread_t heartbeat_tid;   ///TODO:::
+    uint32_t pagesize;
+    uint32_t max_sockets;
+    uint16_t cpu_num;
 
     int error;
     int signal_alarm;
     int log_fd;
     int null_fd;
 
-    uint32_t pagesize;
-    uint32_t max_sockets;
-    uint16_t cpu_num;
-
     struct utsname uname;
+
+    pthread_t heartbeat_tid;   ///TODO:::
 
     zanServerSet  servSet;
     zanServer    *serv;
@@ -231,11 +220,6 @@ typedef struct _zanWorkerStats
     zan_atomic_t request_count;
     zan_atomic_t start_count;
 } zanWorkerStats;
-
-typedef struct _zanNetWorkerStat
-{
-    //...
-} zanNetWorkerStat;
 
 typedef struct _zanServerStats
 {
@@ -257,6 +241,9 @@ typedef struct _zanServerStats
     zanWorkerStats      *workers_state;
     zanLock             lock;
 } zanServerStats;
+
+#define zan_stats_incr(val) zan_atomic_fetch_add(val, 1)
+#define zan_stats_decr(val) zan_atomic_fetch_sub(val, 1)
 
 #ifdef __cplusplus
 }
