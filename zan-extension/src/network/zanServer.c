@@ -535,6 +535,7 @@ int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length)
     }
 
     //fd: session_id
+    memset(&_send, 0, sizeof(swSendData));
     _send.info.fd = fd;
     _send.info.type = SW_EVENT_TCP;
     _send.data = data;

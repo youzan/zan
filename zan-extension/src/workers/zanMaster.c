@@ -135,8 +135,13 @@ int zan_processpool_create(zanProcessPool *pool, int process_type)
             return ZAN_ERR;
         }
     }
-    else if (ZAN_PROCESS_TASKWORKER == process_type && ServerG.servSet.task_worker_num > 0)
+    else if (ZAN_PROCESS_TASKWORKER == process_type)
     {
+        if (ServerG.servSet.task_worker_num <= 0)
+        {
+            return ZAN_OK;
+        }
+
         if (ZAN_OK != zanPool_taskworker_alloc(pool))
         {
             zanError("alloc taskworker resource failed.");
