@@ -2198,7 +2198,7 @@ PHP_METHOD(swoole_server, sendfile)
     }
 
     zval* zobject = getThis();
-    swServer *serv = swoole_get_object(zobject);
+    zanServer *serv = swoole_get_object(zobject);
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -2225,7 +2225,7 @@ PHP_METHOD(swoole_server, sendfile)
         RETURN_FALSE;
     }
 
-    SW_CHECK_RETURN(swServer_tcp_sendfile(serv, (int) fd, filename, len));
+    SW_CHECK_RETURN(zanServer_tcp_sendfile(serv, (int) fd, filename, len));
 }
 
 PHP_METHOD(swoole_server, close)

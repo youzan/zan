@@ -62,6 +62,7 @@ void zanWorker_free(zanWorker *worker)
         zan_shm_free(worker->send_shm);
     }
     worker->lock.free(&worker->lock);
+	return;
 }
 
 int zanPool_worker_alloc(zanProcessPool *pool)
@@ -415,7 +416,7 @@ int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int lenght, int flag
 }
 
 //Send data to networker
-int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int session_id)
+int zanWorker_send2networker(zanEventData *ev_data, size_t sendn, int session_id)
 {
     int ret = -1;
     zanServer *serv = ServerG.serv;
