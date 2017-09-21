@@ -757,6 +757,7 @@ uint32_t zanServer_get_connection_num(zanServer *serv)
     return sum;
 }
 
+
 int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len)
 {
 #ifdef SW_USE_OPENSSL
@@ -790,7 +791,7 @@ int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len
     send_data.info.type = SW_EVENT_SENDFILE;
     memcpy(buffer, filename, send_data.info.len);
     buffer[send_data.info.len] = 0;
-    send_data.info.len++;
+    ++send_data.info.len;
     send_data.length = 0;
     send_data.data = buffer;
 
