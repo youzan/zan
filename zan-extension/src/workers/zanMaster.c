@@ -45,7 +45,7 @@ static int zan_alloc_userworker_process(void);
 
 //new functions
 static void zanMaster_signalhandle(int sig);
-int zanworker_free(int *reloadworker_index, zanWorker *reload_workers);
+int zanworker_freeprocess(int *reloadworker_index, zanWorker *reload_workers, int reload_num);
 int zanMaster_waituserworker(zanProcessPool *pool, zan_pid_t pid);
 zan_pid_t zanMaster_spawnuserworker(zanServer *serv, zanWorker* worker);
 static void zanMaster_checkexitstatus(zanServer *serv, int worker_id, zan_pid_t pid, int status);
@@ -338,8 +338,10 @@ int zan_master_process_loop(zanServer *serv)
 	
     while (ServerG.running > 0)
     {
-        zanWarn("ServerG.running=%d, process_type=%d, master_pid=%d", ServerG.running, ServerG.process_type, ServerGS->master_pid);
+		pid = -1;
+		status = 0;
         pid = zan_wait(&status);
+		zanWarn("ServerG.running=%d, process_type=%d, master_pid=%d,pid=%d", ServerG.running, ServerG.process_type, ServerGS->master_pid, pid);
         if (pid < 0)
         {
             zanWarn("wait error, pid=%d", pid);
@@ -352,6 +354,7 @@ int zan_master_process_loop(zanServer *serv)
 			else if(MasterProcess.reload_event_worker == 1)
 			{
 				zanWarn("Server is reloading event_worker now.");
+				memset(reload_workers, 0, sizeof(zanWorker)*reloadworker_num);
 				memcpy(reload_workers, ServerGS->event_workers.workers, sizeof(zanWorker) * ServerG.servSet.worker_num);
                 reloadworker_num = ServerG.servSet.worker_num;
                 if (ServerG.servSet.task_worker_num > 0)
@@ -362,17 +365,12 @@ int zan_master_process_loop(zanServer *serv)
 
                 reloadworker_index = 0;
                 MasterProcess.reload_event_worker = 0;
-				
-				result = zanworker_free(&reloadworker_index, reload_workers);
-				if(result < 0)
-				{
-					zanError("kill workers failed");
-					return ZAN_ERR;
-				}
+				goto kill_worker;
 			}
 			else if(MasterProcess.reload_task_worker == 1)
 			{
 				zanWarn("Server is reloading task_worker now.");
+				memset(reload_workers, 0, sizeof(zanWorker)*reloadworker_num);
                 if (ServerG.servSet.task_worker_num == 0)
                 {
                     zanWarn("cannot reload workers, because server no have task workers.");
@@ -383,13 +381,11 @@ int zan_master_process_loop(zanServer *serv)
                 reloadworker_num = SwooleG.task_worker_num;
                 reloadworker_index = 0;
                 MasterProcess.reload_task_worker = 0;
-				
-				result = zanworker_free(&reloadworker_index, reload_workers);
-				if(result < 0)
-				{
-					zanError("kill task workers failed");
-					return ZAN_ERR;
-				}
+				goto kill_worker;
+			}
+			else
+			{
+				break;
 			}
         }
 		
@@ -452,9 +448,31 @@ int zan_master_process_loop(zanServer *serv)
 		}
 		else
 		{
+			zanError("server is not running");
 			break;
 		}	
 		//zanDebug("wait success, child pid=%d exit, status=%d", pid, status);
+kill_worker:
+        if (MasterProcess.reloading == 1)
+        {
+            //reload finish
+            if (reloadworker_index >= reloadworker_num)
+            {
+                MasterProcess.reloading = 0;
+                reloadworker_index = 0;
+                continue;
+            }
+            zanWarn("start kill workers, id: %d, pid: %d.", reloadworker_index, reload_workers[reloadworker_index].worker_pid);
+            result = swKill(reload_workers[reloadworker_index].worker_pid, SIGTERM);
+			zanWarn("result=%d", result);
+            if (result < 0)
+            {
+                zanSysError("kill(%d, SIGTERM) failed.", reload_workers[reloadworker_index].worker_pid);
+            }
+			result = -1;
+            ++reloadworker_index;
+            ServerStatsG->last_reload = time(NULL);
+        }
     }
 
 	sw_free(reload_workers);
@@ -516,7 +534,7 @@ int zan_master_process_loop(zanServer *serv)
     return ZAN_ERR;
 }
 
-int zanworker_free(int *reloadworker_index, zanWorker *reload_workers)
+int zanworker_freeprocess(int *reloadworker_index, zanWorker *reload_workers, int reload_num)
 {
 	if(reload_workers == NULL)
 	{
@@ -528,7 +546,7 @@ int zanworker_free(int *reloadworker_index, zanWorker *reload_workers)
 	
 	if(MasterProcess.reloading == 1)
 	{
-		if(index >= (ServerG.servSet.worker_num + ServerG.servSet.task_worker_num))
+		if(index >= reload_num)
 		{
 			MasterProcess.reloading = 0;
 			index = 0;
