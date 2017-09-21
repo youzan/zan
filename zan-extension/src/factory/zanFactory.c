@@ -198,7 +198,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
         return ZAN_ERR;
     }
 
-    zanEventData ev_data;
+    swEventData ev_data;
     memset(&ev_data, 0, sizeof(ev_data));
     ev_data.info.fd   = session_id;
     ev_data.info.type = resp->info.type;

@@ -416,7 +416,7 @@ int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int lenght, int flag
 }
 
 //Send data to networker
-int zanWorker_send2networker(zanEventData *ev_data, size_t sendn, int session_id)
+int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int session_id)
 {
     int ret = -1;
     zanServer *serv = ServerG.serv;
