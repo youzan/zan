@@ -319,7 +319,6 @@ int zan_spawn_task_process(zanProcessPool *pool)
             worker->worker_pid = pid;
             //insert new process
             swHashMap_add_int(pool->map, pid, worker);
-            return ZAN_OK;
         }
     }
     return ZAN_OK;
