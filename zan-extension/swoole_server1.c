@@ -2363,18 +2363,17 @@ PHP_METHOD(swoole_server, stats)
 
 PHP_METHOD(swoole_server, reload)
 {
-#if 0
-    if (!SwooleGS->start)
+    if (!ServerGS->started)
     {
-        swWarn("Server is not running.");
+        zanWarn("Server is not running.");
         RETURN_FALSE;
     }
 
     zval* zobject = getThis();
-    swServer *serv = swoole_get_object(zobject);
+    zanServer *serv = swoole_get_object(zobject);
     if (!serv)
     {
-        swWarn("not create servers.");
+        zanWarn("not create servers.");
         RETURN_FALSE;
     }
 
@@ -2384,12 +2383,12 @@ PHP_METHOD(swoole_server, reload)
         return;
     }
 
-    if (swKill(SwooleGS->manager_pid, only_reload_taskworker ? SIGUSR2 : SIGUSR1) < 0)
+    if (swKill(ServerGS->master_pid, only_reload_taskworker ? SIGUSR2 : SIGUSR1) < 0)
     {
-        swSysError("kill() failed.");
+        zanSysError("kill() failed.");
         RETURN_FALSE;
     }
-#endif
+	
     RETURN_TRUE;
 }
 
