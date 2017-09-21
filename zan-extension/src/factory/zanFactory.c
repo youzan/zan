@@ -189,7 +189,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
     else if ((conn->closed || conn->removed) && resp->info.type != SW_EVENT_CLOSE)
     {
         int _len = resp->length > 0 ? resp->length : resp->info.len;
-        zanWarn("send %d byte failed, because session#fd=%d is closed.", _len, session_id);
+        zanWarn("send %d byte failed, because session#fd=%d is closed, length=%d.", _len, session_id, resp->length);
         return ZAN_ERR;
     }
     else if (conn->overflow)
@@ -198,7 +198,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
         return ZAN_ERR;
     }
 
-    zanEventData ev_data;
+    swEventData ev_data;
     memset(&ev_data, 0, sizeof(ev_data));
     ev_data.info.fd   = session_id;
     ev_data.info.type = resp->info.type;

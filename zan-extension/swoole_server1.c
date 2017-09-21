@@ -443,6 +443,10 @@ void php_swoole_server_before_start(zanServer *serv, zval *zobject TSRMLS_DC)
         zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), zsetting TSRMLS_CC);
     }
 
+    if (!sw_zend_hash_exists(Z_ARRVAL_P(zsetting), ZEND_STRL("net_worker_num")))
+    {
+        add_assoc_long(zsetting, "net_worker_num", servSet->net_worker_num);
+    }
     if (!sw_zend_hash_exists(Z_ARRVAL_P(zsetting), ZEND_STRL("worker_num")))
     {
         add_assoc_long(zsetting, "worker_num", servSet->worker_num);
@@ -1568,6 +1572,14 @@ PHP_METHOD(swoole_server, set)
         servSet->daemonize = (uint16_t)Z_BVAL_P(value);
     }
 
+    //task_worker_num
+    value = NULL;
+    if (sw_zend_hash_find(vht, ZEND_STRS("net_worker_num"), (void **) &value) == SUCCESS)
+    {
+        convert_to_long(value);
+        servSet->net_worker_num = (uint32_t) Z_LVAL_P(value);
+    }
+
     //worker_num
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("worker_num"), (void **) &value) == SUCCESS)
@@ -2014,12 +2026,14 @@ convert:
     //TCP
     else
     {
+#if 0
+        //to delete,nothing
         if (serv->packet_mode == 1)  /////????????
         {
             uint32_t len_tmp= htonl(length);
             zanServer_tcp_send(serv, fd, &len_tmp, 4);
         }
-
+#endif
         zanDebug("packet_mode=%d, fd=%d, length=%d", serv->packet_mode, fd, length);
         SW_CHECK_RETURN(zanServer_tcp_send(serv, fd, data, length));
     }

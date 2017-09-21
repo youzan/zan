@@ -266,23 +266,9 @@ int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
     reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_READ, zanWorker_onPipeRead);
 
     ///TODO:: 什么场景触发???
-    ///reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_WRITE, swReactor_onWrite);  ////????
+    ///reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_WRITE, swReactor_onWrite);
 
-    //zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
-
-    //TODO:::
-    int index = 0;
-    swConnection *pipe_socket = NULL;
-    zanServer *serv = ServerG.serv;
-    zanServerSet *servSet = &ServerG.servSet;
-    for (index = 0; index < servSet->worker_num + servSet->task_worker_num; index++)
-    {
-        zanWorker *worker_tmp = zanServer_get_worker(serv, index);
-        pipe_socket = swReactor_get(ServerG.main_reactor, worker_tmp->pipe_master);
-        pipe_socket->buffer_size = servSet->pipe_buffer_size;
-        pipe_socket = swReactor_get(ServerG.main_reactor, worker_tmp->pipe_worker);
-        pipe_socket->buffer_size = servSet->pipe_buffer_size;
-    }
+    zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
 
     pool->onWorkerStart(pool, worker);
     zanWarn("worker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, event=%d, pipe_master=%d",
@@ -430,23 +416,23 @@ int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int lenght, int flag
 }
 
 //Send data to networker
-int zanWorker_send2networker(zanEventData *ev_data, size_t sendn, int session_id)
+int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int session_id)
 {
     int ret = -1;
     zanServer *serv = ServerG.serv;
     zanSession *session = zanServer_get_session(serv, session_id);
     zanWorker *worker = zanServer_get_worker(serv, session->networker_id);
 
-    zanDebug("session_id=%d, sendn=%d, networker_id=%d", session_id, (int)sendn, session->networker_id);
-
     if (ServerG.main_reactor)
     {
-        zanWarn("write to pipe_worker=%d, dst worker_id=%d, src_worker_id=%d", worker->pipe_master, worker->worker_id, ServerWG.worker_id);
+        zanWarn("session_id=%d, sendn=%d, write to pipe_worker=%d, dst worker_id=%d, src_worker_id=%d",
+                 session_id, (int)sendn, worker->pipe_master, worker->worker_id, ServerWG.worker_id);
         ret = ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_master, ev_data, sendn);
     }
     else
     {
-        zanWarn("write to pipe_master=%d, dst worker_id=%d, src worker_id=%d", worker->pipe_master, worker->worker_id, ServerWG.worker_id);
+        zanWarn("session_id=%d, sendn=%d, write to pipe_master=%d, dst worker_id=%d, src worker_id=%d",
+                session_id, (int)sendn, worker->pipe_master, worker->worker_id, ServerWG.worker_id);
         ret = swSocket_write_blocking(worker->pipe_master, ev_data, sendn);
     }
 
@@ -532,7 +518,7 @@ zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker)
     //worker child processor
     else if (pid == 0)
     {
-    	int ret = zanWorker_loop(pool, worker);
+        int ret = zanWorker_loop(pool, worker);
         exit(ret);
     }
     //parent,add to writer
