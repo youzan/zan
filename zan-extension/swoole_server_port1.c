@@ -101,13 +101,13 @@ static PHP_METHOD(swoole_server_port, set)
     if (port == NULL || property == NULL)
     {
         swoole_php_fatal_error(E_ERROR, "Please use the swoole_server->listen method.");
-        return;
+        RETURN_FALSE;
     }
 
     zval *zset = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS()TSRMLS_CC, "z", &zset))
     {
-        return;
+        RETURN_FALSE;
     }
 
     php_swoole_array_separate(zset);
@@ -350,7 +350,7 @@ static PHP_METHOD(swoole_server_port, set)
         if (port->open_ssl_encrypt && !port->ssl_key_file)
         {
             swoole_php_fatal_error(E_ERROR, "ssl require key file.");
-            return;
+            RETURN_FALSE;
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_prefer_server_ciphers"), (void **) &value) == SUCCESS)
@@ -399,7 +399,7 @@ static PHP_METHOD(swoole_server_port, on)
     if (port == NULL || property == NULL)
     {
         swoole_php_fatal_error(E_ERROR, "Please use the swoole_server->listen method.");
-        return;
+        RETURN_FALSE;
     }
 
     char *name = NULL;
@@ -407,18 +407,18 @@ static PHP_METHOD(swoole_server_port, on)
     zval *cb = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS()TSRMLS_CC, "sz", &name, &len, &cb))
     {
-        return;
+        RETURN_FALSE;
     }
 
     if (!name || len <= 0)
     {
-        return;
+        RETURN_FALSE;
     }
 
 
     if (swoole_check_callable(cb TSRMLS_CC) < 0)
     {
-        return;
+        RETURN_FALSE;
     }
 
     port->ptr = (!port->ptr)? property:port->ptr;

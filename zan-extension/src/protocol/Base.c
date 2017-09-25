@@ -16,6 +16,7 @@
  +----------------------------------------------------------------------+
  */
 
+#include "php_swoole.h"
 #include "swoole.h"
 #include "swLog.h"
 #include "swConnection.h"
@@ -43,10 +44,10 @@ int swProtocol_get_package_length(swProtocol *protocol, swConnection *conn, char
     //Protocol length is not legitimate, out of bounds or exceed the allocated length
     if (body_length < 0)
     {
-		char addr[SW_IP_MAX_LENGTH] = {0};
-		swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
-		swError("invalid package, remote_addr=%s:%d, length=%d, size=%d.",addr, swConnection_get_port(conn), body_length, size);
-		return SW_ERR;
+        char addr[SW_IP_MAX_LENGTH] = {0};
+        swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
+        swError("invalid package, remote_addr=%s:%d, length=%d, size=%d.",addr, swConnection_get_port(conn), body_length, size);
+        return SW_ERR;
     }
     //total package length
     return protocol->package_body_offset + body_length;
@@ -54,9 +55,9 @@ int swProtocol_get_package_length(swProtocol *protocol, swConnection *conn, char
 
 static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void *object, swString *buffer)
 {
+    char *stack_buf = (char *)emalloc(SW_BUFFER_SIZE_BIG);
+    memset(stack_buf, 0, SW_BUFFER_SIZE_BIG);
 
-
-    char stack_buf[SW_BUFFER_SIZE_BIG] = {0};
     int eof_pos;
     if (buffer->length - buffer->offset < protocol->package_eof_len)
     {
@@ -73,6 +74,7 @@ static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void 
     if (eof_pos < 0)
     {
         buffer->offset = buffer->length - protocol->package_eof_len;
+        swoole_efree(stack_buf);
         return buffer->length;
     }
 
@@ -102,6 +104,7 @@ static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void 
                 memcpy(buffer->str, stack_buf, remaining_length);
                 buffer->length = remaining_length;
                 buffer->offset = 0;
+                swoole_efree(stack_buf);
                 return remaining_length;
             }
             else
@@ -116,6 +119,7 @@ static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void 
     }
     //swNotice("#[3] length=%ld, size=%ld, offset=%ld", buffer->length, buffer->size, buffer->offset);
     swString_clear(buffer);
+    swoole_efree(stack_buf);
     return 0;
 }
 
@@ -183,8 +187,8 @@ int swProtocol_recv_check_length(swProtocol *protocol, swConnection *conn, swStr
             }
             else if (package_length > protocol->package_max_length)
             {
-            	char addr[SW_IP_MAX_LENGTH] = {0};
-            	swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
+                char addr[SW_IP_MAX_LENGTH] = {0};
+                swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
                 swWarn("package is too big, remote_addr=%s:%d, length=%d.", addr, swConnection_get_port(conn), package_length);
                 return SW_ERR;
             }
@@ -266,7 +270,7 @@ int swProtocol_recv_check_eof(swProtocol *protocol, swConnection *conn, swString
             }
         }
         else if (memcmp(buffer->str + buffer->length - protocol->package_eof_len,
-        					protocol->package_eof, protocol->package_eof_len) == 0)
+                            protocol->package_eof, protocol->package_eof_len) == 0)
         {
             protocol->onPackage(conn, buffer->str, buffer->length);
             swString_clear(buffer);

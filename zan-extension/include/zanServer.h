@@ -70,7 +70,6 @@ swConnection *zanServer_verify_connection(zanServer *serv, int session_id);
 
 int zanServer_getSocket(zanServer *serv, int port);
 
-swString *zanWorker_get_buffer(zanServer *serv, int worker_id);
 zanSession* zanServer_get_session(zanServer *serv, uint32_t session_id);
 swListenPort* zanServer_get_port(zanServer *serv, int networker_id, int fd);
 swConnection* zanServer_get_connection(zanServer *serv, int networker_id, int fd);
@@ -83,6 +82,8 @@ int zanServer_get_networker_index(int net_worker_id);
 uint32_t zanServer_get_connection_num(zanServer *serv);
 
 int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len);
+
+swString *zanServer_get_buffer(zanServer *serv, int networker_id, int fd);
 
 
 #ifdef __cplusplus
