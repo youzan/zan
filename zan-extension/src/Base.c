@@ -244,6 +244,12 @@ void zan_init(void)
     ServerG.max_sockets = (zan_getrlimit(RLIMIT_NOFILE, &rlmt) < 0) ?
                           1024:(uint32_t) rlmt.rlim_cur;
 
+#ifdef __MACH__
+    ServerG.servSet.socket_buffer_size = 256 * 1024;
+#else
+    servSet->socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
+#endif
+
 #if defined(HAVE_REUSEPORT) && defined(HAVE_EPOLL)
     if (swoole_version_compare(ServerG.uname.release, "3.9.0") >= 0)
     {

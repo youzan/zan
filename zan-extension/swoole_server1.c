@@ -1235,7 +1235,7 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
     add_assoc_long(zaddr, "server_socket", req->info.from_fd);
 
     //udp ipv4
-    swString *buffer = zanWorker_get_buffer(serv, req->info.from_id);
+    swString *buffer = NULL;////////// = zanWorker_get_buffer(serv, req->info.from_id);
     swDgramPacket *packet = (swDgramPacket*) buffer->str;
     if (req->info.type == SW_EVENT_UDP)
     {
@@ -1568,7 +1568,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("daemonize"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         servSet->daemonize = (uint16_t)Z_BVAL_P(value);
     }
 
@@ -1576,7 +1576,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("net_worker_num"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         servSet->net_worker_num = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -1584,7 +1584,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("worker_num"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         servSet->worker_num = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -2388,7 +2388,7 @@ PHP_METHOD(swoole_server, reload)
         zanSysError("kill() failed.");
         RETURN_FALSE;
     }
-	
+
     RETURN_TRUE;
 }
 

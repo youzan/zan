@@ -30,6 +30,8 @@ extern "C" {
 
 int zanReactor_onAccept(swReactor *reactor, swEvent *event);
 void zanReactor_enableAccept(swReactor *reactor);
+int zanNetworker_dispatch(swConnection *conn, char *data, uint32_t length);
+
 
 #ifdef __cplusplus
 }

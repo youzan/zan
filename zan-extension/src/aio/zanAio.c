@@ -158,13 +158,15 @@ start_switch:
         break;
     case SW_AIO_DNS_LOOKUP:
         {
-            char ipaddr[SW_IP_MAX_LENGTH] = {0};
-            ret = swoole_gethostbyname(event->fd, event->buf,ipaddr,SW_IP_MAX_LENGTH);
+            struct in_addr addr;
+            ret = swoole_gethostbyname(AF_INET, event->buf, (char *) &addr);
 
             if (ret >= 0)
             {
-                bzero(event->buf, event->nbytes);
-                memcpy(event->buf, ipaddr, strnlen(ipaddr, SW_IP_MAX_LENGTH) + 1);
+               char *ip_addr = inet_ntoa(addr);
+               bzero(event->buf, event->nbytes);
+               memcpy(event->buf, ip_addr, strnlen(ip_addr, SW_IP_MAX_LENGTH) + 1);
+               ret = 0;
             }
         }
         break;
