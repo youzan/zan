@@ -202,7 +202,7 @@ void php_swoole_event_wait()
 #ifdef HAVE_SIGNALFD
         if (ServerG.main_reactor->check_signalfd)
         {
-            swSignalfd_setup(SwooleG.main_reactor);
+            swSignalfd_setup(ServerG.main_reactor);
         }
 #endif
         int ret = ServerG.main_reactor->wait(ServerG.main_reactor, NULL);
