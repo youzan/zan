@@ -266,3 +266,47 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     return connection;
 }
 
+int zanNetworker_dispatch(swConnection *conn, char *data, uint32_t length)
+{
+    zanFactory *factory = ServerG.factory;
+    swDispatchData task;
+    memset(&task, 0, sizeof(task));
+
+    task.data.info.fd = conn->fd;
+    task.data.info.from_id = conn->from_id;
+    task.data.info.type = SW_EVENT_PACKAGE_START;
+    task.target_worker_id = -1;
+
+    zanTrace("send string package, size=%u bytes.", length);
+
+    size_t send_n = length;
+    size_t offset = 0;
+
+    while (send_n > 0)
+    {
+        if (send_n > SW_BUFFER_SIZE)
+        {
+            task.data.info.len = SW_BUFFER_SIZE;
+        }
+        else
+        {
+            task.data.info.type = SW_EVENT_PACKAGE_END;
+            task.data.info.len = send_n;
+        }
+
+        task.data.info.fd = conn->fd;
+        memcpy(task.data.data, data + offset, task.data.info.len);
+
+        send_n -= task.data.info.len;
+        offset += task.data.info.len;
+
+        zanTrace("dispatch, type=%d|len=%d\n", task.data.info.type, task.data.info.len);
+
+        if (factory->dispatch(factory, &task) < 0)
+        {
+            break;
+        }
+    }
+
+    return ZAN_OK;
+}

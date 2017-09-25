@@ -271,7 +271,7 @@ if test "$PHP_ZAN" != "no"; then
         swoole_server1.c \
         swoole_server_port1.c \
         swoole_connpool.c \
-        swoole_client1.c \
+        swoole_client.c \
         swoole_event.c \
         swoole_timer.c \
         swoole_async.c \
@@ -372,7 +372,7 @@ dnl        src/network/Port.c \
         src/ipc/zanUnSock.c \
         src/ipc/zanMsgQueue.c \
         src/ipc/zanShm.c \
-        src/aio/AsyncIO.c \
+dnl        src/aio/AsyncIO.c \
         src/aio/zanAio.c \
         src/timer/Timer.c \
         src/workers/zanWorker.c \

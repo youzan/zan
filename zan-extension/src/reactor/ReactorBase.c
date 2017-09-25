@@ -240,22 +240,22 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
 
 #if 0
     //server worker
-    swWorker *worker = SwooleWG.worker;
+    swWorker *worker = ServerWG.worker;
     if (worker != NULL && SwooleWG.reload)
     {
-		SwooleWG.reload_count++;
+        SwooleWG.reload_count++;
 
-		if (reactor->event_num <= 2 || SwooleWG.reload_count >= SW_MAX_RELOAD_WAIT)
-		{
-			reactor->running = 0;
-		}
+        if (reactor->event_num <= 2 || SwooleWG.reload_count >= SW_MAX_RELOAD_WAIT)
+        {
+            reactor->running = 0;
+        }
     }
 #endif
 
     //client
     if (ServerG.serv == NULL && ServerG.timer.num <= 0 && !reactor->defer_callback_list)
     {
-        if (SwooleAIO.init && reactor->event_num == 1 && SwooleAIO.task_num == 0)
+        if (ZanAIO.init && reactor->event_num == 1 && ZanAIO.task_num == 0)
         {
             reactor->running = 0;
         }
@@ -376,7 +376,6 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
 
         do_send:
         ret = swConnection_send(socket, buf, n, 0);
-		swWarn("ret=%d,errno=%d,error=%s", ret, errno, strerror(errno));
         if (ret > 0)
         {
             if (n == ret)
@@ -390,7 +389,7 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
                 goto do_buffer;
             }
         }
-        
+
 #ifdef HAVE_KQUEUE
         else if (errno == EAGAIN || errno == ENOBUFS)
 #else
