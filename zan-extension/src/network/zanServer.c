@@ -802,3 +802,23 @@ swString *zanServer_get_buffer(zanServer *serv, int networker_id, int fd)
     }
     return buffer;
 }
+
+int zanServer_adduserworker(zanServer *serv, zanWorker *worker)
+{
+    zanUserWorker_node *user_worker = zan_malloc(sizeof(zanUserWorker_node));
+    if (!user_worker)
+    {
+        return ZAN_ERR;
+    }
+
+    serv->user_worker_num++;
+    user_worker->worker = worker;
+
+    LL_APPEND(serv->user_worker_list, user_worker);
+    if (!serv->user_worker_map)
+    {
+        serv->user_worker_map = swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, NULL);
+    }
+
+    return worker->worker_id;
+}

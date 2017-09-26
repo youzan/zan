@@ -85,6 +85,7 @@ int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len
 
 swString *zanServer_get_buffer(zanServer *serv, int networker_id, int fd);
 
+int zanServer_adduserworker(zanServer *serv, zanWorker *worker);
 
 #ifdef __cplusplus
 }
