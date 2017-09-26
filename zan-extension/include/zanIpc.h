@@ -108,9 +108,6 @@ typedef struct _zanMsgQueue
     int (*close)(struct _zanMsgQueue *);
 } zanMsgQueue;
 
-int zanMsgQueue_create(zanMsgQueue *pMq, int wait, key_t msg_key, long type);
-
-
 //=======================zanShm=================================================
 //share memory
 void* zan_shm_malloc(size_t size);
