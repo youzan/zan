@@ -2394,18 +2394,17 @@ PHP_METHOD(swoole_server, reload)
 
 PHP_METHOD(swoole_server, heartbeat)
 {
-#if 0
-    if (!SwooleGS->start)
+    if (!ServerGS->started)
     {
-        swWarn("Server is not running.");
+        zanWarn("Server is not running.");
         RETURN_FALSE;
     }
 
     zval* zobject = getThis();
-    swServer *serv = swoole_get_object(zobject);
+    zanServer *serv = swoole_get_object(zobject);
     if (!serv)
     {
-        swWarn("not create servers.");
+        zanWarn("not create servers.");
         RETURN_FALSE;
     }
 
@@ -2415,39 +2414,55 @@ PHP_METHOD(swoole_server, heartbeat)
         return;
     }
 
-    if (serv->heartbeat_idle_time < 1)
+    if (ServerG.servSet.heartbeat_idle_time < 1)
     {
         RETURN_FALSE;
     }
 
-    int serv_max_fd = swServer_get_maxfd(serv);
-    int serv_min_fd = swServer_get_minfd(serv);
-    int fd = 0;
-    int checktime = (int) SwooleGS->now - serv->heartbeat_idle_time;
-    array_init(return_value);
-    for (fd = serv_min_fd; fd <= serv_max_fd; fd++)
-    {
-        zanWarn("heartbeat check fd=%d", fd);
-        swConnection *conn = &serv->connection_list[fd];
+	int checktime = 0;
+	
+	if(ServerGS->server_time < (time_t)ServerG.servSet.heartbeat_idle_time)
+	{
+		RETURN_FALSE;
+	}
+	else
+	{
+		checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
+	}
+	
+	int tempfd = 0;
+	for(int networker_index = 0; networker_index < ServerG.servSet.net_worker_num; ++networker_index)
+	{
+		int serv_maxfd = zanServer_get_maxfd(serv, networker_index);
+		int serv_minfd = zanServer_get_minfd(serv, networker_index);
+		array_init(return_value);
+		
+		for (tempfd = serv_minfd; tempfd <= serv_maxfd; ++tempfd)
+		{
+			zanWarn("heartbeat check fd=%d", tempfd);
+			swConnection *conn = &serv->connection_list[networker_index][tempfd];
 
-        if (conn->active && conn->last_time < checktime)
-        {
-            conn->close_force = 1;
-            /**
-             * Close the connection
-             */
-            if (close_connection)
-            {
-                serv->factory.end(&serv->factory, fd);
-            }
+			if (conn->active && conn->last_time < checktime)
+			{
+				conn->close_force = 1;
+				/**
+				 * Close the connection
+				 */
+				if (close_connection)
+				{
+					serv->factory.end(&serv->factory, tempfd);
+				}
 #ifdef SW_REACTOR_USE_SESSION
-            add_next_index_long(return_value, conn->session_id);
+				add_next_index_long(return_value, conn->session_id);
 #else
-            add_next_index_long(return_value, fd);
+				add_next_index_long(return_value, tempfd);
 #endif
-        }
-    }
-#endif
+			}
+		}		
+		
+	}
+    
+    RETURN_TRUE;
 }
 
 PHP_METHOD(swoole_server, task)
@@ -2498,7 +2513,7 @@ PHP_METHOD(swoole_server, sendMessage)
 {
     if (!ServerGS->started)
     {
-        swWarn("Server is not running.");
+        zanWarn("Server is not running.");
         RETURN_FALSE;
     }
 
@@ -2571,7 +2586,7 @@ PHP_METHOD(swoole_server, finish)
     zanServer *serv = ServerG.serv;
     if (!serv)
     {
-        swWarn("not create servers.");
+        zanWarn("not create servers.");
         RETURN_FALSE;
     }
 
@@ -2637,7 +2652,7 @@ PHP_METHOD(swoole_server, getSocket)
     zanServer *serv = ServerG.serv;
     if (!serv)
     {
-        swWarn("not create servers.");
+        zanWarn("not create servers.");
         RETURN_FALSE;
     }
 
@@ -2789,7 +2804,6 @@ PHP_METHOD(swoole_server, getClientInfo)
 
 PHP_METHOD(swoole_server, getClientList)
 {
-#if 0
     if (!ServerGS->started)
     {
         zanWarn("Server is not running.");
@@ -2797,7 +2811,7 @@ PHP_METHOD(swoole_server, getClientList)
     }
 
     //zval* zobject = getThis();
-    swServer *serv = ServerG.serv;
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -2818,48 +2832,46 @@ PHP_METHOD(swoole_server, getClientList)
         find_count = SW_MAX_FIND_COUNT;
     }
 
-    if (start_fd == 0)
+	int networker_index = 0;
+	zanSession *tempSession = zanServer_get_session(serv,start_fd);
+	
+	if(tempSession == NULL)
     {
-        start_fd = swServer_get_minfd(serv);
-    }
-#ifdef SW_REACTOR_USE_SESSION
-    else
+		zanWarn("not find this session");
+		RETURN_FALSE;
+	}
+	
+	networker_index = tempSession->networker_id;
+	array_init(return_value);
+	
+	for(; networker_index < ServerG.servSet.net_worker_num; ++networker_index)
     {
-        swConnection *conn = swWorker_get_connection(serv, start_fd);
-        if (!conn)
+		int min_fd = zanServer_get_minfd(serv, networker_index);
+		int max_fd = zanServer_get_maxfd(serv, networker_index);
+		
+		if(max_fd == 0)
         {
-            RETURN_FALSE;
-        }
-
-        start_fd = conn->fd;
-    }
-#endif
-
-    //复制出来避免被其他进程改写
-    int serv_max_fd = swServer_get_maxfd(serv);
-    //达到最大，表示已经取完了
-    if ((int) start_fd >= serv_max_fd)
-    {
-        RETURN_FALSE;
-    }
-
-    array_init(return_value);
-    int fd = start_fd + 1;
-    for (; fd <= serv_max_fd && find_count > 0; fd++)
-    {
-        zanWarn("maxfd=%d, fd=%d, find_count=%ld, start_fd=%ld", serv_max_fd, fd, find_count, start_fd);
-        swConnection *conn = &serv->connection_list[fd];
-        if (conn->active && !conn->closed)
+			break;
+		}
+		
+		for(; min_fd <= max_fd && find_count > 0; ++min_fd)
         {
+			zanWarn("maxfd=%d, minfd=%d, find_count=%ld, start_fd=%ld", max_fd, min_fd, find_count, start_fd);
+			swConnection *conn = &serv->connection_list[networker_index][min_fd];
+			if (conn->active && !conn->closed)
+			{
 #ifdef SW_REACTOR_USE_SESSION
-            add_next_index_long(return_value, conn->session_id);
+				add_next_index_long(return_value, conn->session_id);
 #else
-            add_next_index_long(return_value, fd);
+				add_next_index_long(return_value, min_fd);
 #endif
-            find_count--;
-        }
+				--find_count;
+			}
+		}
+		
     }
-#endif
+	
+	RETURN_TRUE;
 }
 
 PHP_METHOD(swoole_server, exist)
