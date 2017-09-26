@@ -247,7 +247,7 @@ void zan_init(void)
 #ifdef __MACH__
     ServerG.servSet.socket_buffer_size = 256 * 1024;
 #else
-    servSet->socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
+    ServerG.servSet.socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
 #endif
 
 #if defined(HAVE_REUSEPORT) && defined(HAVE_EPOLL)
