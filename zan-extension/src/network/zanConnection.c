@@ -90,13 +90,11 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         new_fd = accept(event->fd, (struct sockaddr*)&client_addr, &client_addrlen);
 #endif
 
-        //zanWarn("accepted: new_fd = %d", new_fd);
         if (new_fd < 0)
         {
             switch (errno)
             {
                 case EAGAIN:
-                    //zanWarn("accept return EAGAIN");
                     return ZAN_OK;
                 case EINTR:
                     continue;
@@ -129,7 +127,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             return ZAN_OK;
         }
 
-        zanWarn("new_fd=%d, sockfd event->fd=%d, reactor->id=%d", new_fd, event->fd, reactor->id);
+        zanDebug("new_fd=%d, sockfd event->fd=%d, reactor->id=%d", new_fd, event->fd, reactor->id);
         //add to connection_list
         swConnection *conn = zanConnection_create(serv, listen_host, new_fd, event->fd, reactor->id);
         memcpy(&conn->info.addr, &client_addr, sizeof(client_addr));
@@ -199,7 +197,7 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     connection->active  = 1;
     connection->from_id = reactor_id;
     connection->from_fd = from_fd;                    //listen sockfd
-    connection->from_net_id  = networker_id;
+    connection->networker_id = networker_id;
     connection->last_time    = ServerGS->server_time;
     connection->connect_time = ServerGS->server_time;
 
@@ -247,7 +245,7 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
             session_id = 1;
             ServerGS->session_round = 1;
         }
-        zanWarn("session_id=%d, index=%d", session_id, index);
+        zanDebug("session_id=%d, index=%d", session_id, index);
         session = zanServer_get_session(serv, session_id);
 
         if (session->accept_fd == 0)

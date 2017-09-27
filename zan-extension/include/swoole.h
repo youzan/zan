@@ -176,19 +176,19 @@ enum swServer_mode
 
 enum swCloseType
 {
-	SW_CLOSE_PASSIVE = 32, 			///被动关闭
-	SW_CLOSE_INITIATIVE,			///主动关闭
+    SW_CLOSE_PASSIVE = 32,          ///被动关闭
+    SW_CLOSE_INITIATIVE,            ///主动关闭
 };
 
 enum swClientTimeoutType
 {
-	SW_CLIENT_INVAILED_TIMEOUT = 0,
-	SW_CLIENT_CONNECT_TIMEOUT = 1,
-	SW_CLIENT_RECV_TIMEOUT = 2,
+    SW_CLIENT_INVAILED_TIMEOUT = 0,
+    SW_CLIENT_CONNECT_TIMEOUT = 1,
+    SW_CLIENT_RECV_TIMEOUT = 2,
 };
 
 
-#define SW_MODE_PACKET		   0x10
+#define SW_MODE_PACKET         0x10
 #define SW_SOCK_SSL            (1u << 9)
 #define SW_MAX_FDTYPE          32 //32 kinds of event
 
@@ -209,11 +209,12 @@ typedef struct
 
 typedef struct _swDataHead
 {
-    int fd;  //文件描述符
-    uint16_t len;  //长度
-    int16_t from_id;  //Reactor Id
-    uint8_t type;  //类型
-    uint8_t from_fd;
+    int      fd;       //文件描述符
+    uint8_t  type;     //类型
+    uint8_t  from_fd;
+    uint16_t len;      //长度
+    uint16_t from_id;  //Reactor Id
+    uint16_t from_net_id;
     uint16_t worker_id;
 } swDataHead;
 

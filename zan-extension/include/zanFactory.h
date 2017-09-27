@@ -65,7 +65,7 @@ typedef struct _zanFactory
     int (*dispatch)(struct _zanFactory *, swDispatchData *);
     int (*finish)(struct _zanFactory *, swSendData *);
     int (*notify)(struct _zanFactory *, swDataHead *);
-    int (*end)(struct _zanFactory *, int fd);
+    int (*end)(struct _zanFactory *, int session_id);
 } zanFactory;
 
 int zanFactory_create(zanFactory *factory);

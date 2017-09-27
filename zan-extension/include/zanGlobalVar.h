@@ -30,7 +30,7 @@ extern "C" {
 extern zanServerG   ServerG;              //Local Global Variable
 extern zanServerGS *ServerGS;             //Share Memory Global Variable
 extern zanWorkerG   ServerWG;             //Worker Global Variable
-//extern __thread zanThreadG ServerTG;      //Thread Global Variable
+extern __thread zanThreadG ServerTG;      //Thread Global Variable
 extern zanServerStats *ServerStatsG;
 
 extern zanAsyncIO ZanAIO;

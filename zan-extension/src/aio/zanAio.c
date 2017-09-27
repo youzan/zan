@@ -63,7 +63,6 @@ void zanAio_free(void)
 {
     if (!ZanAIO.init)
     {
-        zanWarn("ZanAIO not been initialized");
         return;
     }
 
