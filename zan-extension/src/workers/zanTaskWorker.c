@@ -335,7 +335,7 @@ int zan_spawn_task_process(zanProcessPool *pool)
 static void zanTaskworker_onStart(zanProcessPool *pool, zanWorker *worker)
 {
     zanServer *serv = ServerG.serv;
-
+    zanTaskWorker_signal_init();
     //
     if (serv->onWorkerStart)
     {
