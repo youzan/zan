@@ -18,12 +18,14 @@
 
 #include "swoole.h"
 #include "swSocket.h"
-#include "swLog.h"
 #include "swReactor.h"
 #include "swSendfile.h"
 #include "swConnection.h"
 #include "swMemory/memoryPool.h"
 #include "swBaseOperator.h"
+
+#include "swLog.h"
+
 #include <sys/poll.h>
 #include <sys/ioctl.h>
 
@@ -38,15 +40,15 @@ void swSocket_clean(int fd)
 
 int swSocket_status(int fd)
 {
-	uint64_t buf = 0;
-	int ret = recv(fd,&buf,sizeof(buf),MSG_DONTWAIT | MSG_PEEK);
-	int errType = swConnection_error(errno);
-	if (0 == ret || (ret < 0 && errType == SW_CLOSE))
-	{
-		return SW_CLOSE;
-	}
+    uint64_t buf = 0;
+    int ret = recv(fd,&buf,sizeof(buf),MSG_DONTWAIT | MSG_PEEK);
+    int errType = swConnection_error(errno);
+    if (0 == ret || (ret < 0 && errType == SW_CLOSE))
+    {
+        return SW_CLOSE;
+    }
 
-	return ret > 0? SW_READY: errType;
+    return ret > 0? SW_READY: errType;
 }
 /**
  * Wait socket can read or write.
@@ -116,18 +118,18 @@ int swSocket_wait_multi(int *list_of_fd, int n_fd, int timeout_ms, int events)
         int ret = poll(event_list, n_fd, timeout_ms);
         if (ret == 0)
         {
-        	sw_free(event_list);
+            sw_free(event_list);
             return SW_ERR;
         }
         else if (ret < 0 && errno != EINTR)
         {
-			sw_free(event_list);
-			swSysError("poll() failed.");
-			return SW_ERR;
+            sw_free(event_list);
+            swSysError("poll() failed.");
+            return SW_ERR;
         }
         else
         {
-        	sw_free(event_list);
+            sw_free(event_list);
             return ret;
         }
     }
@@ -237,7 +239,7 @@ int swSocket_write_blocking(int __fd, void *__data, int __len)
 #endif
             {
                 if (swSocket_wait(__fd, SW_WORKER_WAIT_TIMEOUT, SW_EVENT_WRITE) >= 0)
-                	continue;
+                    continue;
             }
             else
             {
@@ -264,7 +266,7 @@ int swSocket_udp_sendto(int server_sock, char *dst_ip, int dst_port, char *data,
     }
 
     addr.sin_family = AF_INET;
-    	addr.sin_port = htons(dst_port);
+        addr.sin_port = htons(dst_port);
     return swSocket_sendto_blocking(server_sock, data, len, 0, (struct sockaddr *) &addr, sizeof(addr));
 }
 
@@ -329,11 +331,11 @@ int swSocket_sendfile_sync(int sock, char *filename, double timeout)
     }
 
     size_t filelen = get_filelen(file_fd);
-	if (filelen <= 0)
-	{
-		close(file_fd);
-		return SW_ERR;
-	}
+    if (filelen <= 0)
+    {
+        close(file_fd);
+        return SW_ERR;
+    }
 
     int n, sendn;
     off_t offset = 0;
@@ -494,7 +496,7 @@ int swSocket_set_timeout(int sock, double timeout)
     ret = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (void *) &timeo, sizeof(timeo));
     if (ret < 0)
     {
-    	swSysError("setsockopt(SO_RCVTIMEO) failed.");
+        swSysError("setsockopt(SO_RCVTIMEO) failed.");
         return SW_ERR;
     }
     return SW_OK;
