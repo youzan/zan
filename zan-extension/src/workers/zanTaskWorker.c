@@ -426,7 +426,7 @@ void zanTaskWorker_signal_handler(int signo)
 static void zanTaskworker_onStart(zanProcessPool *pool, zanWorker *worker)
 {
     zanServer *serv = ServerG.serv;
-
+    zanTaskWorker_signal_init();
     //
     if (serv->onWorkerStart)
     {
