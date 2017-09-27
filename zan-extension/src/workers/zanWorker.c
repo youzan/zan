@@ -18,6 +18,7 @@
 
 #include "swWork.h"
 #include "swStats.h"
+#include "swSignal.h"
 
 #include "zanGlobalDef.h"
 #include "zanSystem.h"
@@ -37,6 +38,8 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task);
 static int zanWorker_loop(zanProcessPool *pool, zanWorker *worker);
 static int zanWorker_onPipeRead(swReactor *reactor, swEvent *event);
 static int zanWorker_discard_data(zanServer *serv, swEventData *task);
+void zanWorker_signal_handler(int signo);
+void zanWorker_signal_init(void);
 
 int zanWorker_init(zanWorker *worker)
 {
@@ -54,6 +57,99 @@ int zanWorker_init(zanWorker *worker)
     }
     zanLock_create(&worker->lock, ZAN_MUTEX, 1);
     return ZAN_OK;
+}
+
+void zanWorker_signal_init(void)
+{
+    swSignal_add(SIGHUP, NULL);
+    swSignal_add(SIGPIPE, NULL);
+    swSignal_add(SIGUSR1, zanWorker_signal_handler);
+    swSignal_add(SIGUSR2, NULL);
+    //swSignal_add(SIGINT, swWorker_signal_handler);
+    swSignal_add(SIGTERM, zanWorker_signal_handler);
+    swSignal_add(SIGALRM, swSystemTimer_signal_handler);
+    //for test
+    swSignal_add(SIGVTALRM, zanWorker_signal_handler);
+#ifdef SIGRTMIN
+    swSignal_set(SIGRTMIN, zanWorker_signal_handler, 1, 0);
+#endif
+}
+
+void zanWorker_signal_handler(int signo)
+{
+    switch (signo)
+    {
+		case SIGTERM:
+			zanWarn("signal SIGTERM coming");
+			if (ServerG.main_reactor)
+			{
+				ServerG.main_reactor->running = 0;
+			}
+			else
+			{
+				ServerG.running = 0;
+			}
+			break;
+		case SIGALRM:
+			zanWarn("signal SIGALRM coming");
+			swSystemTimer_signal_handler(SIGALRM);
+			break;
+		/**
+		 * for test
+     */
+		case SIGVTALRM:
+			zanWarn("signal SIGVTALRM coming");
+			break;
+		case SIGUSR1:
+			zanWarn("signal SIGUSR1 coming");
+			if (ServerG.main_reactor)
+			{
+				//获取当前进程运行进程的信息
+				uint32_t worker_id = ServerWG.worker_id;	
+				zanWorker worker = ServerGS->event_workers.workers[worker_id];
+				zanWarn("the worker %d get the signo", worker.worker_pid);
+				ServerWG.reload = 1;
+				ServerWG.reload_count = 0;
+
+				//删掉read管道
+				swConnection *socket = swReactor_get(ServerG.main_reactor, worker.pipe_worker);
+				if (socket->events & SW_EVENT_WRITE)
+				{
+					socket->events &= (~SW_EVENT_READ);
+					if (ServerG.main_reactor->set(ServerG.main_reactor, worker.pipe_worker, socket->fdtype | socket->events) < 0)
+					{
+						zanSysError("reactor->set(%d, SW_EVENT_READ) failed.", worker.pipe_worker);
+					}
+				}
+				else
+				{
+					if (ServerG.main_reactor->del(ServerG.main_reactor, worker.pipe_worker) < 0)
+					{
+						zanSysError("reactor->del(%d) failed.", worker.pipe_worker);
+					}
+				}
+			}
+			else
+			{
+				ServerG.running = 0;
+			}
+			break;
+		case SIGUSR2:
+			zanWarn("signal SIGUSR2 coming.");
+			break;
+		default:
+#ifdef SIGRTMIN
+			if (signo == SIGRTMIN)
+			{
+				swServer_reopen_log_file(SwooleG.serv);
+			}
+			else
+#endif
+			{
+				zanWarn("recv other signal: %d.", signo);
+			}
+			break;
+    }
 }
 
 void zanWorker_free(zanWorker *worker)
@@ -217,7 +313,7 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
     ServerStatsG->workers_state[worker->worker_id].first_start_time = time(NULL);
 
     //signal init
-    //swWorker_signal_init();
+    zanWorker_signal_init();
 
     /// 设置cpu 亲和性
     ///swoole_cpu_setAffinity(ServerWG.worker_id, serv);

@@ -462,9 +462,7 @@ kill_worker:
                 reloadworker_index = 0;
                 continue;
             }
-            zanWarn("start kill workers, id: %d, pid: %d.", reloadworker_index, reload_workers[reloadworker_index].worker_pid);
             result = swKill(reload_workers[reloadworker_index].worker_pid, SIGTERM);
-			zanWarn("result=%d", result);
             if (result < 0)
             {
                 zanSysError("kill(%d, SIGTERM) failed.", reload_workers[reloadworker_index].worker_pid);
