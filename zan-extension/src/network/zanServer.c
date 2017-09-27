@@ -36,7 +36,7 @@
 zanServerG   ServerG;              //Local Global Variable
 zanServerGS *ServerGS = NULL;      //Share Memory Global Variable
 zanWorkerG   ServerWG;             //Worker Global Variable
-//__thread zanThreadG ServerTG;      //Thread Global Variable
+__thread zanThreadG ServerTG;      //Thread Global Variable
 zanServerStats *ServerStatsG = NULL;
 
 static void zan_server_set_init(void);
@@ -107,7 +107,7 @@ int zanServer_create(zanServer *serv)
     serv->connection_list  = (swConnection**)sw_shm_calloc(servSet->net_worker_num, sizeof(swConnection*));
     for (uint32_t index = 0; index < servSet->net_worker_num; index++)
     {
-        zanWarn("calloc connection_list: index=%d, networker_num=%d", index, servSet->net_worker_num);
+        zanDebug("calloc connection_list: index=%d, networker_num=%d", index, servSet->net_worker_num);
         serv->connection_list[index] = (swConnection*)sw_shm_calloc(ServerG.servSet.max_connection, sizeof(swConnection));
     }
 
@@ -153,9 +153,6 @@ int zanServer_start(zanServer *serv)
         zanError("factory start failed");
         return ZAN_ERR;
     }
-
-    //init master process signal, TODO:::
-    //
 
     int ret = zan_master_process_loop(serv);
 
@@ -228,8 +225,7 @@ static int zanServer_start_check(zanServer *serv)
         }
     }
 
-#if 0
-    //AsyncTask  ///TODO:::
+    //AsyncTask
     if (servSet->task_worker_num > 0)
     {
         if (serv->onTask == NULL || serv->onFinish == NULL)
@@ -238,7 +234,6 @@ static int zanServer_start_check(zanServer *serv)
             return ZAN_ERR;
         }
     }
-#endif
 
     if (ServerG.max_sockets > 0 && servSet->max_connection > ServerG.max_sockets)
     {
@@ -739,7 +734,7 @@ uint32_t zanServer_get_connection_num(zanServer *serv)
         int minfd = zanServer_get_minfd(serv, index);
         int maxfd = zanServer_get_maxfd(serv, index);
         sum += maxfd - minfd + 1;
-        zanWarn("index=%d, minfd=%d, max_fd=%d, sum=%d", index, minfd, maxfd, sum);
+        zanDebug("index=%d, minfd=%d, max_fd=%d, sum=%d", index, minfd, maxfd, sum);
     }
 
     return sum;

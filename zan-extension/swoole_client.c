@@ -18,11 +18,8 @@
   +----------------------------------------------------------------------+
 */
 
-
 #include "php_swoole.h"
-//#include "swWork.h"
 #include "swBaseOperator.h"
-//#include "swLog.h"
 
 #include "zanLog.h"
 
@@ -885,7 +882,7 @@ void php_swoole_check_reactor()
 void swoole_thread_clean()
 {
     /// 释放async io线程资源
-    swAio_free();
+    zanAio_free();
 }
 
 void php_swoole_client_free(zval *object, swClient *cli TSRMLS_DC)
@@ -1985,7 +1982,7 @@ PHP_FUNCTION(swoole_client_select)
     int retval = select(max_fd + 1, &rfds, &wfds, &efds, &timeo);
     if (retval < 0)
     {
-        swSysError("unable to select.");
+        zanError("unable to select.");
         RETURN_FALSE;
     }
 

@@ -44,14 +44,22 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
     int   index        = 0;
     int   create_pipe  = 1;
     key_t msgqueue_key = 0;
+    zanServerSet *servSet = &ServerG.servSet;
 
-    if (ZAN_IPC_MSGQUEUE == ServerG.servSet.task_ipc_mode)
+    if (ZAN_IPC_MSGQUEUE == servSet->task_ipc_mode)
     {
-        msgqueue_key = ServerG.servSet.message_queue_key;
+        if (servSet->message_queue_key == 0)
+        {
+            char path_buf[128] = {0};
+            char *path_ptr = getcwd(path_buf, 128);
+            servSet->message_queue_key = ftok(path_ptr, 1);
+        }
+
+        msgqueue_key = servSet->message_queue_key;
         create_pipe = 0;
     }
 
-    int worker_num = ServerG.servSet.task_worker_num;
+    int worker_num = servSet->task_worker_num;
     pool->workers = zan_shm_calloc(worker_num, sizeof(zanWorker));
     if (pool->workers == NULL)
     {

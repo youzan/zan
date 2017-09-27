@@ -35,7 +35,7 @@ static int zanFactory_notify(zanFactory *factory, swDataHead *event);
 static int zanFactory_dispatch(zanFactory *factory, swDispatchData *buf);
 static int zanFactory_finish(zanFactory *factory, swSendData *data);
 static int zanFactory_shutdown(zanFactory *factory);
-static int zanFactory_end(zanFactory *factory, int fd);
+static int zanFactory_end(zanFactory *factory, int session_id);
 
 int zanFactory_create(zanFactory *factory)
 {
@@ -65,7 +65,7 @@ static int zanFactory_shutdown(zanFactory *factory)
     ///TODO:::
     //....
 
-    zanWarn("factory shutdown.");
+    zanDebug("factory shutdown.");
     return ZAN_OK;
 }
 
@@ -256,23 +256,19 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 //TODO:::
 //1. server: close 接口
 //2. SW_EVENT_CLOSE 事件
-static int zanFactory_end(zanFactory *factory, int fd)
+static int zanFactory_end(zanFactory *factory, int session_id)
 {
-    //zanServer *serv = (zanServer *)ServerG.serv;
+    zanServer *serv = (zanServer *)ServerG.serv;
     swSendData _send;
-    //swDataHead info;
+    swDataHead info;
 
     bzero(&_send, sizeof(_send));
-    _send.info.fd   = fd;
+    _send.info.fd   = session_id;
     _send.info.len  = 0;
     _send.info.type = SW_EVENT_CLOSE;
 
-    zanDebug("for test, todo.........");
-    return ZAN_OK;
-
-#if 0
     //1. get and verify connection, then close the conn
-    swConnection *conn = swWorker_get_connection(serv, fd);
+    swConnection *conn = zanServer_get_connection_by_sessionId(serv, session_id);
     if (conn == NULL || conn->active == 0)
     {
         zanWarn("can not close. Connection[%d] not found.", _send.info.fd);
@@ -284,12 +280,12 @@ static int zanFactory_end(zanFactory *factory, int fd)
     }
     else if (conn->closing)
     {
-        zanWarn("The connection[fd=%d] is closing.", fd);
+        zanWarn("The connection[fd=%d] is closing.", session_id);
         return ZAN_ERR;
     }
     else if (conn->closed)
     {
-        zanWarn("The connection[fd=%d] is closed.", fd);
+        zanWarn("The connection[fd=%d] is closed.", session_id);
         return ZAN_ERR;
     }
     else
@@ -298,14 +294,14 @@ static int zanFactory_end(zanFactory *factory, int fd)
         conn->closing = 1;
         if (serv->onClose != NULL)
         {
-            info.fd = fd;
+            info.fd = session_id;
             info.from_id =  conn->from_id;
             info.from_fd =  conn->from_fd;
+            //info.from_net_id = conn->  ///TODO:::
             serv->onClose(serv, &info);
         }
         conn->closing = 0;
         conn->closed = 1;
         return factory->finish(factory, &_send);
     }
-#endif
 }

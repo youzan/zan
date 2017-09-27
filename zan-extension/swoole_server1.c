@@ -493,6 +493,7 @@ void php_swoole_server_before_start(zanServer *serv, zval *zobject TSRMLS_DC)
 zval* php_swoole_server_get_callback(zanServer *serv, int server_fd, int networker_id, int event_type)
 {
     int networker_index = zanServer_get_networker_index(networker_id);
+    zanDebug("fd=%d, networker_id=%d, networker_index=%d, event_type=%d", server_fd, networker_id, networker_index, event_type);
 
     swListenPort *port = serv->connection_list[networker_index][server_fd].object;
     swoole_server_port_property *property = (port)? port->ptr:NULL;
@@ -1218,11 +1219,11 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.from_id, SW_SERVER_CB_onPacket);
+    zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.from_net_id, SW_SERVER_CB_onPacket);
     if (!callback || ZVAL_IS_NULL(callback))
     {
         swoole_php_fatal_error(E_WARNING, "onPacket callback is null.");
-        return SW_OK;
+        return ZAN_ERR;
     }
 
     zval *zdata = NULL;
@@ -1235,7 +1236,7 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
     add_assoc_long(zaddr, "server_socket", req->info.from_fd);
 
     //udp ipv4
-    swString *buffer = NULL;////////// = zanWorker_get_buffer(serv, req->info.from_id);
+    swString *buffer = zanWorker_get_buffer(req->info.from_id);
     swDgramPacket *packet = (swDgramPacket*) buffer->str;
     if (req->info.type == SW_EVENT_UDP)
     {
@@ -2041,18 +2042,16 @@ convert:
 
 PHP_METHOD(swoole_server, sendto)
 {
-#if 0
-    if (!SwooleGS->start)
+    if (!ServerGS->started)
     {
-        swWarn("Server is not running.");
+        zanWarn("Server is not running.");
         RETURN_FALSE;
     }
 
-    zval* zobject = getThis();
-    swServer *serv = swoole_get_object(zobject);
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
-        swWarn("not create servers.");
+        zanWarn("not create servers.");
         RETURN_FALSE;
     }
 
@@ -2063,12 +2062,12 @@ PHP_METHOD(swoole_server, sendto)
     long server_socket = -1;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sls|l", &ip, &ip_len, &port, &data, &len, &server_socket))
     {
-        return;
+        RETURN_FALSE;
     }
 
     if (!data || len <= 0)
     {
-        swWarn("data is empty.");
+        zanWarn("data is empty.");
         RETURN_FALSE;
     }
 
@@ -2076,7 +2075,7 @@ PHP_METHOD(swoole_server, sendto)
 
     if ((!ipv6 && serv->udp_socket_ipv4 <= 0) || (ipv6 && serv->udp_socket_ipv6 <= 0))
     {
-        swWarn("You must use Rigth socket type to server before using sendto.");
+        zanWarn("You must use Rigth socket type to server before using sendto.");
         RETURN_FALSE;
     }
 
@@ -2086,7 +2085,6 @@ PHP_METHOD(swoole_server, sendto)
                      swSocket_udp_sendto(server_socket, ip, port, data, len);
 
     SW_CHECK_RETURN(ret);
-#endif
 }
 
 PHP_METHOD(swoole_server, listen)
@@ -2768,7 +2766,7 @@ PHP_METHOD(swoole_server, getClientInfo)
         add_assoc_long(return_value, "uid", conn->uid);
     }
 
-    swListenPort *port = zanServer_get_port(serv, conn->from_net_id, conn->fd);
+    swListenPort *port = zanServer_get_port(serv, conn->networker_id, conn->fd);
     if (port->open_websocket_protocol)
     {
         add_assoc_long(return_value, "websocket_status", conn->websocket_status);
@@ -2785,7 +2783,7 @@ PHP_METHOD(swoole_server, getClientInfo)
     add_assoc_long(return_value, "server_fd", conn->from_fd);
     add_assoc_long(return_value, "socket_type", conn->socket_type);
 
-    swConnection *from_sock = zanServer_get_connection(serv, conn->from_net_id, conn->from_fd);
+    swConnection *from_sock = zanServer_get_connection(serv, conn->networker_id, conn->from_fd);
     add_assoc_long(return_value, "server_port", swConnection_get_port(from_sock));
     add_assoc_long(return_value, "remote_port", swConnection_get_port(conn));
 
