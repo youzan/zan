@@ -16,10 +16,6 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swServer.h"
-#include "swReactor.h"
-#include "list.h"
-#include "swExecutor.h"
 #include "swProtocol/http.h"
 #include "swProtocol/http2.h"
 #include "swProtocol/websocket.h"
@@ -27,6 +23,11 @@
 #include "swPort.h"
 
 #include "zanGlobalVar.h"
+<<<<<<< HEAD
+=======
+#include "zanServer.h"
+#include "zanConnection.h"
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
 #include "zanLog.h"
 
 static int swPort_onRead_raw(swReactor *reactor, swListenPort *lp, swEvent *event);
@@ -82,33 +83,33 @@ static int swPort_websocket_onPackage(swConnection *conn, char *data, uint32_t l
         offset = length - ws.payload_length - 2;
         data[offset] = ws.header.FIN;
         data[offset + 1] = ws.header.OPCODE;
-        swReactorThread_dispatch(conn, data + offset, length - offset);
+        zanNetworker_dispatch(conn, data + offset, length - offset);
         break;
 
     case WEBSOCKET_OPCODE_PING:
         if (length == 2 || length >= (sizeof(buf) - 2))
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
         swWebSocket_encode(&send_frame, data += 2, length - 2, WEBSOCKET_OPCODE_PONG, 1, 0);
         swConnection_send(conn, send_frame.str, send_frame.length, 0);
         break;
 
     case WEBSOCKET_OPCODE_PONG:
-        return SW_ERR;
+        return ZAN_ERR;
 
     case WEBSOCKET_OPCODE_CONNECTION_CLOSE:
         if (0x7d < (length - 2))
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
         send_frame.str[0] = 0x88;
         send_frame.str[1] = 0x00;
         send_frame.length = 2;
         swConnection_send(conn, send_frame.str, 2, 0);
-        return SW_ERR;
+        return ZAN_ERR;
     }
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void swPort_set_protocol(swListenPort *ls)
@@ -121,13 +122,13 @@ void swPort_set_protocol(swListenPort *ls)
         {
             ls->protocol.package_eof_len = sizeof(ls->protocol.package_eof);
         }
-        ls->protocol.onPackage = swReactorThread_dispatch;
+        ls->protocol.onPackage = zanNetworker_dispatch;
         ls->onRead = swPort_onRead_check_eof;
     }
     else if (ls->open_length_check)
     {
         ls->protocol.get_package_length = swProtocol_get_package_length;
-        ls->protocol.onPackage = swReactorThread_dispatch;
+        ls->protocol.onPackage = zanNetworker_dispatch;
         ls->onRead = swPort_onRead_check_length;
     }
     else if (ls->open_http_protocol)
@@ -143,7 +144,7 @@ void swPort_set_protocol(swListenPort *ls)
         {
             ls->protocol.get_package_length = swHttp2_get_frame_length;
             ls->protocol.package_length_size = SW_HTTP2_FRAME_HEADER_SIZE;
-            ls->protocol.onPackage = swReactorThread_dispatch;
+            ls->protocol.onPackage = zanNetworker_dispatch;
         }
 #endif
         ls->onRead = swPort_onRead_http;
@@ -151,7 +152,7 @@ void swPort_set_protocol(swListenPort *ls)
     else if (ls->open_mqtt_protocol)
     {
         ls->protocol.get_package_length = swMqtt_get_package_length;
-        ls->protocol.onPackage = swReactorThread_dispatch;
+        ls->protocol.onPackage = zanNetworker_dispatch;
         ls->onRead = swPort_onRead_check_length;
     }
     else
@@ -176,19 +177,23 @@ static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *ev
         {
         case SW_ERROR:
             zanError("recv from connection#%d failed.", event->fd);
-            return SW_OK;
+            return ZAN_OK;
         case SW_CLOSE:
             zanWarn("onRead_raw error, recv_ret=%d, errno=%d:%s", n, errno, strerror(errno));
             goto close_fd;
         default:
-            return SW_OK;
+            return ZAN_OK;
         }
     }
     else if (n == 0)
     {
         close_fd:
             zanNetworker_onClose(reactor, event);
+<<<<<<< HEAD
         return SW_OK;
+=======
+        return ZAN_OK;
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
     }
     else
     {
@@ -203,20 +208,20 @@ static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *ev
         return ret;
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
-
+///TODO:::
 static int swPort_onRead_check_length(swReactor *reactor, swListenPort *port, swEvent *event)
 {
-    swServer *serv = reactor->ptr;
+    zanServer *serv = ServerG.serv;
     swConnection *conn = event->socket;
     swProtocol *protocol = &port->protocol;
 
-    swString *buffer = swServer_get_buffer(serv, event->fd);
+    swString *buffer = zanServer_get_buffer(serv, event->from_id, event->fd);
     if (!buffer)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     if (swProtocol_recv_check_length(protocol, conn, buffer) < 0)
@@ -225,7 +230,7 @@ static int swPort_onRead_check_length(swReactor *reactor, swListenPort *port, sw
         zanNetworker_onClose(reactor, event);
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 /**
@@ -278,7 +283,11 @@ static int swPort_onRead_http(swReactor *reactor, swListenPort *port, swEvent *e
         if (!request->buffer)
         {
             zanNetworker_onClose(reactor, event);
+<<<<<<< HEAD
             return SW_ERR;
+=======
+            return ZAN_ERR;
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
         }
     }
 
@@ -295,11 +304,15 @@ recv_data:
         {
         case SW_ERROR:
             zanError("recv from connection#%d failed.", event->fd);
+<<<<<<< HEAD
             return SW_OK;
+=======
+            return ZAN_OK;
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
         case SW_CLOSE:
             goto close_fd;
         default:
-            return SW_OK;
+            return ZAN_OK;
         }
     }
     else if (n == 0)
@@ -307,7 +320,11 @@ recv_data:
         close_fd:
         swHttpRequest_free(conn);
         zanNetworker_onClose(reactor, event);
+<<<<<<< HEAD
         return SW_OK;
+=======
+        return ZAN_OK;
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
     }
     else
     {
@@ -357,7 +374,7 @@ recv_data:
                 {
                     if (memcmp(buffer->str + buffer->length - 4, "\r\n\r\n", 4) == 0)
                     {
-                        swReactorThread_dispatch(conn, buffer->str, buffer->length);
+                        zanNetworker_dispatch(conn, buffer->str, buffer->length);
                         swHttpRequest_free(conn);
                         return SW_OK;
                     }
@@ -390,7 +407,7 @@ recv_data:
             buffer->length = (buffer->length > request_size)? request_size:buffer->length;
             if (buffer->length == request_size)
             {
-                swReactorThread_dispatch(conn, buffer->str, buffer->length);
+                zanNetworker_dispatch(conn, buffer->str, buffer->length);
                 swHttpRequest_free(conn);
             }
             else
@@ -453,19 +470,20 @@ recv_data:
         }
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swPort_onRead_check_eof(swReactor *reactor, swListenPort *port, swEvent *event)
 {
     swConnection *conn = event->socket;
     swProtocol *protocol = &port->protocol;
-    swServer *serv = reactor->ptr;
+    zanServer *serv = ServerG.serv;
 
-    swString *buffer = swServer_get_buffer(serv, event->fd);
+    swString *buffer = zanServer_get_buffer(serv, event->from_id, event->fd);
     if (!buffer)
     {
-        return SW_ERR;
+        zanWarn("get buffer error, fd=%d, from_id=%d", event->fd, event->from_id);
+        return ZAN_ERR;
     }
 
     if (swProtocol_recv_check_eof(protocol, conn, buffer) < 0)
@@ -473,7 +491,7 @@ static int swPort_onRead_check_eof(swReactor *reactor, swListenPort *port, swEve
         zanNetworker_onClose(reactor, event);
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void swPort_free(swListenPort *port)

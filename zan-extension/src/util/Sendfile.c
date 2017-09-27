@@ -78,8 +78,11 @@ do_sendfile:
 #elif !defined(HAVE_SENDFILE)
 int swoole_sendfile(int out_fd, int in_fd, off_t *offset, size_t size)
 {
-    char buf[SW_BUFFER_SIZE_BIG] = {0};
+    //char buf[SW_BUFFER_SIZE_BIG] = {0};
     int readn = size > sizeof(buf) ? sizeof(buf) : size;
+
+    char *buf = (char *)emalloc(SW_BUFFER_SIZE_BIG);
+    memset(buf, 0, SW_BUFFER_SIZE_BIG);
 
     int ret = -1;
     int n = pread(in_fd, buf, readn, *offset);
@@ -95,11 +98,13 @@ int swoole_sendfile(int out_fd, int in_fd, off_t *offset, size_t size)
             *offset += ret;
         }
 
+        swoole_efree(buf);
         return ret;
     }
     else
     {
         swSysError("pread() failed.");
+        swoole_efree(buf);
         return SW_ERR;
     }
 }
@@ -131,8 +136,8 @@ int swoole_sync_readfile(int fd, void *buf, int len)
         }
         else
         {
-			swSysError("read() failed.");
-			break;
+            swSysError("read() failed.");
+            break;
         }
     }
     return readn;

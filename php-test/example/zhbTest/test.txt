@@ -1,0 +1,8 @@
+[2017-09-21 16:38:00 @.84303.0]	WARNING	zanServer_create(:116): calloc connection_list: index=0, networker_num=1
+[2017-09-21 16:38:00 w.84304.0]	WARNING	zanWorker_loop(:275): worker loop in: worker_id=0, process_type=2, pid=84304, reactor->add pipe_worker=4, event=517, pipe_master=5
+[2017-09-21 16:38:00 w.84305.1]	WARNING	zanWorker_loop(:275): worker loop in: worker_id=1, process_type=2, pid=84305, reactor->add pipe_worker=6, event=517, pipe_master=7
+[2017-09-21 16:38:00 t.84306.2]	WARNING	zanTaskworker_loop(:224): task_worker loop in: worker_id=2, process_type=3, pipe_worker=8, pipe_master=9
+[2017-09-21 16:38:00 t.84307.3]	WARNING	zanTaskworker_loop(:224): task_worker loop in: worker_id=3, process_type=3, pipe_worker=10, pipe_master=11
+[2017-09-21 16:38:13 m.84303.100]	WARNING	zan_master_process_loop(:342): ServerG.running=1, process_type=1, master_pid=84303,pid=-1
+[2017-09-21 16:38:13 m.84303.100]	WARNING	zan_master_process_loop(:345): wait error, pid=-1
+[2017-09-21 16:38:13 m.84303.100]	WARNING	zan_master_process_loop(:370): Server is reloading task_worker now.

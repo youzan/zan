@@ -109,6 +109,7 @@ typedef struct _zanMsgQueue
 } zanMsgQueue;
 
 int zanMsgQueue_create(zanMsgQueue *pMq, int wait, key_t msg_key, long type);
+int zanMsgQueue_stat(zanMsgQueue *pMq, int *queue_num, int *queue_bytes);
 
 
 //=======================zanShm=================================================

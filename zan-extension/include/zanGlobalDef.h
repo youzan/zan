@@ -128,7 +128,11 @@ typedef struct _zanWorkerG
     uint8_t in_client :1;
     uint8_t shutdown :1;
 
+<<<<<<< HEAD
     //swString **buffer_input;
+=======
+    swString **buffer_input;
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
     //swString **buffer_output;
 } zanWorkerG;
 
@@ -210,6 +214,14 @@ typedef struct _zanServerG
     zanFactory   *factory;
     zanShmPool   *g_shm_pool;
 } zanServerG;
+
+typedef struct _zanThreadG
+{
+    uint16_t id;
+    uint8_t type;
+    //uint8_t factory_lock_target;
+    //int16_t factory_target_worker;
+} zanThreadG;
 
 //==============================================================================
 typedef struct _zanWorkerStats

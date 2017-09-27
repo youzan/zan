@@ -90,13 +90,11 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         new_fd = accept(event->fd, (struct sockaddr*)&client_addr, &client_addrlen);
 #endif
 
-        //zanWarn("accepted: new_fd = %d", new_fd);
         if (new_fd < 0)
         {
             switch (errno)
             {
                 case EAGAIN:
-                    //zanWarn("accept return EAGAIN");
                     return ZAN_OK;
                 case EINTR:
                     continue;
@@ -129,7 +127,11 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             return ZAN_OK;
         }
 
+<<<<<<< HEAD
         zanWarn("new_fd=%d, sockfd event->fd=%d, reactor->id=%d", new_fd, event->fd, reactor->id);
+=======
+        zanDebug("new_fd=%d, sockfd event->fd=%d, reactor->id=%d", new_fd, event->fd, reactor->id);
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
         //add to connection_list
         swConnection *conn = zanConnection_create(serv, listen_host, new_fd, event->fd, reactor->id);
         memcpy(&conn->info.addr, &client_addr, sizeof(client_addr));
@@ -199,7 +201,11 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     connection->active  = 1;
     connection->from_id = reactor_id;
     connection->from_fd = from_fd;                    //listen sockfd
+<<<<<<< HEAD
     connection->from_net_id  = networker_id;
+=======
+    connection->networker_id = networker_id;
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
     connection->last_time    = ServerGS->server_time;
     connection->connect_time = ServerGS->server_time;
 
@@ -247,7 +253,11 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
             session_id = 1;
             ServerGS->session_round = 1;
         }
+<<<<<<< HEAD
         zanWarn("session_id=%d, index=%d", session_id, index);
+=======
+        zanDebug("session_id=%d, index=%d", session_id, index);
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
         session = zanServer_get_session(serv, session_id);
 
         if (session->accept_fd == 0)
@@ -266,3 +276,47 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     return connection;
 }
 
+int zanNetworker_dispatch(swConnection *conn, char *data, uint32_t length)
+{
+    zanFactory *factory = ServerG.factory;
+    swDispatchData task;
+    memset(&task, 0, sizeof(task));
+
+    task.data.info.fd = conn->fd;
+    task.data.info.from_id = conn->from_id;
+    task.data.info.type = SW_EVENT_PACKAGE_START;
+    task.target_worker_id = -1;
+
+    zanTrace("send string package, size=%u bytes.", length);
+
+    size_t send_n = length;
+    size_t offset = 0;
+
+    while (send_n > 0)
+    {
+        if (send_n > SW_BUFFER_SIZE)
+        {
+            task.data.info.len = SW_BUFFER_SIZE;
+        }
+        else
+        {
+            task.data.info.type = SW_EVENT_PACKAGE_END;
+            task.data.info.len = send_n;
+        }
+
+        task.data.info.fd = conn->fd;
+        memcpy(task.data.data, data + offset, task.data.info.len);
+
+        send_n -= task.data.info.len;
+        offset += task.data.info.len;
+
+        zanTrace("dispatch, type=%d|len=%d\n", task.data.info.type, task.data.info.len);
+
+        if (factory->dispatch(factory, &task) < 0)
+        {
+            break;
+        }
+    }
+
+    return ZAN_OK;
+}

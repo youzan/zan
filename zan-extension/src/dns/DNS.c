@@ -17,11 +17,15 @@
  */
 
 #include "swDNS.h"
-#include "swLog.h"
 #include "swClient.h"
 #include "swReactor.h"
-#include "swAsyncIO.h"
-#include "swGlobalVars.h"
+
+//#include "swAsyncIO.h"
+//#include "swGlobalVars.h"
+//#include "swLog.h"
+
+#include "zanAsyncIo.h"
+#include "zanLog.h"
 
 #define SW_DNS_SERVER_CONF   "/etc/resolv.conf"
 #define SW_DNS_SERVER_NUM    2
@@ -29,9 +33,9 @@
 
 static swHashMap *swoole_dns_cache_v4 = NULL;
 static swHashMap *swoole_dns_cache_v6 = NULL;
-static swLock	 *dns_cache_v4_lock = NULL;
+static swLock    *dns_cache_v4_lock = NULL;
 static swLock    *dns_cache_v6_lock = NULL;
-static int 		 dns_inited = 0;
+static int       dns_inited = 0;
 
 enum swDNS_type
 {
@@ -100,7 +104,7 @@ static void swDNSResolver_domain_encode(char *src, char *dest);
 static void swDNSResolver_domain_decode(char *str);
 static int swDNSResolver_get_servers(swDNS_server *dns_server);
 static int swDNSResolver_onReceive(swReactor *reactor, swEvent *event);
-static int get_host_by_syscall(int af,char* name,swDNS_cache* cache);
+//static int get_host_by_syscall(int af,char* name,swDNS_cache* cache);
 
 static int swDNSResolver_get_servers(swDNS_server *dns_server)
 {
@@ -110,8 +114,8 @@ static int swDNSResolver_get_servers(swDNS_server *dns_server)
 
     if ((fp = fopen(SW_DNS_SERVER_CONF, "rt")) == NULL)
     {
-    	swSysError("fopen("SW_DNS_SERVER_CONF") failed.");
-        return SW_ERR;
+        zanError("fopen("SW_DNS_SERVER_CONF") failed.");
+        return ZAN_ERR;
     }
 
     while (fgets(line, 100, fp))
@@ -132,10 +136,10 @@ static int swDNSResolver_get_servers(swDNS_server *dns_server)
 
     if (swoole_dns_server_num == 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swDNSResolver_onReceive(swReactor *reactor, swEvent *event)
@@ -158,7 +162,7 @@ static int swDNSResolver_onReceive(swReactor *reactor, swEvent *event)
 
     if (recv(event->fd, packet, 65536, 0) <= 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     header = (swDNSResolver_header *) &packet[steps];
@@ -166,7 +170,7 @@ static int swDNSResolver_onReceive(swReactor *reactor, swEvent *event)
     int requestID = ntohs(header->id);
     cli = swoole_dns_request_ptr[requestID%1024];
     if (!cli){
-    	return SW_ERR;
+        return ZAN_ERR;
     }
 
     _domain_name = &packet[steps];
@@ -212,7 +216,7 @@ static int swDNSResolver_onReceive(swReactor *reactor, swEvent *event)
         /* Parsing the IPv4 address in the RR */
         if (ntohs(rrflags->type) == 1)
         {
-        	int rdLength = ntohs(rrflags->rdlength);
+            int rdLength = ntohs(rrflags->rdlength);
             for (j = 0; j < rdLength; ++j)
                 rdata[index][j] = (uchar) packet[steps + j];
             type[index] = ntohs(rrflags->type);
@@ -266,7 +270,7 @@ static int swDNSResolver_onReceive(swReactor *reactor, swEvent *event)
     putchar('\n');
 
     ((swDNS_request*)(cli->ptr))->callback(NULL);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swDNSResolver_request(swDNS_request *request)
@@ -281,10 +285,10 @@ int swDNSResolver_request(swDNS_request *request)
     {
         if (swDNSResolver_get_servers(swoole_dns_servers) < 0)
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
 
-        SwooleG.main_reactor->setHandle(SwooleG.main_reactor, SW_FD_DNS_RESOLVER, swDNSResolver_onReceive);
+        ServerG.main_reactor->setHandle(ServerG.main_reactor, SW_FD_DNS_RESOLVER, swDNSResolver_onReceive);
     }
 
 //    header = (swDNSResolver_header *) &packet;
@@ -318,41 +322,41 @@ int swDNSResolver_request(swDNS_request *request)
     swClient *cli = sw_malloc(sizeof(swClient));
     if (cli == NULL)
     {
-        swWarn("malloc failed.");
-        return SW_ERR;
+        zanWarn("malloc failed.");
+        return ZAN_ERR;
     }
 
     if (swClient_create(cli, SW_SOCK_UDP, 0) < 0)
     {
-    	sw_free(cli);
-        return SW_ERR;
+        sw_free(cli);
+        return ZAN_ERR;
     }
 
     if (cli->connect(cli, swoole_dns_servers[0].ipaddr.v4, SW_DNS_SERVER_PORT, 1, 0) < 0)
     {
-    	cli->close(cli);
-    	sw_free(cli);
-        return SW_ERR;
+        cli->close(cli);
+        sw_free(cli);
+        return ZAN_ERR;
     }
 
     if (cli->send(cli, (char *) packet, steps, 0) < 0)
     {
-    	cli->close(cli);
-    	sw_free(cli);
-        return SW_ERR;
+        cli->close(cli);
+        sw_free(cli);
+        return ZAN_ERR;
     }
 
-    if (SwooleG.main_reactor->add(SwooleG.main_reactor, cli->socket->fd, SW_FD_DNS_RESOLVER))
+    if (ServerG.main_reactor->add(ServerG.main_reactor, cli->socket->fd, SW_FD_DNS_RESOLVER))
     {
-    	cli->close(cli);
-    	sw_free(cli);
-        return SW_ERR;
+        cli->close(cli);
+        sw_free(cli);
+        return ZAN_ERR;
     }
 
     cli->ptr = request;
     /// 不安全
     swoole_dns_request_ptr[(swoole_dns_request_id++)%1024] = cli;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 /**
@@ -406,49 +410,49 @@ static void swDNSResolver_domain_decode(char *str)
     str[index - 1] = '\0';
 }
 
+#if 0
 /// get host by system call
-int swoole_gethostbyname(int flags, char *name, char *addr,uint32_t addrLen)
+int swoole_gethostbyname(int flags, char *name, int name_length, char *addr,uint32_t addrLen)
 {
-    int name_length = name? strlen(name): 0;
     if (name_length <= 0){
-    	return SW_ERR;
+        return ZAN_ERR;
     }
 
     int __af = flags & (~SW_DNS_LOOKUP_CACHE_ONLY) & (~SW_DNS_LOOKUP_RANDOM) & (~SW_DNS_LOOKUP_NOCACHE);
 
     swHashMap *cache_table = NULL;
-    swLock 	  *cache_lock = NULL;
+    swLock    *cache_lock = NULL;
     swDNS_cache *cache = NULL;
     int disable_cache = (flags & SW_DNS_LOOKUP_NOCACHE);
     if (!disable_cache)
     {
-		if (__af == AF_INET)
-		{
-			cache_lock = dns_cache_v4_lock;
-			cache_lock->lock(cache_lock);
-			cache_table = (!swoole_dns_cache_v4)? (swoole_dns_cache_v4 =
-											swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, free)):swoole_dns_cache_v4;
-		}
-		else if (__af == AF_INET6)
-		{
-			cache_lock = dns_cache_v6_lock;
-			cache_lock->lock(cache_lock);
-			cache_table = (!swoole_dns_cache_v6)? (swoole_dns_cache_v6 =
-									swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, free)):swoole_dns_cache_v6;
-		}
-		else
-		{
-			return SW_ERR;
-		}
+        if (__af == AF_INET)
+        {
+            cache_lock = dns_cache_v4_lock;
+            cache_lock->lock(cache_lock);
+            cache_table = (!swoole_dns_cache_v4)? (swoole_dns_cache_v4 =
+                                            swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, free)):swoole_dns_cache_v4;
+        }
+        else if (__af == AF_INET6)
+        {
+            cache_lock = dns_cache_v6_lock;
+            cache_lock->lock(cache_lock);
+            cache_table = (!swoole_dns_cache_v6)? (swoole_dns_cache_v6 =
+                                    swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, free)):swoole_dns_cache_v6;
+        }
+        else
+        {
+            return ZAN_ERR;
+        }
 
-		cache = swHashMap_find(cache_table, name, name_length);
-		if (!cache && (flags & SW_DNS_LOOKUP_CACHE_ONLY))
-		{
-			cache_lock->unlock(cache_lock);
-			return SW_ERR;
-		}
+        cache = swHashMap_find(cache_table, name, name_length);
+        if (!cache && (flags & SW_DNS_LOOKUP_CACHE_ONLY))
+        {
+            cache_lock->unlock(cache_lock);
+            return ZAN_ERR;
+        }
 
-		cache_lock->unlock(cache_lock);
+        cache_lock->unlock(cache_lock);
     }
 
     swDNS_cache tmp_info;
@@ -457,48 +461,93 @@ int swoole_gethostbyname(int flags, char *name, char *addr,uint32_t addrLen)
     int cacheisNull = (cache == NULL)? 1:0;
     if (cacheisNull)
     {
-    	if (get_host_by_syscall(__af,name,&tmp_info) < 0)
-    	{
-    		return SW_ERR;
-    	}
+        if (get_host_by_syscall(__af,name,&tmp_info) < 0)
+        {
+            return ZAN_ERR;
+        }
 
-    	tmp_cache = &tmp_info;
-    	if (!disable_cache)
-    	{
-    		cache = sw_malloc(sizeof(swDNS_cache));
-    		memcpy(cache,&tmp_info,sizeof(swDNS_cache));
-    	}
+        tmp_cache = &tmp_info;
+        if (!disable_cache)
+        {
+            cache = sw_malloc(sizeof(swDNS_cache));
+            memcpy(cache,&tmp_info,sizeof(swDNS_cache));
+        }
     }
 
     int index = (flags & SW_DNS_LOOKUP_RANDOM)? (rand() % tmp_cache->number):0;
     bzero(addr,addrLen);
-	memcpy(addr, tmp_cache->addr[index].host, addrLen);
+    memcpy(addr, tmp_cache->addr[index].host, addrLen);
 
-	/// 允许缓冲，并且缓冲没有当前节点数据.
+    /// 允许缓冲，并且缓冲没有当前节点数据.
     if (!disable_cache && cacheisNull && cache)
     {
-    	cache_table = NULL;
-    	/// 设置缓冲，先判断是否当前查询的key是否存在，避免并发时造成hash 冲突,引起hash表膨胀(多线程模式下)
-    	cache_lock->lock(cache_lock);
-    	/// 防止cache_table被清空
-    	cache_table = (__af == AF_INET)? swoole_dns_cache_v4:((__af == AF_INET6)? swoole_dns_cache_v6:NULL);
-    	int ret = SW_ERR;
-    	if (cache_table)
-    	{
-    		ret = (!swHashMap_find(cache_table, name, name_length))?
-						swHashMap_add(cache_table, name, name_length, cache): SW_ERR;
-    	}
+        cache_table = NULL;
+        /// 设置缓冲，先判断是否当前查询的key是否存在，避免并发时造成hash 冲突,引起hash表膨胀(多线程模式下)
+        cache_lock->lock(cache_lock);
+        /// 防止cache_table被清空
+        cache_table = (__af == AF_INET)? swoole_dns_cache_v4:((__af == AF_INET6)? swoole_dns_cache_v6:NULL);
+        int ret = ZAN_ERR;
+        if (cache_table)
+        {
+            ret = (!swHashMap_find(cache_table, name, name_length))?
+                        swHashMap_add(cache_table, name, name_length, cache): ZAN_ERR;
+        }
 
-    	cache_lock->unlock(cache_lock);
-		if (ret < 0) sw_free(cache);
+        cache_lock->unlock(cache_lock);
+        if (ret < 0) sw_free(cache);
     }
 
-    return SW_OK;
+    return ZAN_OK;
+}
+#endif
+
+int swoole_gethostbyname(int flags, char *name, char *addr)
+{
+    int __af = flags & (~SW_DNS_LOOKUP_RANDOM);
+    int index = 0;
+
+    struct hostent *host_entry;
+    if (!(host_entry = gethostbyname2(name, __af)))
+    {
+        return ZAN_ERR;
+    }
+
+    union
+    {
+        char v4[INET_ADDRSTRLEN];
+        char v6[INET6_ADDRSTRLEN];
+    } addr_list[SW_DNS_HOST_BUFFER_SIZE];
+
+    int i = 0;
+    for (i = 0; i < SW_DNS_HOST_BUFFER_SIZE; i++)
+    {
+        if (host_entry->h_addr_list[i] == NULL)
+        {
+            break;
+        }
+        if (__af == AF_INET)
+        {
+            memcpy(addr_list[i].v4, host_entry->h_addr_list[i], host_entry->h_length);
+        }
+        else
+        {
+            memcpy(addr_list[i].v6, host_entry->h_addr_list[i], host_entry->h_length);
+        }
+    }
+    if (__af == AF_INET)
+    {
+        memcpy(addr, addr_list[index].v4, host_entry->h_length);
+    }
+    else
+    {
+        memcpy(addr, addr_list[index].v6, host_entry->h_length);
+    }
+    return ZAN_OK;
 }
 
 void swoole_clear_dns_cache(void)
 {
-	dns_cache_v4_lock->lock(dns_cache_v4_lock);
+    dns_cache_v4_lock->lock(dns_cache_v4_lock);
     if (swoole_dns_cache_v4)
     {
         swHashMap_free(swoole_dns_cache_v4);
@@ -519,64 +568,67 @@ void swoole_clear_dns_cache(void)
 
 void dns_lookup_init()
 {
-	if (dns_inited)
-	{
-		return ;
-	}
+    if (dns_inited)
+    {
+        return ;
+    }
 
-	dns_inited = 1;
+    dns_inited = 1;
 
-	if (!dns_cache_v4_lock)
-	{
-		dns_cache_v4_lock = sw_malloc(sizeof(swLock));
-		swMutex_create(dns_cache_v4_lock,0);
-	}
+    if (!dns_cache_v4_lock)
+    {
+        dns_cache_v4_lock = sw_malloc(sizeof(swLock));
+        swMutex_create(dns_cache_v4_lock,0);
+    }
 
-	if (!dns_cache_v6_lock)
-	{
-		dns_cache_v6_lock = sw_malloc(sizeof(swLock));
-		swMutex_create(dns_cache_v6_lock,0);
-	}
+    if (!dns_cache_v6_lock)
+    {
+        dns_cache_v6_lock = sw_malloc(sizeof(swLock));
+        swMutex_create(dns_cache_v6_lock,0);
+    }
 }
 
 int swoole_getHostbyAIO(int type,void *hostname, void *ip_addr, size_t size)
 {
-	return swAio_dns_lookup(type,hostname,ip_addr,size);
+    //return swAio_dns_lookup(type,hostname,ip_addr,size);
+    return zanAio_dns_lookup(type,hostname,ip_addr,size);
 }
 
+#if 0
 static int get_host_by_syscall(int af,char* name,swDNS_cache* cache)
 {
-	struct addrinfo* result = NULL;
-	struct addrinfo* ptr = NULL;
-	struct addrinfo hints;
-	bzero(&hints,sizeof(struct addrinfo));
-	hints.ai_family = af;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
+    struct addrinfo* result = NULL;
+    struct addrinfo* ptr = NULL;
+    struct addrinfo hints;
+    bzero(&hints,sizeof(struct addrinfo));
+    hints.ai_family = af;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
-	if (getaddrinfo(name,NULL,&hints,&result) != 0 || !result){
-		swWarn("get address info error.");
-		if (result) freeaddrinfo(result);
-		return SW_ERR;
-	}
+    if (getaddrinfo(name,NULL,&hints,&result) != 0 || !result){
+        zanWarn("get address info error.");
+        if (result) freeaddrinfo(result);
+        return ZAN_ERR;
+    }
 
-	int icount = 0;
-	for (icount = 0,ptr = result; icount < SW_DNS_LOOKUP_CACHE_SIZE && ptr!= NULL;
-			ptr = ptr->ai_next)
-	{
-		if (ptr->ai_family != af){
-			continue;
-		}
+    int icount = 0;
+    for (icount = 0,ptr = result; icount < SW_DNS_LOOKUP_CACHE_SIZE && ptr!= NULL;
+            ptr = ptr->ai_next)
+    {
+        if (ptr->ai_family != af){
+            continue;
+        }
 
-		void* srcptr = (AF_INET == af)? (void*)(&((struct sockaddr_in*)ptr->ai_addr)->sin_addr):
-											(void*)(&((struct sockaddr_in6*)ptr->ai_addr)->sin6_addr);
+        void* srcptr = (AF_INET == af)? (void*)(&((struct sockaddr_in*)ptr->ai_addr)->sin_addr):
+                                            (void*)(&((struct sockaddr_in6*)ptr->ai_addr)->sin6_addr);
 
-		inet_ntop(af,srcptr,cache->addr[icount++].host,SW_IP_MAX_LENGTH);
-	}
+        inet_ntop(af,srcptr,cache->addr[icount++].host,SW_IP_MAX_LENGTH);
+    }
 
-	cache->number = icount;
-	cache->host_length = SW_IP_MAX_LENGTH;
-	freeaddrinfo(result);
+    cache->number = icount;
+    cache->host_length = SW_IP_MAX_LENGTH;
+    freeaddrinfo(result);
 
-	return icount <= 0? SW_ERR:SW_OK;
+    return icount <= 0? ZAN_ERR:ZAN_OK;
 }
+#endif

@@ -533,7 +533,7 @@ PHP_MINIT_FUNCTION(zan)
         {
             SWOOLE_G(aio_thread_num) = SW_AIO_THREAD_NUM_MAX;
         }
-        SwooleAIO.thread_num = SWOOLE_G(aio_thread_num);
+        ZanAIO.thread_num = SWOOLE_G(aio_thread_num);
     }
 
     if (strcasecmp("cli", sapi_module.name) == 0)

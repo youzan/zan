@@ -85,12 +85,6 @@ void zan_server_set_init(void)
     servSet->buffer_output_size = SW_BUFFER_OUTPUT_SIZE;
     servSet->pipe_buffer_size   = SW_PIPE_BUFFER_SIZE;
 
-#ifdef __MACH__
-    ServerG.servSet.socket_buffer_size = 256 * 1024;
-#else
-    servSet->socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
-#endif
-
     servSet->heartbeat_idle_time      = SW_HEARTBEAT_IDLE;
     servSet->heartbeat_check_interval = SW_HEARTBEAT_CHECK;
 
@@ -113,7 +107,11 @@ int zanServer_create(zanServer *serv)
     serv->connection_list  = (swConnection**)sw_shm_calloc(servSet->net_worker_num, sizeof(swConnection*));
     for (uint32_t index = 0; index < servSet->net_worker_num; index++)
     {
+<<<<<<< HEAD
         zanWarn("calloc connection_list: index=%d, networker_num=%d", index, servSet->net_worker_num);
+=======
+        zanDebug("calloc connection_list: index=%d, networker_num=%d", index, servSet->net_worker_num);
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
         serv->connection_list[index] = (swConnection*)sw_shm_calloc(ServerG.servSet.max_connection, sizeof(swConnection));
     }
 
@@ -160,9 +158,12 @@ int zanServer_start(zanServer *serv)
         return ZAN_ERR;
     }
 
+<<<<<<< HEAD
     //init master process signal, TODO:::
     //
 
+=======
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
     int ret = zan_master_process_loop(serv);
 
     exit(ret);
@@ -234,8 +235,7 @@ static int zanServer_start_check(zanServer *serv)
         }
     }
 
-#if 0
-    //AsyncTask  ///TODO:::
+    //AsyncTask
     if (servSet->task_worker_num > 0)
     {
         if (serv->onTask == NULL || serv->onFinish == NULL)
@@ -244,7 +244,6 @@ static int zanServer_start_check(zanServer *serv)
             return ZAN_ERR;
         }
     }
-#endif
 
     if (ServerG.max_sockets > 0 && servSet->max_connection > ServerG.max_sockets)
     {
@@ -670,12 +669,15 @@ swConnection* zanServer_get_connection(zanServer *serv, int networker_id, int fd
     }
 }
 
+<<<<<<< HEAD
 swString *zanWorker_get_buffer(zanServer *serv, int worker_id)
 {
     zanWarn("TEST.....");
     return NULL;
 }
 
+=======
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
 zanSession* zanServer_get_session(zanServer *serv, uint32_t session_id)
 {
     return &serv->session_list[session_id % SW_SESSION_LIST_SIZE];
@@ -751,7 +753,11 @@ uint32_t zanServer_get_connection_num(zanServer *serv)
         int minfd = zanServer_get_minfd(serv, index);
         int maxfd = zanServer_get_maxfd(serv, index);
         sum += maxfd - minfd + 1;
+<<<<<<< HEAD
         zanWarn("index=%d, minfd=%d, max_fd=%d, sum=%d", index, minfd, maxfd, sum);
+=======
+        zanDebug("index=%d, minfd=%d, max_fd=%d, sum=%d", index, minfd, maxfd, sum);
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
     }
 
     return sum;
@@ -790,10 +796,54 @@ int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len
     send_data.info.type = SW_EVENT_SENDFILE;
     memcpy(buffer, filename, send_data.info.len);
     buffer[send_data.info.len] = 0;
+<<<<<<< HEAD
     send_data.info.len++;
+=======
+    ++send_data.info.len;
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
     send_data.length = 0;
     send_data.data = buffer;
 
     return serv->factory.finish(&serv->factory, &send_data);
 }
 
+<<<<<<< HEAD
+=======
+swString *zanServer_get_buffer(zanServer *serv, int networker_id, int fd)
+{
+    int networker_index = zanServer_get_networker_index(networker_id);
+    swString *buffer = serv->connection_list[networker_index][fd].object;
+
+    if (buffer == NULL)
+    {
+        buffer = swString_new(SW_BUFFER_SIZE);
+        //alloc memory failed.
+        if (!buffer)
+        {
+            return NULL;
+        }
+        serv->connection_list[networker_index][fd].object = buffer;
+    }
+    return buffer;
+}
+
+int zanServer_adduserworker(zanServer *serv, zanWorker *worker)
+{
+    zanUserWorker_node *user_worker = zan_malloc(sizeof(zanUserWorker_node));
+    if (!user_worker)
+    {
+        return ZAN_ERR;
+    }
+
+    serv->user_worker_num++;
+    user_worker->worker = worker;
+
+    LL_APPEND(serv->user_worker_list, user_worker);
+    if (!serv->user_worker_map)
+    {
+        serv->user_worker_map = swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, NULL);
+    }
+
+    return worker->worker_id;
+}
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3

@@ -37,3 +37,4 @@ zan-extension/modules/
 zan-extension/zan.la
 tags
 settings.json
+*.udb

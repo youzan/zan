@@ -77,12 +77,17 @@ typedef struct
 memcpy(&_pkg, task->data, sizeof(_pkg));\
 _length = _pkg.length;\
     if (_length > ServerG.serv->listen_list->protocol.package_max_length) {\
+<<<<<<< HEAD
 	zanWarn("task package[length=%d] is too big.", _length);\
+=======
+    zanWarn("task package[length=%d] is too big.", _length);\
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
 }\
 _buf = __malloc(_length + 1);\
 _buf[_length] = 0;\
 int tmp_file_fd = open(_pkg.tmpfile, O_RDONLY);\
     if (tmp_file_fd < 0){\
+<<<<<<< HEAD
 	zanSysError("open(%s) failed.", task->data);\
 	_length = -1;\
     } else if (swoole_sync_readfile(tmp_file_fd, _buf, _length) > 0) {\
@@ -92,6 +97,17 @@ int tmp_file_fd = open(_pkg.tmpfile, O_RDONLY);\
 	_length = -1;\
 	close(tmp_file_fd); \
 	unlink(_pkg.tmpfile); \
+=======
+    zanSysError("open(%s) failed.", task->data);\
+    _length = -1;\
+    } else if (swoole_sync_readfile(tmp_file_fd, _buf, _length) > 0) {\
+    close(tmp_file_fd);\
+    unlink(_pkg.tmpfile);\
+    } else {\
+    _length = -1;\
+    close(tmp_file_fd); \
+    unlink(_pkg.tmpfile); \
+>>>>>>> f48472527034ccabe0569797a19bc881105510c3
 }
 typedef struct _zanProcessPool zanProcessPool;
 
@@ -197,6 +213,8 @@ static inline zanWorker* zan_pool_get_worker(zanProcessPool *pool, int worker_id
 {
     return &(pool->workers[worker_id - pool->start_id]);
 }
+
+swString *zanWorker_get_buffer(int from_id);
 
 
 #ifdef __cplusplus
