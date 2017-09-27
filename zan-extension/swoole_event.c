@@ -21,12 +21,8 @@
 
 #include "php_swoole.h"
 #include "swSignal.h"
-<<<<<<< HEAD
-#include "swLog.h"
-=======
 
 #include "zanLog.h"
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
 typedef struct
 {

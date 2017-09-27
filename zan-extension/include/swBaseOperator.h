@@ -24,10 +24,6 @@
 #include "swBaseData.h"
 #include "swAtomic.h"
 #include "swGlobalVars.h"
-<<<<<<< HEAD
-//#include "swLog.h"
-=======
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
 #include "zanAtomic.h"
 

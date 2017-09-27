@@ -31,15 +31,9 @@ int zan_spawn_task_process(zanProcessPool *pool);
 
 int zanPool_taskworker_alloc(zanProcessPool *pool);
 int zanPool_taskworker_init(zanProcessPool *pool);
-<<<<<<< HEAD
 
 static void zanPool_taskworker_free(zanProcessPool *pool);
 
-=======
-
-static void zanPool_taskworker_free(zanProcessPool *pool);
-
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 static void zanTaskworker_onStart(zanProcessPool *pool, zanWorker *worker);
 static void zanTaskworker_onStop(zanProcessPool *pool, zanWorker *worker);
 static int zanTaskworker_onTask(zanProcessPool *pool, swEventData *task);
@@ -50,10 +44,7 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
     int   index        = 0;
     int   create_pipe  = 1;
     key_t msgqueue_key = 0;
-<<<<<<< HEAD
-=======
     zanServerSet *servSet = &ServerG.servSet;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
     if (ZAN_IPC_MSGQUEUE == servSet->task_ipc_mode)
     {
@@ -68,11 +59,7 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
         create_pipe = 0;
     }
 
-<<<<<<< HEAD
-    int worker_num = ServerG.servSet.task_worker_num;
-=======
     int worker_num = servSet->task_worker_num;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     pool->workers = zan_shm_calloc(worker_num, sizeof(zanWorker));
     if (pool->workers == NULL)
     {
@@ -559,40 +546,6 @@ zan_pid_t zanTaskWorker_spawn(zanWorker *worker)
 
     switch (pid)
     {
-<<<<<<< HEAD
-		//child
-		case 0:
-    	{
-    		if (pool->onWorkerStart != NULL)
-			{
-				pool->onWorkerStart(pool, worker);
-			}
-			
-			int ret_code = pool->main_loop(pool, worker);
-			
-			if (pool->onWorkerStop != NULL)
-			{
-				pool->onWorkerStop(pool, worker);
-			}
-			exit(ret_code);
-			break;
-    	}
-		case -1:
-			zanSysError("fork failed.");
-			break;
-        //parent
-		default:
-			//remove old process
-			if (worker->worker_pid)
-			{
-				swHashMap_del_int(pool->map, worker->worker_pid);
-			}
-			worker->deleted = 0;
-			worker->worker_pid = pid;
-			//insert new process
-			swHashMap_add_int(pool->map, pid, worker);
-			break;
-=======
         //child
         case 0:
         {
@@ -625,7 +578,6 @@ zan_pid_t zanTaskWorker_spawn(zanWorker *worker)
             //insert new process
             swHashMap_add_int(pool->map, pid, worker);
             break;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     }
     return pid;
 }

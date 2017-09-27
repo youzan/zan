@@ -493,10 +493,7 @@ void php_swoole_server_before_start(zanServer *serv, zval *zobject TSRMLS_DC)
 zval* php_swoole_server_get_callback(zanServer *serv, int server_fd, int networker_id, int event_type)
 {
     int networker_index = zanServer_get_networker_index(networker_id);
-<<<<<<< HEAD
-=======
     zanDebug("fd=%d, networker_id=%d, networker_index=%d, event_type=%d", server_fd, networker_id, networker_index, event_type);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
     swListenPort *port = serv->connection_list[networker_index][server_fd].object;
     swoole_server_port_property *property = (port)? port->ptr:NULL;
@@ -1222,82 +1219,6 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
 {
     SWOOLE_FETCH_TSRMLS;
 
-<<<<<<< HEAD
-    zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.from_id, SW_SERVER_CB_onPacket);
-    if (!callback || ZVAL_IS_NULL(callback))
-    {
-        swoole_php_fatal_error(E_WARNING, "onPacket callback is null.");
-        return SW_OK;
-    }
-
-    zval *zdata = NULL;
-    zval *zaddr = NULL;
-
-    SW_MAKE_STD_ZVAL(zdata);
-    SW_MAKE_STD_ZVAL(zaddr);
-
-    array_init(zaddr);
-    add_assoc_long(zaddr, "server_socket", req->info.from_fd);
-
-    //udp ipv4
-    swString *buffer = zanWorker_get_buffer(serv, req->info.from_id);
-    swDgramPacket *packet = (swDgramPacket*) buffer->str;
-    if (req->info.type == SW_EVENT_UDP)
-    {
-        char tmp[SW_IP_MAX_LENGTH] = {0};
-        inet_ntop(AF_INET, &packet->addr.v4, tmp, sizeof(tmp));
-        sw_add_assoc_string(zaddr, "address", tmp, 1);
-        add_assoc_long(zaddr, "port", packet->port);
-        SW_ZVAL_STRINGL(zdata, packet->data, packet->length, 1);
-    }
-    //udp ipv6
-    else if (req->info.type == SW_EVENT_UDP6)
-    {
-        char tmp[SW_IP_MAX_LENGTH] = {0};
-        inet_ntop(AF_INET6, &packet->addr.v6, tmp, sizeof(tmp));
-        sw_add_assoc_string(zaddr, "address", tmp, 1);
-        add_assoc_long(zaddr, "port", packet->port);
-        SW_ZVAL_STRINGL(zdata, packet->data, packet->length, 1);
-    }
-    //unix dgram
-    else if (req->info.type == SW_EVENT_UNIX_DGRAM)
-    {
-        sw_add_assoc_stringl(zaddr, "address", packet->data, packet->addr.un.path_length, 1);
-        SW_ZVAL_STRINGL(zdata, packet->data + packet->addr.un.path_length, packet->length - packet->addr.un.path_length, 1);
-        dgram_server_socket = req->info.from_fd;
-    }
-
-    zval **args[3];
-    zval *zserv = (zval *) serv->ptr2;
-    args[0] = &zserv;
-    args[1] = &zdata;
-    args[2] = &zaddr;
-    zval *retval = NULL;
-    if (sw_call_user_function_ex(EG(function_table), NULL, callback, &retval, 3, args, 0, NULL TSRMLS_CC) == FAILURE)
-    {
-        swWarn("swoole_server: onPacket handler error");
-    }
-    if (EG(exception))
-    {
-        zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
-    }
-
-    sw_zval_ptr_dtor(&zaddr);
-    sw_zval_ptr_dtor(&zdata);
-
-    if (retval)
-    {
-        sw_zval_ptr_dtor(&retval);
-    }
-
-    return SW_OK;
-}
-
-void php_swoole_onClose(zanServer *serv, swDataHead *info)
-{
-    SWOOLE_FETCH_TSRMLS;
-
-=======
     zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.from_net_id, SW_SERVER_CB_onPacket);
     if (!callback || ZVAL_IS_NULL(callback))
     {
@@ -1372,7 +1293,6 @@ void php_swoole_onClose(zanServer *serv, swDataHead *info)
 {
     SWOOLE_FETCH_TSRMLS;
 
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     zval *callback = php_swoole_server_get_callback(serv, info->from_fd, info->from_id, SW_SERVER_CB_onClose);
     if (!callback || ZVAL_IS_NULL(callback))
     {
@@ -1465,112 +1385,6 @@ void php_swoole_register_callback(zanServer *serv)
 {
     serv->onReceive = php_swoole_onReceive;
 
-<<<<<<< HEAD
-    if (php_sw_server_callbacks[SW_SERVER_CB_onStart])
-    {
-        serv->onStart = php_swoole_onStart;
-=======
-    zval *retval = NULL;
-    if (sw_call_user_function_ex(EG(function_table), NULL, callback, &retval, 3,
-                                                args, 0, NULL TSRMLS_CC) == FAILURE)
-    {
-        zanWarn("onClose handler error");
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
-    }
-
-    serv->onShutdown = php_swoole_onShutdown;
-    serv->onWorkerStart = php_swoole_onWorkerStart;
-
-    if (php_sw_server_callbacks[SW_SERVER_CB_onWorkerStop])
-    {
-<<<<<<< HEAD
-        serv->onWorkerStop = php_swoole_onWorkerStop;
-    }
-
-    /// UDP Packet
-    if (php_sw_server_callbacks[SW_SERVER_CB_onPacket])
-    {
-        serv->onPacket = php_swoole_onPacket;
-    }
-
-    /// Task Worker
-    if (php_sw_server_callbacks[SW_SERVER_CB_onTask])
-    {
-        serv->onTask = php_swoole_onTask;
-    }
-    if (php_sw_server_callbacks[SW_SERVER_CB_onFinish])
-    {
-        serv->onFinish = php_swoole_onFinish;
-    }
-
-    if (php_sw_server_callbacks[SW_SERVER_CB_onWorkerError])
-    {
-        serv->onWorkerError = php_swoole_onWorkerError;
-    }
-
-=======
-        SwooleWG.fatal_error = 1;
-    }
-
-    sw_zval_ptr_dtor(&zfd);
-    sw_zval_ptr_dtor(&zfrom_id);
-
-    if (retval)
-    {
-        sw_zval_ptr_dtor(&retval);
-    }
-}
-
-static sw_inline int php_swoole_check_task_param(int dst_worker_id TSRMLS_DC)
-{
-    if (ServerG.servSet.task_worker_num < 1)
-    {
-        zanWarn("Task method cannot use, Please set task_worker_num=%d", ServerG.servSet.task_worker_num);
-        return ZAN_ERR;
-    }
-
-    int task_worker_num = (int)ServerG.servSet.task_worker_num;
-    if (dst_worker_id >= task_worker_num)
-    {
-        zanWarn("dst_worker_id=%d must be less than servSet.task_worker_num=%d.", dst_worker_id, task_worker_num);
-        return ZAN_ERR;
-    }
-
-    /// should be TaskWorker
-    if (!is_worker())
-    {
-        zanWarn("The method can only be used in the worker process.");
-        return ZAN_ERR;
-    }
-
-    return ZAN_OK;
-}
-
-static zval* php_swoole_server_add_port(swListenPort *port TSRMLS_DC)
-{
-    zval *port_object = NULL;
-    SW_ALLOC_INIT_ZVAL(port_object);
-    object_init_ex(port_object, swoole_server_port_class_entry_ptr);
-    server_port_list.zobjects[server_port_list.num++] = port_object;
-
-    swoole_server_port_property *property = emalloc(sizeof(swoole_server_port_property));
-    bzero(property, sizeof(swoole_server_port_property));
-    swoole_set_property(port_object, swoole_property_common, property);
-    swoole_set_object(port_object, port);
-
-    zend_update_property_string(swoole_server_port_class_entry_ptr, port_object, ZEND_STRL("host"), port->host TSRMLS_CC);
-    zend_update_property_long(swoole_server_port_class_entry_ptr, port_object, ZEND_STRL("port"), port->port TSRMLS_CC);
-    zend_update_property_long(swoole_server_port_class_entry_ptr, port_object, ZEND_STRL("type"), port->type TSRMLS_CC);
-
-    add_next_index_zval(server_port_list.zports, port_object);
-
-    return port_object;
-}
-
-void php_swoole_register_callback(zanServer *serv)
-{
-    serv->onReceive = php_swoole_onReceive;
-
     if (php_sw_server_callbacks[SW_SERVER_CB_onStart])
     {
         serv->onStart = php_swoole_onStart;
@@ -1605,7 +1419,6 @@ void php_swoole_register_callback(zanServer *serv)
         serv->onWorkerError = php_swoole_onWorkerError;
     }
 
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     if (php_sw_server_callbacks[SW_SERVER_CB_onPipeMessage])
     {
         serv->onPipeMessage = php_swoole_onPipeMessage;
@@ -1756,11 +1569,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("daemonize"), (void **) &value) == SUCCESS)
     {
-<<<<<<< HEAD
-        convert_to_boolean(value);
-=======
         zan_convert_to_boolean(value);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
         servSet->daemonize = (uint16_t)Z_BVAL_P(value);
     }
 
@@ -1768,11 +1577,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("net_worker_num"), (void **) &value) == SUCCESS)
     {
-<<<<<<< HEAD
-        convert_to_long(value);
-=======
         zan_convert_to_long(value);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
         servSet->net_worker_num = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -1780,11 +1585,7 @@ PHP_METHOD(swoole_server, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("worker_num"), (void **) &value) == SUCCESS)
     {
-<<<<<<< HEAD
-        convert_to_long(value);
-=======
         zan_convert_to_long(value);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
         servSet->worker_num = (uint32_t) Z_LVAL_P(value);
     }
 
@@ -2965,11 +2766,7 @@ PHP_METHOD(swoole_server, getClientInfo)
         add_assoc_long(return_value, "uid", conn->uid);
     }
 
-<<<<<<< HEAD
-    swListenPort *port = zanServer_get_port(serv, conn->from_net_id, conn->fd);
-=======
     swListenPort *port = zanServer_get_port(serv, conn->networker_id, conn->fd);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     if (port->open_websocket_protocol)
     {
         add_assoc_long(return_value, "websocket_status", conn->websocket_status);
@@ -2986,11 +2783,7 @@ PHP_METHOD(swoole_server, getClientInfo)
     add_assoc_long(return_value, "server_fd", conn->from_fd);
     add_assoc_long(return_value, "socket_type", conn->socket_type);
 
-<<<<<<< HEAD
-    swConnection *from_sock = zanServer_get_connection(serv, conn->from_net_id, conn->from_fd);
-=======
     swConnection *from_sock = zanServer_get_connection(serv, conn->networker_id, conn->from_fd);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     add_assoc_long(return_value, "server_port", swConnection_get_port(from_sock));
     add_assoc_long(return_value, "remote_port", swConnection_get_port(conn));
 
@@ -3005,10 +2798,6 @@ PHP_METHOD(swoole_server, getClientInfo)
 
 PHP_METHOD(swoole_server, getClientList)
 {
-<<<<<<< HEAD
-#if 0
-=======
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     if (!ServerGS->started)
     {
         zanWarn("Server is not running.");
@@ -3016,11 +2805,7 @@ PHP_METHOD(swoole_server, getClientList)
     }
 
     //zval* zobject = getThis();
-<<<<<<< HEAD
-    swServer *serv = ServerG.serv;
-=======
     zanServer *serv = ServerG.serv;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     if (!serv)
     {
         zanWarn("not create servers.");

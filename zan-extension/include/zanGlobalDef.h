@@ -128,11 +128,7 @@ typedef struct _zanWorkerG
     uint8_t in_client :1;
     uint8_t shutdown :1;
 
-<<<<<<< HEAD
-    //swString **buffer_input;
-=======
     swString **buffer_input;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     //swString **buffer_output;
 } zanWorkerG;
 

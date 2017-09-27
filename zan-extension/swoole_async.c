@@ -26,7 +26,6 @@
 #include "swBaseData.h"
 #include "swBaseOperator.h"
 #include "swDNS.h"
-#include "swLog.h"
 
 #include "zanAsyncIo.h"
 #include "zanLog.h"

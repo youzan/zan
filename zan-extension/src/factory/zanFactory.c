@@ -35,11 +35,7 @@ static int zanFactory_notify(zanFactory *factory, swDataHead *event);
 static int zanFactory_dispatch(zanFactory *factory, swDispatchData *buf);
 static int zanFactory_finish(zanFactory *factory, swSendData *data);
 static int zanFactory_shutdown(zanFactory *factory);
-<<<<<<< HEAD
-static int zanFactory_end(zanFactory *factory, int fd);
-=======
 static int zanFactory_end(zanFactory *factory, int session_id);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
 int zanFactory_create(zanFactory *factory)
 {
@@ -262,9 +258,9 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 //2. SW_EVENT_CLOSE 事件
 static int zanFactory_end(zanFactory *factory, int session_id)
 {
-    //zanServer *serv = (zanServer *)ServerG.serv;
+    zanServer *serv = (zanServer *)ServerG.serv;
     swSendData _send;
-    //swDataHead info;
+    swDataHead info;
 
     bzero(&_send, sizeof(_send));
     _send.info.fd   = session_id;

@@ -23,11 +23,8 @@
 #include "swPort.h"
 
 #include "zanGlobalVar.h"
-<<<<<<< HEAD
-=======
 #include "zanServer.h"
 #include "zanConnection.h"
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 #include "zanLog.h"
 
 static int swPort_onRead_raw(swReactor *reactor, swListenPort *lp, swEvent *event);
@@ -189,11 +186,7 @@ static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *ev
     {
         close_fd:
             zanNetworker_onClose(reactor, event);
-<<<<<<< HEAD
-        return SW_OK;
-=======
         return ZAN_OK;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     }
     else
     {
@@ -283,11 +276,7 @@ static int swPort_onRead_http(swReactor *reactor, swListenPort *port, swEvent *e
         if (!request->buffer)
         {
             zanNetworker_onClose(reactor, event);
-<<<<<<< HEAD
-            return SW_ERR;
-=======
             return ZAN_ERR;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
         }
     }
 
@@ -304,11 +293,7 @@ recv_data:
         {
         case SW_ERROR:
             zanError("recv from connection#%d failed.", event->fd);
-<<<<<<< HEAD
-            return SW_OK;
-=======
             return ZAN_OK;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
         case SW_CLOSE:
             goto close_fd;
         default:
@@ -320,11 +305,7 @@ recv_data:
         close_fd:
         swHttpRequest_free(conn);
         zanNetworker_onClose(reactor, event);
-<<<<<<< HEAD
-        return SW_OK;
-=======
         return ZAN_OK;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     }
     else
     {

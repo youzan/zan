@@ -18,10 +18,7 @@
 
 #include "swWork.h"
 #include "swStats.h"
-<<<<<<< HEAD
-=======
 #include "swSignal.h"
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
 #include "zanGlobalDef.h"
 #include "zanSystem.h"
@@ -40,12 +37,9 @@ static void zanWorker_onStop(zanProcessPool *pool, zanWorker *worker);
 static int zanWorker_onTask(zanFactory *factory, swEventData *task);
 static int zanWorker_loop(zanProcessPool *pool, zanWorker *worker);
 static int zanWorker_onPipeRead(swReactor *reactor, swEvent *event);
-<<<<<<< HEAD
-=======
 static int zanWorker_discard_data(zanServer *serv, swEventData *task);
 void zanWorker_signal_handler(int signo);
 void zanWorker_signal_init(void);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
 int zanWorker_init(zanWorker *worker)
 {
@@ -165,11 +159,7 @@ void zanWorker_free(zanWorker *worker)
         zan_shm_free(worker->send_shm);
     }
     worker->lock.free(&worker->lock);
-<<<<<<< HEAD
-	return;
-=======
     return;
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 }
 
 int zanPool_worker_alloc(zanProcessPool *pool)
@@ -328,8 +318,6 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
     /// 设置cpu 亲和性
     ///swoole_cpu_setAffinity(ServerWG.worker_id, serv);
 
-<<<<<<< HEAD
-=======
     int buffer_input_size = (serv->listen_list->open_eof_check ||
                              serv->listen_list->open_length_check ||
                              serv->listen_list->open_http_protocol)?
@@ -356,7 +344,6 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
         }
     }
 
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     if (serv->onWorkerStart)
     {
         //zanWarn("worker: call worker onStart, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
@@ -407,19 +394,11 @@ int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
     zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
 
     pool->onWorkerStart(pool, worker);
-<<<<<<< HEAD
-    zanWarn("worker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, event=%d, pipe_master=%d",
-            worker->worker_id, ServerG.process_type, ServerG.process_pid, worker->pipe_worker, SW_FD_PIPE | SW_EVENT_READ, worker->pipe_master);
-
-    int ret = ServerG.main_reactor->wait(ServerG.main_reactor, NULL);
-    zanWarn("worker wait return, ret=%d", ret);
-=======
     zanDebug("worker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, event=%d, pipe_master=%d",
             worker->worker_id, ServerG.process_type, ServerG.process_pid, worker->pipe_worker, SW_FD_PIPE | SW_EVENT_READ, worker->pipe_master);
 
     int ret = ServerG.main_reactor->wait(ServerG.main_reactor, NULL);
     zanWarn("worker main_reactor wait return, ret=%d", ret);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 
     pool->onWorkerStop(pool, worker);
 
@@ -434,10 +413,6 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
     zanServer     *serv    = ServerG.serv;
     swString      *package = NULL;
     swDgramPacket *header  = NULL;
-
-#ifdef SW_USE_OPENSSL
-    swConnection *conn = NULL;
-#endif
 
 #ifdef SW_USE_OPENSSL
     swConnection *conn = NULL;
@@ -542,10 +517,7 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
                 bzero(&conn->ssl_client_cert, sizeof(conn->ssl_client_cert.str));
             }
 #endif
-<<<<<<< HEAD
-=======
             zanWarn("call factory end: session_id=%d, from_id=%d", task->info.fd, task->info.from_id);
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
             factory->end(factory, task->info.fd);
             break;
 
@@ -620,21 +592,13 @@ int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int session_id)
 
     if (ServerG.main_reactor)
     {
-<<<<<<< HEAD
-        zanWarn("session_id=%d, sendn=%d, write to pipe_worker=%d, dst worker_id=%d, src_worker_id=%d",
-=======
         zanDebug("session_id=%d, sendn=%d, write to pipe_worker=%d, dst worker_id=%d, src_worker_id=%d",
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
                  session_id, (int)sendn, worker->pipe_master, worker->worker_id, ServerWG.worker_id);
         ret = ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_master, ev_data, sendn);
     }
     else
     {
-<<<<<<< HEAD
-        zanWarn("session_id=%d, sendn=%d, write to pipe_master=%d, dst worker_id=%d, src worker_id=%d",
-=======
         zanDebug("session_id=%d, sendn=%d, write to pipe_master=%d, dst worker_id=%d, src worker_id=%d",
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
                 session_id, (int)sendn, worker->pipe_master, worker->worker_id, ServerWG.worker_id);
         ret = swSocket_write_blocking(worker->pipe_master, ev_data, sendn);
     }
@@ -714,17 +678,6 @@ zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker)
     zan_pid_t pid = fork();
     //fork() failed
     if (pid < 0)
-<<<<<<< HEAD
-    {
-        zanError("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
-        return ZAN_ERR;
-    }
-    //worker child processor
-    else if (pid == 0)
-    {
-        int ret = zanWorker_loop(pool, worker);
-        exit(ret);
-=======
     {
         zanError("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
         return ZAN_ERR;
@@ -753,15 +706,9 @@ static int zanWorker_discard_data(zanServer *serv, swEventData *task)
         {
             return ZAN_ERR;
         }
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
     }
-    //parent,add to writer
     else
     {
-<<<<<<< HEAD
-        return pid;
-    }
-=======
         if (!conn->closed)
         {
             return ZAN_ERR;
@@ -776,5 +723,4 @@ swString *zanWorker_get_buffer(int from_id)
 {
     //input buffer
     return ServerWG.buffer_input[from_id];
->>>>>>> f48472527034ccabe0569797a19bc881105510c3
 }
