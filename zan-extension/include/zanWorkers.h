@@ -22,6 +22,7 @@
 #include "zanIpc.h"
 #include "zanFactory.h"
 #include "zanReactor.h"
+#include "swFactory.h"
 
 #ifdef __cplusplus
 extern "C" {
