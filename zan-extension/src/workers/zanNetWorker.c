@@ -19,7 +19,7 @@
 #include "list.h"
 #include "swWork.h"
 #include "swStats.h"
-
+#include "swSignal.h"
 #include "swProtocol/http.h"
 
 #include "zanServer.h"
@@ -34,10 +34,12 @@ int zanPool_networker_alloc(zanProcessPool *pool);
 int zanPool_networker_init(zanProcessPool *pool);
 
 int zan_spawn_net_process(zanProcessPool *pool);
+void zanNetWorker_signal_handler(int signo);
 
 static int zanNetworker_loop(zanProcessPool *pool, zanWorker *worker);
 static void zanNetworker_onStart(zanProcessPool *pool, zanWorker *worker);
 static void zanNetworker_onStop(zanProcessPool *pool, zanWorker *worker);
+static void zanNetWorker_signal_init(void);
 
 static int zanNetworker_tcp_setup(swReactor *reactor, zanServer *serv);
 static int zanNetworker_onPipeReceive(swReactor *reactor, swEvent *event);
@@ -146,15 +148,108 @@ int zanPool_networker_init(zanProcessPool *pool)
     return ZAN_OK;
 }
 
+static void zanNetWorker_signal_init(void)
+{
+    swSignal_set(SIGHUP, NULL, 1, 0);
+    swSignal_set(SIGPIPE, NULL, 1, 0);
+    swSignal_set(SIGUSR1, NULL, 1, 0);
+    swSignal_set(SIGUSR2, NULL, 1, 0);
+    swSignal_set(SIGTERM, zanNetWorker_signal_handler, 1, 0);
+    swSignal_set(SIGALRM, swSystemTimer_signal_handler, 1, 0);
+#ifdef SIGRTMIN
+    swSignal_set(SIGRTMIN, zanNetWorker_signal_handler, 1, 0);
+#endif
+}
+
+void zanNetWorker_signal_handler(int signo)
+{
+    switch (signo)
+    {
+		case SIGTERM:
+			zanWarn("signal SIGTERM coming");
+			if (ServerG.main_reactor)
+			{
+				ServerG.main_reactor->running = 0;
+			}
+			else
+			{
+				ServerG.running = 0;
+			}
+			break;
+		case SIGALRM:
+			zanWarn("signal SIGALRM coming");
+			swSystemTimer_signal_handler(SIGALRM);
+			break;
+		/**
+		 * for test
+	*/
+		case SIGVTALRM:
+			zanWarn("signal SIGVTALRM coming");
+			break;
+		case SIGUSR1:
+			zanWarn("signal SIGUSR1 coming");
+			if (ServerG.main_reactor)
+			{
+				//获取当前进程运行进程的信息
+				uint32_t worker_id = ServerWG.worker_id;	
+				zanWorker worker = ServerGS->net_workers.workers[worker_id];
+				zanWarn("the worker %d get the signo", worker.worker_pid);
+				ServerWG.reload = 1;
+				ServerWG.reload_count = 0;
+
+				//删掉read管道
+				swConnection *socket = swReactor_get(ServerG.main_reactor, worker.pipe_worker);
+				if (socket->events & SW_EVENT_WRITE)
+				{
+					socket->events &= (~SW_EVENT_READ);
+					if (ServerG.main_reactor->set(ServerG.main_reactor, worker.pipe_worker, socket->fdtype | socket->events) < 0)
+					{
+						zanSysError("reactor->set(%d, SW_EVENT_READ) failed.", worker.pipe_worker);
+					}
+				}
+				else
+				{
+					if (ServerG.main_reactor->del(ServerG.main_reactor, worker.pipe_worker) < 0)
+					{
+						zanSysError("reactor->del(%d) failed.", worker.pipe_worker);
+					}
+				}
+			}
+			else
+			{
+				ServerG.running = 0;
+			}
+			break;
+		case SIGUSR2:
+			zanWarn("signal SIGUSR2 coming.");
+			break;
+		default:
+#ifdef SIGRTMIN
+			if (signo == SIGRTMIN)
+			{
+				swServer_reopen_log_file(ServerG.serv);
+			}
+			else
+#endif
+			{
+				zanWarn("recv other signal: %d.", signo);
+			}
+			break;
+    }
+}
+
 static void zanNetworker_onStart(zanProcessPool *pool, zanWorker *worker)
 {
     //zanWarn("networker onStart....");
+	zanNetWorker_signal_init();
+	return;
 }
 
 static void zanNetworker_onStop(zanProcessPool *pool, zanWorker *worker)
 {
     ///TODO:::
     zanWarn("networker onStop, worker_id=%d, process_types=%d", worker->worker_id, worker->process_type);
+	return;
 }
 
 
@@ -209,7 +304,7 @@ static int zanNetworker_loop(zanProcessPool *pool, zanWorker *worker)
     reactor->setHandle(reactor, SW_FD_LISTEN | SW_EVENT_READ, zanReactor_onAccept);
 
     pool->onWorkerStart(pool, worker);
-    zanDebug("networker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, pipe_master=%d",
+    zanWarn("networker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, pipe_master=%d",
               worker->worker_id, ServerG.process_type, ServerG.process_pid, pipe_worker, worker->pipe_master);
 
     struct timeval tmo = {1, 0};
@@ -1053,3 +1148,45 @@ static int zanNetworker_onPacket(swReactor *reactor, swEvent *event)
     return ret;
 }
 
+zan_pid_t zanNetWorker_spawn(zanWorker *worker)
+{
+    pid_t pid = fork();
+    zanProcessPool *pool = worker->pool;
+
+    switch (pid)
+    {
+        //child
+        case 0:
+        {
+            if (pool->onWorkerStart != NULL)
+            {
+                pool->onWorkerStart(pool, worker);
+            }
+
+            int ret_code = pool->main_loop(pool, worker);
+
+            if (pool->onWorkerStop != NULL)
+            {
+                pool->onWorkerStop(pool, worker);
+            }
+            exit(ret_code);
+            break;
+        }
+        case -1:
+            zanSysError("fork failed.");
+            break;
+        //parent
+        default:
+            //remove old process
+            //if (worker->worker_pid)
+            //{
+            //    swHashMap_del_int(pool->map, worker->worker_pid);
+            //}
+            worker->deleted = 0;
+            worker->worker_pid = pid;
+            //insert new process
+            //swHashMap_add_int(pool->map, pid, worker);
+            break;
+    }
+    return pid;
+}

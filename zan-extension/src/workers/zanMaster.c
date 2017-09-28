@@ -309,7 +309,7 @@ int zan_master_process_loop(zanServer *serv)
     }
 
     //init reload worker
-    unsigned int reloadworker_num = ServerG.servSet.worker_num + ServerG.servSet.task_worker_num;
+    unsigned int reloadworker_num = ServerG.servSet.worker_num + ServerG.servSet.task_worker_num + ServerG.servSet.net_worker_num;
     if(reloadworker_num == 0)
     {
         zanError("No worker running");
@@ -402,7 +402,7 @@ int zan_master_process_loop(zanServer *serv)
 					sw_stats_incr(status == 0 ? &ServerStatsG->worker_normal_exit
 								  : &ServerStatsG->worker_abnormal_exit);
 					zanMaster_checkexitstatus(serv, index, pid, status);
-					pid = 0;
+					pid = -1;
 					while (1)
 					{
 						new_pid = zanMaster_spawnworker(&ServerGS->event_workers, &(ServerGS->event_workers.workers[index]));
@@ -420,23 +420,66 @@ int zan_master_process_loop(zanServer *serv)
 				}
 			}
 			
-			zanWorker *exit_worker = NULL;
-			//task worker
-			if(ServerGS->task_workers.map != NULL)
+			if((pid > 0) && (index < ServerG.servSet.worker_num + ServerG.servSet.task_worker_num))
 			{
-				exit_worker = swHashMap_find_int(ServerGS->task_workers.map, pid);
-				if (exit_worker != NULL)
+				for(; index < ServerG.servSet.worker_num + ServerG.servSet.task_worker_num; ++index)
 				{
-					sw_stats_incr(status == 0 ? &ServerStatsG->task_worker_normal_exit
-								  : &ServerStatsG->task_worker_abnormal_exit);
-					zanMaster_checkexitstatus(serv, exit_worker->worker_id, pid, status);
-					if (exit_worker->deleted == 1)  //主动回收不重启
+					if(pid != ServerGS->task_workers.workers[index-ServerGS->task_workers.start_id].worker_pid)
 					{
-						exit_worker->deleted = 0;
+						continue;
 					}
 					else
 					{
-						zanTaskWorker_spawn(exit_worker);
+						sw_stats_incr(status == 0 ? &ServerStatsG->worker_normal_exit
+									  : &ServerStatsG->worker_abnormal_exit);
+						zanMaster_checkexitstatus(serv, index, pid, status);
+						pid = -1;
+						while (1)
+						{
+							new_pid = zanTaskWorker_spawn(&(ServerGS->task_workers.workers[index-ServerGS->task_workers.start_id]));
+							if (new_pid < 0)
+							{
+								usleep(100000);
+								continue;
+							}
+							else
+							{
+								ServerGS->task_workers.workers[index-ServerGS->task_workers.start_id].worker_pid = new_pid;
+								break;
+							}
+						}
+					}
+				}
+			}
+			
+			if((pid > 0) && (index < ServerG.servSet.worker_num + ServerG.servSet.task_worker_num + ServerG.servSet.net_worker_num))
+			{
+				for(; index < ServerGS->net_workers.start_id + ServerG.servSet.net_worker_num; ++index)
+				{
+					if(pid != ServerGS->net_workers.workers[index-ServerGS->net_workers.start_id].worker_pid)
+					{
+						continue;
+					}
+					else
+					{
+						sw_stats_incr(status == 0 ? &ServerStatsG->worker_normal_exit
+									  : &ServerStatsG->worker_abnormal_exit);
+						zanMaster_checkexitstatus(serv, index, pid, status);
+						pid = -1;
+						while (1)
+						{
+							new_pid = zanNetWorker_spawn(&(ServerGS->net_workers.workers[index-ServerGS->net_workers.start_id]));
+							if (new_pid < 0)
+							{
+								usleep(100000);
+								continue;
+							}
+							else
+							{
+								ServerGS->net_workers.workers[index-ServerGS->net_workers.start_id].worker_pid = new_pid;
+								break;
+							}
+						}
 					}
 				}
 			}
