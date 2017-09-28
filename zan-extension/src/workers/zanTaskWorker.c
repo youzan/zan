@@ -18,6 +18,7 @@
 
 #include "swBaseOperator.h"
 #include "swWork.h"
+#include "swSignal.h"
 
 #include "zanGlobalDef.h"
 #include "zanServer.h"
