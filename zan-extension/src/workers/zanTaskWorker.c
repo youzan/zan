@@ -18,6 +18,7 @@
 
 #include "swBaseOperator.h"
 #include "swWork.h"
+#include "swSignal.h"
 
 #include "zanGlobalDef.h"
 #include "zanServer.h"
@@ -412,7 +413,7 @@ void zanTaskWorker_signal_handler(int signo)
 #ifdef SIGRTMIN
 			if (signo == SIGRTMIN)
 			{
-				swServer_reopen_log_file(SwooleG.serv);
+				swServer_reopen_log_file(ServerG.serv);
 			}
 			else
 #endif
