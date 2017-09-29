@@ -335,7 +335,7 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 				*pid = -1;
 				while (1)
 				{
-					if(!(reload_worker->workers[i-reload_worker->start_id].deleted) == 1)
+					if((reload_worker->workers[i-reload_worker->start_id].deleted) == 1)
 					{
 						reload_worker->workers[i-reload_worker->start_id].deleted = 0;
 						reload_worker->workers[i-reload_worker->start_id].worker_pid = -1;
@@ -346,14 +346,17 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 					if(worker_type == 0)
 					{
 						new_pid = zanMaster_spawnworker(reload_worker, &(reload_worker->workers[i-reload_worker->start_id]));
+						zanWarn("worker_pid=%d", new_pid);
 					}
 					else if(worker_type == 1)
 					{
 						new_pid = zanTaskWorker_spawn(&(reload_worker->workers[i-reload_worker->start_id]));
+						zanWarn("task_worker_pid=%d", new_pid);
 					}
 					else
 					{
 						new_pid = zanNetWorker_spawn(&(reload_worker->workers[i-reload_worker->start_id]));
+						zanWarn("net_worker_pid=%d", new_pid);
 					}
 					
 					if (new_pid < 0)
@@ -451,8 +454,13 @@ int zan_master_process_loop(zanServer *serv)
                 }
 
                 reloadworker_index = 0;
-                MasterProcess.reload_event_worker = 0;
-				goto kill_worker;
+                //MasterProcess.reload_event_worker = 0;
+				//result = zanworker_freeprocess(&reloadworker_index, reload_workers, reloadworker_num);
+				//if(result < 0)
+				//{
+				//	zanWarn("kill worker failed");
+				//}
+				//goto kill_worker;
 			}
 			else if(MasterProcess.reload_task_worker == 1)
 			{
@@ -467,8 +475,13 @@ int zan_master_process_loop(zanServer *serv)
 				memcpy(reload_workers, ServerGS->task_workers.workers, sizeof(zanWorker) * ServerG.servSet.task_worker_num);
                 reloadworker_num = SwooleG.task_worker_num;
                 reloadworker_index = 0;
-                MasterProcess.reload_task_worker = 0;
-				goto kill_worker;
+                //MasterProcess.reload_task_worker = 0;
+				//goto kill_worker;
+				//result = zanworker_freeprocess(&reloadworker_index, reload_workers, reloadworker_num);
+				//if(result < 0)
+				//{
+				//	zanWarn("kill task worker failed");
+				//}
 			}
 			else
 			{
@@ -503,25 +516,14 @@ int zan_master_process_loop(zanServer *serv)
 			break;
 		}	
 		//zanDebug("wait success, child pid=%d exit, status=%d", pid, status);
-kill_worker:
-        if (MasterProcess.reloading == 1)
-        {
-            //reload finish
-            if (reloadworker_index >= reloadworker_num)
-            {
-                MasterProcess.reloading = 0;
-                reloadworker_index = 0;
-                continue;
-            }
-            result = swKill(reload_workers[reloadworker_index].worker_pid, SIGTERM);
-            if (result < 0)
-            {
-                zanSysError("kill(%d, SIGTERM) failed.", reload_workers[reloadworker_index].worker_pid);
-            }
-			result = -1;
-            ++reloadworker_index;
-            ServerStatsG->last_reload = time(NULL);
-        }
+		if((MasterProcess.reload_event_worker == 1 )|| (MasterProcess.reload_task_worker == 1))
+		{
+			result = zanworker_freeprocess(&reloadworker_index, reload_workers, reloadworker_num);
+			if(result < 0)
+			{
+				zanWarn("kill workers failed");
+			}
+		}
     }
 
     sw_free(reload_workers);
@@ -596,6 +598,8 @@ int zanworker_freeprocess(int *reloadworker_index, zanWorker *reload_workers, in
 			MasterProcess.reloading = 0;
 			index = 0;
 			*reloadworker_index = index;
+			MasterProcess.reload_event_worker = 0; 
+			MasterProcess.reload_task_worker = 0;
 			return ZAN_OK;
 		}
 		

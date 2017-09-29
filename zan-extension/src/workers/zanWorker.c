@@ -19,6 +19,7 @@
 #include "swWork.h"
 #include "swStats.h"
 #include "swSignal.h"
+#include "swBaseOperator.h"
 
 #include "zanGlobalDef.h"
 #include "zanSystem.h"
