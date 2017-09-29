@@ -38,8 +38,10 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task);
 static int zanWorker_loop(zanProcessPool *pool, zanWorker *worker);
 static int zanWorker_onPipeRead(swReactor *reactor, swEvent *event);
 static int zanWorker_discard_data(zanServer *serv, swEventData *task);
+static void zanPool_worker_free(zanProcessPool *pool);
 void zanWorker_signal_handler(int signo);
 void zanWorker_signal_init(void);
+
 
 int zanWorker_init(zanWorker *worker)
 {
@@ -723,4 +725,66 @@ swString *zanWorker_get_buffer(int from_id)
 {
     //input buffer
     return ServerWG.buffer_input[from_id];
+}
+
+static void zanPool_worker_free(zanProcessPool *pool)
+{
+    int index = 0;
+    zanPipe *_pipe = NULL;
+
+    if (ZAN_UNSOCK == pool->workers[0].pipe_object->pipe_type)
+    {
+        for (index = 0; index < ServerG.servSet.worker_num; ++index)
+        {
+            _pipe = &pool->pipes[index];
+            _pipe->close(_pipe);
+        }
+        zan_free(pool->pipes);
+    }
+    else
+    {
+        pool->queue->close(pool->queue);
+        zan_free(pool->queue);
+    }
+
+    if (pool->map)
+    {
+        swHashMap_free(pool->map);
+    }
+
+    for (index = 0; index < ServerG.servSet.worker_num; ++index)
+    {
+        //TODO:::???
+        zanWorker_free(&pool->workers[index]);
+    }
+    zan_shm_free(pool->workers);
+}
+
+void zan_worker_shutdown(zanProcessPool *pool)
+{
+    int index  = 0;
+    int status = 0;
+    zanWorker *worker = NULL;
+    ServerG.running = 0;
+
+    for (index = 0; index < ServerG.servSet.worker_num; ++index)
+    {
+        worker = &pool->workers[index];
+		if(worker->worker_pid == -1)
+		{
+			zanWarn("this net worker is delete,worker_id=%d", worker->worker_id);
+			continue;
+		}
+		
+        if (swKill(worker->worker_pid, SIGTERM) < 0)
+        {
+            zanError("kill(%d) failed.", worker->worker_pid);
+            continue;
+        }
+        if (swWaitpid(worker->worker_pid, &status, 0) < 0)
+        {
+            zanError("waitpid(%d) failed.", worker->worker_pid);
+        }
+    }
+    zanPool_worker_free(pool);
 }

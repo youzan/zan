@@ -40,6 +40,7 @@ static int zanNetworker_loop(zanProcessPool *pool, zanWorker *worker);
 static void zanNetworker_onStart(zanProcessPool *pool, zanWorker *worker);
 static void zanNetworker_onStop(zanProcessPool *pool, zanWorker *worker);
 static void zanNetWorker_signal_init(void);
+static void zanPool_networker_free(zanProcessPool *pool);
 
 static int zanNetworker_tcp_setup(swReactor *reactor, zanServer *serv);
 static int zanNetworker_onPipeReceive(swReactor *reactor, swEvent *event);
@@ -1189,4 +1190,66 @@ zan_pid_t zanNetWorker_spawn(zanWorker *worker)
             break;
     }
     return pid;
+}
+
+static void zanPool_networker_free(zanProcessPool *pool)
+{
+    int index = 0;
+    zanPipe *_pipe = NULL;
+
+    if (ZAN_UNSOCK == pool->workers[0].pipe_object->pipe_type)
+    {
+        for (index = 0; index < ServerG.servSet.net_worker_num; index++)
+        {
+            _pipe = &pool->pipes[index];
+            _pipe->close(_pipe);
+        }
+        zan_free(pool->pipes);
+    }
+    else
+    {
+        pool->queue->close(pool->queue);
+        zan_free(pool->queue);
+    }
+
+    if (pool->map)
+    {
+        swHashMap_free(pool->map);
+    }
+
+    for (index = 0; index < ServerG.servSet.net_worker_num; index++)
+    {
+        //TODO:::???
+        zanWorker_free(&pool->workers[index]);
+    }
+    zan_shm_free(pool->workers);
+}
+
+void zan_networker_shutdown(zanProcessPool *pool)
+{
+    int index  = 0;
+    int status = 0;
+    zanWorker *worker = NULL;
+    ServerG.running = 0;
+
+    for (index = 0; index < ServerG.servSet.net_worker_num; ++index)
+    {
+        worker = &pool->workers[index];
+		if(worker->worker_pid == -1)
+		{
+			zanWarn("this net worker is delete,worker_id=%d", worker->worker_id);
+			continue;
+		}
+		
+        if (swKill(worker->worker_pid, SIGTERM) < 0)
+        {
+            zanError("kill(%d) failed.", worker->worker_pid);
+            continue;
+        }
+        if (swWaitpid(worker->worker_pid, &status, 0) < 0)
+        {
+            zanError("waitpid(%d) failed.", worker->worker_pid);
+        }
+    }
+    zanPool_networker_free(pool);
 }

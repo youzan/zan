@@ -143,7 +143,7 @@ typedef struct _zanUserWorker_node
 int zanWorker_init(zanWorker *worker);
 void zanWorker_free(zanWorker *worker);
 zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker);
-
+void zan_worker_shutdown(zanProcessPool *pool);
 
 //networker<--->worker<--->task_worker
 int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int n, int flag);
@@ -152,6 +152,7 @@ int zanWorker_send2networker(swEventData *ev_data, size_t sendn, int fd);
 int zanNetworker_send2worker(void *data, int len, uint16_t target_worker_id);
 int zanNetworker_close_connection(swReactor *reactor, int fd);
 zan_pid_t zanNetWorker_spawn(zanWorker *worker);
+void zan_networker_shutdown(zanProcessPool *pool);
 
 int zanNetworker_onClose(swReactor *reactor, swEvent *event);
 
