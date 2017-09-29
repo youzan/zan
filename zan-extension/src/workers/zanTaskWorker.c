@@ -147,7 +147,7 @@ static void zanPool_taskworker_free(zanProcessPool *pool)
 
     if (ZAN_IPC_UNSOCK == ServerG.servSet.task_ipc_mode)
     {
-        for (index = 0; index < ServerG.servSet.worker_num; index++)
+        for (index = 0; index < ServerG.servSet.task_worker_num; index++)
         {
             _pipe = &pool->pipes[index];
             _pipe->close(_pipe);
@@ -165,7 +165,7 @@ static void zanPool_taskworker_free(zanProcessPool *pool)
         swHashMap_free(pool->map);
     }
 
-    for (index = 0; index < ServerG.servSet.worker_num; index++)
+    for (index = 0; index < ServerG.servSet.task_worker_num; ++index)
     {
         //TODO:::???
         zanWorker_free(&pool->workers[index]);
@@ -175,26 +175,30 @@ static void zanPool_taskworker_free(zanProcessPool *pool)
 
 void zan_processpool_shutdown(zanProcessPool *pool)
 {
-#if 0
     int index  = 0;
     int status = 0;
     zanWorker *worker = NULL;
     ServerG.running = 0;
 
-    for (index = 0; index < pool->run_worker_num; index++)
+    for (index = 0; index < ServerG.servSet.task_worker_num; ++index)
     {
         worker = &pool->workers[index];
-        if (swKill(worker->pid, SIGTERM) < 0)
+		if(worker->worker_pid == -1)
+		{
+			zanWarn("this worker is delete,worker_id=%d", worker->worker_id);
+			continue;
+		}
+		
+        if (swKill(worker->worker_pid, SIGTERM) < 0)
         {
-            zanError("kill(%d) failed.", worker->pid);
+            zanError("kill(%d) failed.", worker->worker_pid);
             continue;
         }
-        if (swWaitpid(worker->pid, &status, 0) < 0)
+        if (swWaitpid(worker->worker_pid, &status, 0) < 0)
         {
-            zanError("waitpid(%d) failed.", worker->pid);
+            zanError("waitpid(%d) failed.", worker->worker_pid);
         }
     }
-#endif
     zanPool_taskworker_free(pool);
 }
 
