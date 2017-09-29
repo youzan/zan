@@ -335,6 +335,14 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 				*pid = -1;
 				while (1)
 				{
+					if(!(reload_worker->workers[i-reload_worker->start_id].deleted) == 1)
+					{
+						reload_worker->workers[i-reload_worker->start_id].deleted = 0;
+						reload_worker->workers[i-reload_worker->start_id].worker_pid = -1;
+						
+						break;
+					}
+					
 					if(worker_type == 0)
 					{
 						new_pid = zanMaster_spawnworker(reload_worker, &(reload_worker->workers[i-reload_worker->start_id]));
@@ -426,8 +434,6 @@ int zan_master_process_loop(zanServer *serv)
         if (pid < 0)
         {
             zanWarn("wait error, pid=%d", pid);
-            //sleep(3);
-            //continue;
 			if (MasterProcess.reloading == 0)
             {
                 zanTrace("wait() failed. Error: %s [%d]", strerror(errno), errno);
@@ -466,6 +472,7 @@ int zan_master_process_loop(zanServer *serv)
 			}
 			else
 			{
+				zanWarn("signal is not right");
 				break;
 			}
         }
@@ -474,11 +481,12 @@ int zan_master_process_loop(zanServer *serv)
 		{
 			index = 0;
 			new_pid = zanrelaod_worker(&index, status, 0, serv, &pid, &(ServerGS->event_workers));
+			//reload task_worker
 			if(pid > 0)
 			{
 				new_pid = zanrelaod_worker(&index, status, 1, serv, &pid, &(ServerGS->task_workers));
 			}
-			
+			//reload net_worker
 			if(pid > 0)
 			{
 				new_pid = zanrelaod_worker(&index, status, 2, serv, &pid, &(ServerGS->net_workers));
@@ -518,21 +526,11 @@ kill_worker:
 
     sw_free(reload_workers);
 
-    //kill all child process
-    for (index = 0; index < ServerG.servSet.worker_num; ++index)
-    {
-        zanTrace("[Master]kill worker processor");
-        kill(ServerGS->event_workers.workers[index].worker_pid, SIGTERM);
-    }
-
-    //wait child process
-    for (index = 0; index < ServerG.servSet.worker_num; index++)
-    {
-        if (swWaitpid(ServerGS->event_workers.workers[index].worker_pid, &status, 0) < 0)
-        {
-            zanSysError("waitpid(%d) failed.", ServerGS->event_workers.workers[index].worker_pid);
-        }
-    }
+    //kill all child process	
+	if(ServerG.servSet.worker_num > 0)
+	{
+		zan_worker_shutdown(&ServerGS->event_workers);
+	}
 
     //kill and wait task process
     if (ServerG.servSet.task_worker_num > 0)
@@ -540,6 +538,12 @@ kill_worker:
         zan_processpool_shutdown(&ServerGS->task_workers);
     }
 
+	//kill and wait net process
+	if(ServerG.servSet.net_worker_num > 0)
+	{
+		zan_networker_shutdown(&ServerGS->net_workers);
+	}
+	
     if (serv->user_worker_map)
     {
         zanWorker* user_worker = NULL;
