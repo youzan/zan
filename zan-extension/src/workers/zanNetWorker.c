@@ -20,6 +20,7 @@
 #include "swWork.h"
 #include "swStats.h"
 #include "swSignal.h"
+#include "swBaseOperator.h"
 #include "swProtocol/http.h"
 
 #include "zanServer.h"
