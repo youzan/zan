@@ -192,11 +192,12 @@ static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *ev
     {
         task.data.info.fd = event->fd;
         task.data.info.from_id = event->from_id;
+        task.data.info.networker_id = ServerWG.worker_id;
         task.data.info.len = n;
         task.data.info.type = SW_EVENT_TCP;
         task.target_worker_id = -1;
 
-        zanDebug("fd=%d, from_id=%d, dispatch", event->fd, event->from_id);
+        zanDebug("dispatch: fd=%d, from_id=%d, reactor_id=%d, networker_id=%d", event->fd, event->from_id, reactor->id, ServerWG.worker_id);
         ret = serv->factory.dispatch(&serv->factory, &task);
         return ret;
     }
@@ -211,7 +212,7 @@ static int swPort_onRead_check_length(swReactor *reactor, swListenPort *port, sw
     swConnection *conn = event->socket;
     swProtocol *protocol = &port->protocol;
 
-    swString *buffer = zanServer_get_buffer(serv, event->from_id, event->fd);
+    swString *buffer = zanServer_get_buffer(serv, ServerWG.worker_id, event->fd);
     if (!buffer)
     {
         return ZAN_ERR;
@@ -460,7 +461,7 @@ static int swPort_onRead_check_eof(swReactor *reactor, swListenPort *port, swEve
     swProtocol *protocol = &port->protocol;
     zanServer *serv = ServerG.serv;
 
-    swString *buffer = zanServer_get_buffer(serv, event->from_id, event->fd);
+    swString *buffer = zanServer_get_buffer(serv, ServerWG.worker_id, event->fd);
     if (!buffer)
     {
         zanWarn("get buffer error, fd=%d, from_id=%d", event->fd, event->from_id);

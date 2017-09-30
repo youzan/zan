@@ -55,15 +55,15 @@ int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, k
     pool->map = swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, NULL);
     if (pool->map == NULL)
     {
-    	SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
+        SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
         return SW_ERR;
     }
 
     pool->queue = sw_malloc(sizeof(swMsgQueue));
     if (pool->queue == NULL)
     {
-    	swHashMap_free(pool->map);
-    	SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
+        swHashMap_free(pool->map);
+        SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
         swSysError("malloc[2] failed.");
         return SW_ERR;
     }
@@ -73,9 +73,9 @@ int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, k
     {
         if (swMsgQueue_create(pool->queue, 1, pool->msgqueue_key, 1) < 0)
         {
-        	sw_free(pool->queue);
-        	swHashMap_free(pool->map);
-        	SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
+            sw_free(pool->queue);
+            swHashMap_free(pool->map);
+            SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
             return SW_ERR;
         }
     }
@@ -84,10 +84,10 @@ int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, k
         pool->pipes = sw_calloc(worker_num, sizeof(swPipe));
         if (pool->pipes == NULL)
         {
-			sw_free(pool->pipes);
-			sw_free(pool->queue);
-			swHashMap_free(pool->map);
-			SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
+            sw_free(pool->pipes);
+            sw_free(pool->queue);
+            swHashMap_free(pool->map);
+            SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
             swFatalError("malloc[2] failed.");
             return SW_ERR;
         }
@@ -99,10 +99,10 @@ int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, k
             pipe = &pool->pipes[index];
             if (swPipeUnsock_create(pipe, 1, SOCK_DGRAM) < 0)
             {
-            	sw_free(pool->pipes);
-            	sw_free(pool->queue);
-            	swHashMap_free(pool->map);
-            	SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
+                sw_free(pool->pipes);
+                sw_free(pool->queue);
+                swHashMap_free(pool->map);
+                SwooleG.memory_pool->free(SwooleG.memory_pool,pool->workers);
                 return SW_ERR;
             }
 
@@ -179,11 +179,11 @@ int swProcessPool_dispatch(swProcessPool *pool, swEventData *data, int *dst_work
 
     if (ret < 0)
     {
-    	swNotice("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
+        swNotice("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
     }
     else
     {
-    	sw_stats_incr(&worker->tasking_num);
+        sw_stats_incr(&worker->tasking_num);
     }
 
     return ret;
@@ -209,7 +209,7 @@ int swProcessPool_dispatch_blocking(swProcessPool *pool, swEventData *data, int 
 
     if (ret < 0)
     {
-    	swNotice("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
+        swNotice("send %d bytes to worker#%d failed.", sendn, *dst_worker_id);
     }
     else
     {
@@ -251,26 +251,26 @@ pid_t swProcessPool_spawn(swWorker *worker)
     {
     //child
     case 0:
-    	{
-    		if (pool->onWorkerStart != NULL)
-			{
-				pool->onWorkerStart(pool, worker->id);
-			}
+        {
+            if (pool->onWorkerStart != NULL)
+            {
+                pool->onWorkerStart(pool, worker->id);
+            }
 
-			/**
-			 * Process main loop
-			 */
-			int ret_code = pool->main_loop(pool, worker);
-			/**
-			 * Process stop
-			 */
-			if (pool->onWorkerStop != NULL)
-			{
-				pool->onWorkerStop(pool, worker->id);
-			}
-			exit(ret_code);
-			break;
-    	}
+            /**
+             * Process main loop
+             */
+            int ret_code = pool->main_loop(pool, worker);
+            /**
+             * Process stop
+             */
+            if (pool->onWorkerStop != NULL)
+            {
+                pool->onWorkerStop(pool, worker->id);
+            }
+            exit(ret_code);
+            break;
+        }
     case -1:
         swSysError("fork failed.");
         break;
@@ -468,7 +468,7 @@ static void swProcessPool_free(swProcessPool *pool)
 
     if (!pool->use_msgqueue)
     {
-    	int index = 0;
+        int index = 0;
         for (index = 0; index < pool->worker_num; index++)
         {
             _pipe = &pool->pipes[index];

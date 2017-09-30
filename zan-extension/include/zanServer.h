@@ -58,14 +58,14 @@ zanWorker* zanServer_get_worker(zanServer *serv, uint16_t worker_id);
 swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port);
 
 int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId);
-int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length);
+int zanServer_tcp_send(zanServer *serv, int session_id, void *data, uint32_t length);
 
 
 uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint32_t conn_fd);
 
 void zanServer_store_listen_socket(zanServer *serv, int networker_id);
 
-void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id);
+void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id, int networker_id);
 swConnection *zanServer_verify_connection(zanServer *serv, int session_id);
 
 int zanServer_getSocket(zanServer *serv, int port);
@@ -86,6 +86,7 @@ int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len
 swString *zanServer_get_buffer(zanServer *serv, int networker_id, int fd);
 
 int zanServer_adduserworker(zanServer *serv, zanWorker *worker);
+int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId);
 
 #ifdef __cplusplus
 }

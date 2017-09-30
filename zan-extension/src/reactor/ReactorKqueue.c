@@ -282,14 +282,14 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
 
     if (reactor->timeout_msec == 0)
     {
-    	reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
+        reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
     }
 
     while (reactor->running > 0)
     {
         if (reactor->timeout_msec > 0 || reactor->defer_callback_list)
         {
-	    	int32_t timeout_msec = reactor->defer_callback_list? 1:reactor->timeout_msec;
+            int32_t timeout_msec = reactor->defer_callback_list? 1:reactor->timeout_msec;
             t.tv_sec = timeout_msec / 1000;
             t.tv_nsec = (timeout_msec - t.tv_sec * 1000) * 1000;
             t_ptr = &t;

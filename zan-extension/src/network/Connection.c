@@ -37,11 +37,11 @@
 #endif
 
 typedef struct {
-	char *filename;
-	uint16_t name_len;
-	int fd;
-	off_t filesize;
-	off_t offset;
+    char *filename;
+    uint16_t name_len;
+    int fd;
+    off_t filesize;
+    off_t offset;
 } swTask_sendfile;
 
 
@@ -70,13 +70,13 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
          */
         if (swSocket_tcp_nopush(conn->fd, 1) == -1)
         {
-        	swSysError("swSocket_tcp_nopush() failed.");
+            swSysError("swSocket_tcp_nopush() failed.");
         }
     }
 #endif
 
     int sendn = (task->filesize - task->offset > SW_SENDFILE_TRUNK) ?
-    			SW_SENDFILE_TRUNK : task->filesize - task->offset;
+                SW_SENDFILE_TRUNK : task->filesize - task->offset;
     ret = swoole_sendfile(conn->fd, task->fd, &task->offset, sendn);
     swTrace("ret=%d|task->offset=%lld|sendn=%d|filesize=%lld", ret, (long long int)(task->offset), sendn, (long long int)(task->filesize));
 
@@ -109,7 +109,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
              */
             if (swSocket_tcp_nopush(conn->fd, 0) == -1)
             {
-            	swSysError("swSocket_tcp_nopush() failed.");
+                swSysError("swSocket_tcp_nopush() failed.");
             }
 
             /**
@@ -120,7 +120,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
                 int value = 1;
                 if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (const void *) &value, sizeof(int)) == -1)
                 {
-                	swSysError("setsockopt(TCP_NODELAY) failed.");
+                    swSysError("setsockopt(TCP_NODELAY) failed.");
                 }
             }
         }
@@ -152,7 +152,7 @@ int swConnection_buffer_send(swConnection *conn)
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-        	swSysError("send to fd[%d] failed.", conn->fd);
+            swSysError("send to fd[%d] failed.", conn->fd);
             break;
         case SW_CLOSE:
             conn->close_wait = 1;
@@ -197,7 +197,7 @@ int swConnection_get_ip(swConnection *conn,char* addip,int len)
         return SW_ERR;
     }
 
-    const char	*ipstr = NULL;
+    const char  *ipstr = NULL;
     bzero(addip,len);
     if (swSocket_is_NET(conn->socket_type))
     {
@@ -283,7 +283,7 @@ int swConnection_sendfile_sync(swConnection *conn, char *filename, double timeou
 {
     if (conn->closed)
     {
-        return SW_ERR;        
+        return SW_ERR;
     }
 
     int timeout_ms = timeout < 0 ? -1 : timeout * 1000;
@@ -291,7 +291,7 @@ int swConnection_sendfile_sync(swConnection *conn, char *filename, double timeou
     int file_fd = open(filename, O_RDONLY);
     if (file_fd < 0)
     {
-    	swSysError("open(%s) failed.", filename);
+        swSysError("open(%s) failed.", filename);
         return SW_ERR;
     }
 

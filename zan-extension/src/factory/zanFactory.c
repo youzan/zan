@@ -116,14 +116,11 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
     uint16_t to_worker_id = -1;
     zanServer *serv = ServerG.serv;
 
-    int fd = task->data.info.fd;
-    send_len = sizeof(task->data.info) + task->data.info.len;
-
     //1. get target_worker_id
     if (task->target_worker_id < 0)
     {
-        schedule_key = task->data.info.fd;
-        to_worker_id = zanServer_worker_schedule(serv, task->data.info.from_id, schedule_key);
+        schedule_key = task->data.info.fd;  //accept fd
+        to_worker_id = zanServer_worker_schedule(serv, task->data.info.networker_id, schedule_key);
     }
     else
     {
@@ -131,10 +128,9 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
     }
 
     //2. send data to worker
-    //todo:::
     if (swEventData_is_stream(task->data.info.type))
     {
-        swConnection *conn = zanServer_get_connection(serv, task->data.info.from_id, task->data.info.fd);
+        swConnection *conn = zanServer_get_connection(serv, task->data.info.networker_id, task->data.info.fd);
         if (conn == NULL || conn->active == 0)
         {
             zanWarn("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
@@ -145,14 +141,14 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
         {
             if (!(task->data.info.type == SW_EVENT_CLOSE && conn->close_force))
             {
-                zanWarn("dispatch[type=%d] failed, connection#%d[session_id=%d] is closed by server.",
-                        task->data.info.type, task->data.info.fd, conn->session_id);
+                zanTrace("networker_id=%d, dispatch[type=%d] failed, connection#%d:[session_id=%d] is closed by server.",
+                         task->data.info.networker_id, task->data.info.type, task->data.info.fd, conn->session_id);
                 return ZAN_OK;
             }
             else
             {
-                ///TODO:::??????
-                zanWarn("error: type=%d, fd=%d, session_id=%d", task->data.info.type, task->data.info.fd, conn->session_id);
+                zanWarn("error: networker_id=%d, task_type=%d, connection_fd=%d, session_id=%d",
+                         task->data.info.networker_id, task->data.info.type, task->data.info.fd, conn->session_id);
                 return ZAN_ERR;
             }
         }
@@ -160,26 +156,26 @@ static int zanFactory_dispatch(zanFactory *factory, swDispatchData *task)
         //converted fd to session_id
         task->data.info.fd = conn->session_id;
         task->data.info.from_fd = conn->from_fd;
-        zanDebug("send2worker: fd=%d, session_id=%d, from_fd=%d, len=%d, worker_id=%d", fd, conn->session_id, conn->from_fd, send_len, to_worker_id);
+        zanDebug("send2worker: connection_fd=%d, session_id=%d, from_fd=%d, len=%d, worker_id=%d",
+                  task->data.info.fd, conn->session_id, conn->from_fd, send_len, to_worker_id);
     }
 
+    send_len = sizeof(task->data.info) + task->data.info.len;
     return zanNetworker_send2worker((void *) &(task->data), send_len, to_worker_id);
 }
 
 //send data to client
 static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 {
-    int ret, sendn, session_id;
-    zanServer *serv = (zanServer *)ServerG.serv;
-
     if (!factory || !resp)
     {
         zanError("factory=%p or resp=%p is null", factory, resp);
         return ZAN_ERR;
     }
 
-    //todo:::
-    session_id = resp->info.fd;
+    zanServer *serv = (zanServer *)ServerG.serv;
+
+    int session_id = resp->info.fd;
     swConnection *conn = zanServer_verify_connection(serv, session_id);
     if (!conn)
     {
@@ -203,12 +199,9 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
     ev_data.info.fd   = session_id;
     ev_data.info.type = resp->info.type;
 
-    ////TODO:::
     zanWorker *worker  = zanServer_get_worker(serv, ServerWG.worker_id);
 
-    /**
-     * Big response, use shared memory
-     */
+    //Big response, use shared memory
     if (resp->length > 0)
     {
         if (worker->send_shm == NULL)
@@ -239,11 +232,14 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
         ev_data.info.from_fd = SW_RESPONSE_SMALL;
     }
 
-    ev_data.info.from_id = conn->from_id;
-    sendn = ev_data.info.len + sizeof(resp->info);
-    zanTrace("[Worker] send: sendn=%d|type=%d|content=%s", sendn, resp->info.type, resp->data);
+    int sendn = ev_data.info.len + sizeof(resp->info);
 
-    ret = zanWorker_send2networker(&ev_data, sendn, session_id);
+    //ev_data.info.from_id = conn->from_id;
+    ev_data.info.from_id = -1; ////////////////TODO:::no
+    zanTrace("[Worker] send: worker_id=%d, session_id=%d, sendn=%d|type=%d|content=%s",
+             ServerWG.worker_id, session_id, sendn, resp->info.type, resp->data);
+
+    int ret = zanWorker_send2networker(&ev_data, sendn, session_id);
     if (ret < 0)
     {
         zanError("sendto to reactor failed.");
@@ -297,7 +293,7 @@ static int zanFactory_end(zanFactory *factory, int session_id)
             info.fd = session_id;
             info.from_id =  conn->from_id;
             info.from_fd =  conn->from_fd;
-            //info.from_net_id = conn->  ///TODO:::
+            info.networker_id = conn->networker_id;
             serv->onClose(serv, &info);
         }
         conn->closing = 0;

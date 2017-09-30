@@ -128,7 +128,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_swoole_server_send_oo, 0, 0, 2)
     ZEND_ARG_INFO(0, conn_fd)
     ZEND_ARG_INFO(0, send_data)
-    ZEND_ARG_INFO(0, from_id)
+    ZEND_ARG_INFO(0, extra_data)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_swoole_server_exist, 0, 0, 1)
@@ -220,9 +220,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_swoole_server_addProcess_oo, 0, 0, 1)
     ZEND_ARG_OBJ_INFO(0, process, swoole_process, 0)
 ZEND_END_ARG_INFO()
-
-//ZEND_BEGIN_ARG_INFO_EX(arginfo_swoole_server_getWorkerType, 0, 0, 0)
-//ZEND_END_ARG_INFO()
 
 static zend_function_entry swoole_server_methods[] = {
     PHP_ME(swoole_server, __construct, arginfo_swoole_server__construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
@@ -331,22 +328,13 @@ void php_swoole_get_recv_data(zval *zdata, swEventData *req, char *header, uint3
     char *data_ptr = NULL;
     int data_len = 0;
 
-#ifdef SW_USE_RINGBUFFER
-    swPackage package;
-    if (req->info.type == SW_EVENT_PACKAGE)
-    {
-        memcpy(&package, req->data, sizeof (package));
-        data_ptr = package.data;
-        data_len = package.length;
-    }
-#else
     if (req->info.type == SW_EVENT_PACKAGE_END)
     {
+        ///////TODO:::::::::
         swString *worker_buffer = swWorker_get_buffer(SwooleG.serv, req->info.from_id);
         data_ptr = worker_buffer->str;
         data_len = worker_buffer->length;
     }
-#endif
     else
     {
         data_ptr = req->data;
@@ -584,11 +572,6 @@ static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    //让请求可以开始接受
-    //if (swServer_tcp_deny_exit(serv, worker_id) < 0) {
-    //    swWarn("swServer_tcp_deny_exit failed, %d.", worker_id);
-    //}
-
     zval *zworker_id = NULL;
     SW_MAKE_STD_ZVAL(zworker_id);
     ZVAL_LONG(zworker_id, worker_id);
@@ -597,8 +580,6 @@ static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
     zval **args[2];
     args[0] = &zserv;
     args[1] = &zworker_id;
-
-    //zanWarn("worker_id=%d, process_type=%d, process_pid=%d", worker_id, ServerG.process_type, ServerG.process_pid);
 
     /// update Worker ID property
     zend_update_property(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_id"), zworker_id TSRMLS_CC);
@@ -620,6 +601,11 @@ static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
     {
         sw_zval_ptr_dtor(&zworker_id);
         return;
+    }
+
+    //让请求可以开始接受
+    if (zanServer_tcp_deny_exit(serv, worker_id) < 0) {
+        zanWarn("zanServer_tcp_deny_exit failed, %d.", worker_id);
     }
 
     zval *retval = NULL;
@@ -704,7 +690,6 @@ static void php_swoole_onWorkerStop(zanServer *serv, int worker_id)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    ////TODO:::????
     if (ServerWG.shutdown)
     {
         zanWarn("ServerWG.shutdow=%d", ServerWG.shutdown);
@@ -758,7 +743,7 @@ static void php_swoole_onUserWorkerStart(zanServer *serv, zanWorker *worker)
     //zend_update_property_long(swoole_process_class_entry_ptr, object, ZEND_STRL("worker_id"), worker->worker_id TSRMLS_CC);
 
     ///TODO:::
-    ///php_swoole_process_start(worker, object TSRMLS_CC);
+    /////php_swoole_process_start(worker, object TSRMLS_CC);
 }
 
 static int php_swoole_onTask(zanServer *serv, swEventData *req)
@@ -782,7 +767,7 @@ static int php_swoole_onTask(zanServer *serv, swEventData *req)
     SW_MAKE_STD_ZVAL(zfrom_id);
     ZVAL_LONG(zfrom_id, (long) req->info.from_id);
 
-    zanWarn("type=%d, worker_id=%d", ServerG.process_type, ServerWG.worker_id);
+    zanDebug("type=%d, worker_id=%d", ServerG.process_type, ServerWG.worker_id);
     zval* zdata = php_swoole_get_task_result(req TSRMLS_CC);
 
     zval **args[4];
@@ -898,7 +883,7 @@ static zval* php_swoole_get_task_result(swEventData *task_result TSRMLS_DC)
         SW_ALLOC_INIT_ZVAL(result_unserialized_data);
 
         if (sw_php_var_unserialize(&result_unserialized_data, (const unsigned char **) &result_data_str,
-                (const unsigned char *) (result_data_str + result_data_len), &var_hash TSRMLS_CC))
+            (const unsigned char *) (result_data_str + result_data_len), &var_hash TSRMLS_CC))
         {
             result_data = result_unserialized_data;
         }
@@ -966,10 +951,12 @@ static int php_swoole_task_finish(zanServer *serv, zval *data TSRMLS_DC)
 static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_DC)
 {
     buf->info.type = SW_EVENT_TASK;
+
     //task_id
     buf->info.fd = php_swoole_task_id++;
+
     //source worker_id
-    buf->info.from_id = ServerWG.worker_id;
+    buf->info.from_id  = ServerWG.worker_id;
     swTask_type(buf) |= SW_TASK_NONBLOCK;
 
     char *task_data_str = NULL;
@@ -1003,11 +990,11 @@ static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_DC)
 
     //write to file
     if (task_data_len >= SW_IPC_MAX_SIZE - sizeof(buf->info) &&
-            swTaskWorker_large_pack(buf, task_data_str, task_data_len) < 0)
+        swTaskWorker_large_pack(buf, task_data_str, task_data_len) < 0)
     {
         smart_str_free(&serialized_data);
-        swWarn("large task pack failed()");
-        return SW_ERR;
+        zanWarn("large task pack failed(), task_data_len=%d", task_data_len);
+        return ZAN_ERR;
     }
     else
     {
@@ -1016,7 +1003,7 @@ static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_DC)
     }
 
     smart_str_free(&serialized_data);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void php_swoole_onConnect(zanServer *serv, swDataHead *info)
@@ -1198,7 +1185,7 @@ static void php_swoole_onPipeMessage(zanServer *serv, swEventData *req)
     if (sw_call_user_function_ex(EG(function_table), NULL, callback,
                                  &retval, 3, args, 0, NULL TSRMLS_CC) == FAILURE)
     {
-        swWarn("swoole_server: onPipeMessage handler error");
+        zanWarn("swoole_server: onPipeMessage handler error");
     }
 
     if (EG(exception))
@@ -1219,7 +1206,7 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.from_net_id, SW_SERVER_CB_onPacket);
+    zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.networker_id, SW_SERVER_CB_onPacket);
     if (!callback || ZVAL_IS_NULL(callback))
     {
         swoole_php_fatal_error(E_WARNING, "onPacket callback is null.");
@@ -1271,7 +1258,7 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
     zval *retval = NULL;
     if (sw_call_user_function_ex(EG(function_table), NULL, callback, &retval, 3, args, 0, NULL TSRMLS_CC) == FAILURE)
     {
-        swWarn("swoole_server: onPacket handler error");
+        zanWarn("swoole_server: onPacket handler error");
     }
     if (EG(exception))
     {
@@ -1286,14 +1273,14 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
         sw_zval_ptr_dtor(&retval);
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void php_swoole_onClose(zanServer *serv, swDataHead *info)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    zval *callback = php_swoole_server_get_callback(serv, info->from_fd, info->from_id, SW_SERVER_CB_onClose);
+    zval *callback = php_swoole_server_get_callback(serv, info->from_fd, info->networker_id, SW_SERVER_CB_onClose);
     if (!callback || ZVAL_IS_NULL(callback))
     {
         return;
@@ -1350,7 +1337,7 @@ static sw_inline int php_swoole_check_task_param(int dst_worker_id TSRMLS_DC)
         return ZAN_ERR;
     }
 
-    /// should be TaskWorker
+    /// should be worker
     if (!is_worker())
     {
         zanWarn("The method can only be used in the worker process.");
@@ -1437,7 +1424,7 @@ PHP_METHOD(swoole_server, __construct)
 
     if (ServerGS->started > 0)
     {
-        swWarn("server is already running. Unable to create swoole_server.");
+        zanWarn("server is already running. Unable to create swoole_server.");
         RETURN_FALSE;
     }
 
@@ -1603,7 +1590,7 @@ PHP_METHOD(swoole_server, set)
     {
         if (sw_convert_to_string(value) < 0)
         {
-            swWarn("convert to string failed.");
+            zanWarn("convert to string failed.");
             RETURN_FALSE;
         }
         servSet->log_file = strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
@@ -1929,9 +1916,7 @@ PHP_METHOD(swoole_server, start)
         RETURN_FALSE;
     }
 
-    /////
     serv->send = zanServer_send;
-
     serv->ptr2 = zobject;
     sw_zval_add_ref(&zobject);
 
@@ -1947,8 +1932,7 @@ PHP_METHOD(swoole_server, start)
 
 PHP_METHOD(swoole_server, send)
 {
-    //zval* zobject = getThis();
-    zanServer *serv = ServerG.serv; //swoole_get_object(zobject);
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -1963,7 +1947,7 @@ PHP_METHOD(swoole_server, send)
 
     zval *zfd = NULL;
     zval *zdata = NULL;
-    long server_socket = -1;
+    long server_socket = -1;  ///udp: doc...
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz|l", &zfd, &zdata, &server_socket))
     {
         RETURN_FALSE;
@@ -2027,15 +2011,7 @@ convert:
     //TCP
     else
     {
-#if 0
-        //to delete,nothing
-        if (serv->packet_mode == 1)  /////????????
-        {
-            uint32_t len_tmp= htonl(length);
-            zanServer_tcp_send(serv, fd, &len_tmp, 4);
-        }
-#endif
-        zanDebug("packet_mode=%d, fd=%d, length=%d", serv->packet_mode, fd, length);
+        zanDebug("tcp server->send: fd=%d, length=%d", fd, length);
         SW_CHECK_RETURN(zanServer_tcp_send(serv, fd, data, length));
     }
 }
@@ -2193,8 +2169,7 @@ PHP_METHOD(swoole_server, sendfile)
         RETURN_FALSE;
     }
 
-    zval* zobject = getThis();
-    zanServer *serv = swoole_get_object(zobject);
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -2238,8 +2213,7 @@ PHP_METHOD(swoole_server, close)
         RETURN_FALSE;
     }
 
-    zval* zobject = getThis();
-    zanServer *serv = swoole_get_object(zobject);
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -2278,8 +2252,7 @@ PHP_METHOD(swoole_server, stats)
         RETURN_FALSE;
     }
 
-    zval* zobject = getThis();
-    zanServer *serv = swoole_get_object(zobject);
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -2413,49 +2386,53 @@ PHP_METHOD(swoole_server, heartbeat)
         RETURN_FALSE;
     }
 
-	int checktime = 0;
-	
-	if(ServerGS->server_time < (time_t)ServerG.servSet.heartbeat_idle_time)
-	{
-		RETURN_FALSE;
-	}
-	else
-	{
-		checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
-	}
-	
-	int tempfd = 0;
-	for(int networker_index = 0; networker_index < ServerG.servSet.net_worker_num; ++networker_index)
-	{
-		int serv_maxfd = zanServer_get_maxfd(serv, networker_index);
-		int serv_minfd = zanServer_get_minfd(serv, networker_index);
-		array_init(return_value);
-		
-		for (tempfd = serv_minfd; tempfd <= serv_maxfd; ++tempfd)
-		{
-			zanWarn("heartbeat check fd=%d", tempfd);
-			swConnection *conn = &serv->connection_list[networker_index][tempfd];
+    int checktime = 0;
 
-			if (conn->active && conn->last_time < checktime)
-			{
-				conn->close_force = 1;
-				/**
-				 * Close the connection
-				 */
-				if (close_connection)
-				{
-					serv->factory.end(&serv->factory, tempfd);
-				}
-#ifdef SW_REACTOR_USE_SESSION
-				add_next_index_long(return_value, conn->session_id);
-#else
-				add_next_index_long(return_value, tempfd);
+#if 0
+    ///TODO:::
+    if(ServerGS->server_time < (time_t)ServerG.servSet.heartbeat_idle_time)
+    {
+        RETURN_FALSE;
+    }
+    else
+    {
+        checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
+    }
 #endif
-			}
-		}		
-		
-	}
-    
+
+    checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
+
+    int tempfd = 0;
+    for(int networker_index = 0; networker_index < ServerG.servSet.net_worker_num; ++networker_index)
+    {
+        int serv_maxfd = zanServer_get_maxfd(serv, networker_index);
+        int serv_minfd = zanServer_get_minfd(serv, networker_index);
+        array_init(return_value);
+
+        for (tempfd = serv_minfd; tempfd <= serv_maxfd; ++tempfd)
+        {
+            zanDebug("heartbeat check fd=%d", tempfd);
+            swConnection *conn = &serv->connection_list[networker_index][tempfd];
+
+            if (conn->active && conn->last_time < checktime)
+            {
+                conn->close_force = 1;
+                /**
+                 * Close the connection
+                 */
+                if (close_connection)
+                {
+                    serv->factory.end(&serv->factory, tempfd);
+                }
+#ifdef SW_REACTOR_USE_SESSION
+                add_next_index_long(return_value, conn->session_id);
+#else
+                add_next_index_long(return_value, tempfd);
+#endif
+            }
+        }
+    }
+
     RETURN_TRUE;
 }
 
@@ -2467,8 +2444,7 @@ PHP_METHOD(swoole_server, task)
         RETURN_FALSE;
     }
 
-    zval* zobject = getThis();
-    zanServer *serv = swoole_get_object(zobject);
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -2511,8 +2487,7 @@ PHP_METHOD(swoole_server, sendMessage)
         RETURN_FALSE;
     }
 
-    zval* zobject = getThis();
-    zanServer *serv = swoole_get_object(zobject);
+    zanServer *serv = ServerG.serv;
     if (!serv)
     {
         zanWarn("not create servers.");
@@ -2524,7 +2499,7 @@ PHP_METHOD(swoole_server, sendMessage)
     long worker_id = -1;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl", &msg, &msglen, &worker_id))
     {
-        return;
+        RETURN_FALSE;
     }
 
     if (worker_id == ServerWG.worker_id)
@@ -2545,9 +2520,10 @@ PHP_METHOD(swoole_server, sendMessage)
         RETURN_FALSE;
     }
 
-    zanEventData buf;
-    buf.info.type = ZAN_EVENT_PIPE_MESSAGE;
+    swEventData buf;
+    buf.info.type = SW_EVENT_PIPE_MESSAGE;  //ZAN_EVENT_PIPE_MESSAGE;
     buf.info.from_id = ServerWG.worker_id;
+    buf.info.worker_id = worker_id;         //dst_worker_id, for test
 
     //write to file
     if (msglen >= SW_IPC_MAX_SIZE - sizeof(buf.info))
@@ -2779,7 +2755,6 @@ PHP_METHOD(swoole_server, getClientInfo)
     }
 #endif
 
-
     add_assoc_long(return_value, "server_fd", conn->from_fd);
     add_assoc_long(return_value, "socket_type", conn->socket_type);
 
@@ -2804,7 +2779,6 @@ PHP_METHOD(swoole_server, getClientList)
         RETURN_FALSE;
     }
 
-    //zval* zobject = getThis();
     zanServer *serv = ServerG.serv;
     if (!serv)
     {
@@ -2826,46 +2800,46 @@ PHP_METHOD(swoole_server, getClientList)
         find_count = SW_MAX_FIND_COUNT;
     }
 
-	int networker_index = 0;
-	zanSession *tempSession = zanServer_get_session(serv,start_fd);
-	
-	if(tempSession == NULL)
+    int networker_index = 0;
+    zanSession *tempSession = zanServer_get_session(serv,start_fd);
+
+    if(tempSession == NULL)
     {
-		zanWarn("not find this session");
-		RETURN_FALSE;
-	}
-	
-	networker_index = tempSession->networker_id;
-	array_init(return_value);
-	
-	for(; networker_index < ServerG.servSet.net_worker_num; ++networker_index)
-    {
-		int min_fd = zanServer_get_minfd(serv, networker_index);
-		int max_fd = zanServer_get_maxfd(serv, networker_index);
-		
-		if(max_fd == 0)
-        {
-			break;
-		}
-		
-		for(; min_fd <= max_fd && find_count > 0; ++min_fd)
-        {
-			zanWarn("maxfd=%d, minfd=%d, find_count=%ld, start_fd=%ld", max_fd, min_fd, find_count, start_fd);
-			swConnection *conn = &serv->connection_list[networker_index][min_fd];
-			if (conn->active && !conn->closed)
-			{
-#ifdef SW_REACTOR_USE_SESSION
-				add_next_index_long(return_value, conn->session_id);
-#else
-				add_next_index_long(return_value, min_fd);
-#endif
-				--find_count;
-			}
-		}
-		
+        zanWarn("not find this session");
+        RETURN_FALSE;
     }
-	
-	RETURN_TRUE;
+
+    networker_index = tempSession->networker_id;
+    array_init(return_value);
+
+    for(; networker_index < ServerG.servSet.net_worker_num; ++networker_index)
+    {
+        int min_fd = zanServer_get_minfd(serv, networker_index);
+        int max_fd = zanServer_get_maxfd(serv, networker_index);
+
+        if(max_fd == 0)
+        {
+            break;
+        }
+
+        for(; min_fd <= max_fd && find_count > 0; ++min_fd)
+        {
+            zanWarn("maxfd=%d, minfd=%d, find_count=%ld, start_fd=%ld", max_fd, min_fd, find_count, start_fd);
+            swConnection *conn = &serv->connection_list[networker_index][min_fd];
+            if (conn->active && !conn->closed)
+            {
+#ifdef SW_REACTOR_USE_SESSION
+                add_next_index_long(return_value, conn->session_id);
+#else
+                add_next_index_long(return_value, min_fd);
+#endif
+                --find_count;
+            }
+        }
+
+    }
+
+    RETURN_TRUE;
 }
 
 PHP_METHOD(swoole_server, exist)
@@ -2939,7 +2913,7 @@ PHP_METHOD(swoole_server, protect)
     RETURN_TRUE;
 }
 
-///TODO:::
+///=================================
 PHP_METHOD(swoole_server, shutdown)
 {
     if (!ServerGS->started)
@@ -3008,7 +2982,6 @@ PHP_METHOD(swoole_server, getLastError)
 
 PHP_METHOD(swoole_server, denyRequest)
 {
-#if 0
     if (!ServerGS->started)
     {
         zanWarn("Server is not running.");
@@ -3029,11 +3002,10 @@ PHP_METHOD(swoole_server, denyRequest)
     }
 
     zanServer_tcp_deny_request(serv, nWorkerId);
-#endif
 }
 
 #if 0
-///TODO::: delete
+///TODO:::
 PHP_METHOD(swoole_server, exit)
 {
     ServerG.running = 0;

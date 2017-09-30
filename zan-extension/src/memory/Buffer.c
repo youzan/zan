@@ -16,10 +16,10 @@
   +----------------------------------------------------------------------+
 */
 
-
-#include "swLog.h"
 #include "swMemory/memoryPool.h"
 #include "swMemory/buffer.h"
+
+#include "zanLog.h"
 
 /**
  * create new buffer
@@ -29,7 +29,7 @@ swBuffer* swBuffer_new(int trunk_size)
     swBuffer *buffer = sw_malloc(sizeof(swBuffer));
     if (buffer == NULL)
     {
-        swFatalError("malloc for buffer failed");
+        zanFatalError("malloc for buffer failed");
         return NULL;
     }
 
@@ -47,7 +47,7 @@ swBuffer_trunk *swBuffer_new_trunk(swBuffer *buffer, uint32_t type, uint32_t siz
     swBuffer_trunk *chunk = sw_malloc(sizeof(swBuffer_trunk));
     if (chunk == NULL)
     {
-        swFatalError("malloc for trunk failed");
+        zanFatalError("malloc for trunk failed");
         return NULL;
     }
 
@@ -59,8 +59,8 @@ swBuffer_trunk *swBuffer_new_trunk(swBuffer *buffer, uint32_t type, uint32_t siz
         void *buf = sw_malloc(size);
         if (buf == NULL)
         {
-        	sw_free(chunk);
-            swFatalError("malloc(%d) for data failed", size);
+            sw_free(chunk);
+            zanFatalError("malloc(%d) for data failed", size);
             return NULL;
         }
         chunk->size = size;
@@ -152,9 +152,7 @@ int swBuffer_append(swBuffer *buffer, void *data, uint32_t size)
 
     memcpy(chunk->store.ptr, data, size);
 
-    swTrace("trunk_n=%d|size=%d|trunk_len=%d|trunk=%p", buffer->trunk_num, size,
-            chunk->length, chunk);
-
+    //zanTrace("trunk_n=%d|size=%d|trunk_len=%d|trunk=%p", buffer->trunk_num, size, chunk->length, chunk);
     return SW_OK;
 }
 
@@ -168,7 +166,7 @@ void swBuffer_debug(swBuffer *buffer, int print_data)
     printf("%s\n%s\n", SW_START_LINE, __func__);
     while (trunk != NULL)
     {
-    	index++;
+        index++;
         printf("%d.\tlen=%d", index, trunk->length);
         if (print_data)
         {

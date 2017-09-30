@@ -210,7 +210,7 @@ typedef struct _swServerGS
     time_t now;
 
     sw_atomic_t spinlock;
-    swLock lock;	 /// server master internal lock
+    swLock lock;     /// server master internal lock
     swLock log_lock;  /// log lock
     uint8_t log_level; /// log level
 
@@ -296,7 +296,7 @@ typedef struct
     char *user;
     char *group;
 
-    char *log_addr;		/// host addr or file
+    char *log_addr;     /// host addr or file
     int   log_port;
 
     /**
