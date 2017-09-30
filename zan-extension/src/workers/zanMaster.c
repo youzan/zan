@@ -417,6 +417,8 @@ int zan_master_process_loop(zanServer *serv)
     //for reload
     swSignal_add(SIGHUP, NULL);
     swSignal_add(SIGTERM, zanMaster_signalhandle);
+	swSignal_add(SIGINT, zanMaster_signalhandle);
+	swSignal_add(SIGQUIT, zanMaster_signalhandle);
     swSignal_add(SIGUSR1, zanMaster_signalhandle);
     swSignal_add(SIGUSR2, zanMaster_signalhandle);
 #ifdef SIGRTMIN
@@ -612,6 +614,8 @@ static void zanMaster_signalhandle(int sig)
     switch (sig)
     {
         case SIGTERM:
+		case SIGINT:
+		case SIGQUIT:
             ServerG.running = 0;
             break;
         case SIGUSR1:
