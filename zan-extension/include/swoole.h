@@ -209,13 +209,13 @@ typedef struct
 
 typedef struct _swDataHead
 {
-    int      fd;       //文件描述符
-    uint8_t  type;     //类型
+    int      fd;
+    uint8_t  type;
     uint8_t  from_fd;
-    uint16_t len;      //长度
-    uint16_t from_id;  //Reactor Id
-    uint16_t from_net_id;
+    uint16_t len;
+    uint16_t from_id;
     uint16_t worker_id;
+    uint16_t networker_id;
 } swDataHead;
 
 typedef struct _swUdpFd
@@ -238,17 +238,6 @@ typedef struct
     uint8_t  reactor_id;
     uint8_t  networker_id;
 } zanSession;
-
-typedef struct _zanDataHead
-{
-    uint32_t accept_fd;    //文件描述符:::todo????
-    uint32_t len;          //长度
-    uint8_t  reactor_id;   //Reactor Id
-    uint8_t  networker_id;
-    uint8_t  type;         //类型
-    uint8_t  from_fd;
-    uint16_t worker_id;
-} zanDataHead;
 
 //for test
 enum zanServer_mode

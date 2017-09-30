@@ -67,7 +67,7 @@ int swFactoryThread_create(swFactory *factory, int worker_num)
 
     if (swThreadPool_create(&object->workers, worker_num) < 0)
     {
-    	sw_free(object);
+        sw_free(object);
         return SW_ERR;
     }
 
@@ -130,11 +130,11 @@ static int swFactoryThread_finish(swFactory *factory, swSendData *_send)
     {
         if (_send->info.type == SW_EVENT_TCP)
         {
-        	swNotice("send %d byte failed, session#%d is closed.", _send->length, session_id);
+            swNotice("send %d byte failed, session#%d is closed.", _send->length, session_id);
         }
         else
         {
-        	swNotice("send [%d] failed, session#%d is closed.", _send->info.type, session_id);
+            swNotice("send [%d] failed, session#%d is closed.", _send->info.type, session_id);
         }
 
         return SW_ERR;
@@ -156,13 +156,13 @@ int swFactoryThread_dispatch(swFactory *factory, swDispatchData *task)
         swConnection *conn = swServer_connection_get(serv, task->data.info.fd);
         if (conn == NULL || conn->active == 0)
         {
-        	swNotice("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
+            swNotice("dispatch[type=%d] failed, connection#%d is not active.", task->data.info.type, task->data.info.fd);
             return SW_ERR;
         }
         //server active close, discard data.
         if (conn->closed)
         {
-        	swNotice("dispatch[type=%d] failed, connection#%d is closed by server.", task->data.info.type,
+            swNotice("dispatch[type=%d] failed, connection#%d is closed by server.", task->data.info.type,
                     task->data.info.fd);
             return SW_OK;
         }

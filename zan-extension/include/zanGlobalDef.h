@@ -25,7 +25,6 @@
 
 #include "zanMemory/zanShmPool.h"
 #include "zanProcess.h"
-//#include "zanReactor.h"
 #include "zanWorkers.h"
 
 #ifdef __cplusplus

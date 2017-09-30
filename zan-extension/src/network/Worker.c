@@ -32,9 +32,9 @@ int swWorker_create(swWorker *worker)
     /**
      * Create shared memory storage
      */
-	if (!worker){
-		return SW_ERR;
-	}
+    if (!worker){
+        return SW_ERR;
+    }
 
     worker->send_shm = sw_shm_malloc(SwooleG.serv->buffer_output_size);
     if (worker->send_shm == NULL)
@@ -140,7 +140,7 @@ void swWorker_signal_handler(int signo)
         else
 #endif
         {
-        	swWarn("recv other signal: %d.", signo);
+            swWarn("recv other signal: %d.", signo);
         }
         break;
     }
@@ -183,7 +183,7 @@ static sw_inline int swWorker_discard_data(swServer *serv, swEventData *task)
     else
 #endif
     {
-    	swWarn("received the wrong data[%d bytes] from socket#%d", task->info.len, fd);
+        swWarn("received the wrong data[%d bytes] from socket#%d", task->info.len, fd);
     }
 
     return SW_TRUE;

@@ -38,28 +38,23 @@ enum zanDispatchMode
     ZAN_DISPATCH_UIDMOD = 5,      //UID 分配
 };
 
+#if 0
 typedef struct
 {
     long target_worker_id;
-    //zanEventData data;
     swEventData data;
 } zanDispatchData;
 
 typedef struct _zanSendData
 {
     swDataHead info;
-    /**
-     * for big package
-     */
     uint32_t length;
     char *data;
 } zanSendData;
+#endif
 
 typedef struct _zanFactory
 {
-    //void *pPipe;           //zanPipe[worker_num]
-    //void *pServ;
-
     int (*start)(struct _zanFactory *);
     int (*shutdown)(struct _zanFactory *);
     int (*dispatch)(struct _zanFactory *, swDispatchData *);

@@ -36,38 +36,38 @@
 #define SW_MYSQL_CLIENT_SECURE_CONNECTION        32768
 
 enum mysql_placeholder_support {
-	MYSQL_PLACEHOLDER_NONE=0,
-	MYSQL_PLACEHOLDER_NAMED=1,
-	MYSQL_PLACEHOLDER_POSITIONAL=2
+    MYSQL_PLACEHOLDER_NONE=0,
+    MYSQL_PLACEHOLDER_NAMED=1,
+    MYSQL_PLACEHOLDER_POSITIONAL=2
 };
 
 /* describes a bound parameter */
 struct mysql_bound_param_data {
 
 #if PHP_MAJOR_VERSION < 7
-	zval *parameter;				/* the variable itself */
-	long paramno; /* if -1, then it has a name, and we don't know the index *yet* */
-	char *name;
-	int name_len;
+    zval *parameter;                /* the variable itself */
+    long paramno; /* if -1, then it has a name, and we don't know the index *yet* */
+    char *name;
+    int name_len;
 #else
-	zval parameter;				/* the variable itself */
-	zend_long paramno; /* if -1, then it has a name, and we don't know the index *yet* */
-	zend_string *name;
+    zval parameter;             /* the variable itself */
+    zend_long paramno; /* if -1, then it has a name, and we don't know the index *yet* */
+    zend_string *name;
 #endif
     //HashTable *bound_params;
 
-	//zend_long max_value_len;	/* as a hint for pre-allocation */
-	//enum mysql_param_type param_type; /* desired or suggested variable type */
-	//int is_param;		/* parameter or column ? */
+    //zend_long max_value_len;  /* as a hint for pre-allocation */
+    //enum mysql_param_type param_type; /* desired or suggested variable type */
+    //int is_param;     /* parameter or column ? */
 };
 
-//typedef struct mysql_bound_param_stmt		 mysql_bound_param_stmt;
+//typedef struct mysql_bound_param_stmt      mysql_bound_param_stmt;
 struct mysql_bound_param_stmt {
     HashTable *bound_params;
-	/* if true, the statement supports placeholders and can implement
-	 * bindParam() for its prepared statements, if false, PDO should
-	 * emulate prepare and bind on its behalf */
-	unsigned supports_placeholders:2;
+    /* if true, the statement supports placeholders and can implement
+     * bindParam() for its prepared statements, if false, PDO should
+     * emulate prepare and bind on its behalf */
+    unsigned supports_placeholders:2;
 };
 
 typedef struct
@@ -98,9 +98,9 @@ typedef struct
 
 typedef struct
 {
-	uint8_t released;
-	/* if true, commit or rollBack is allowed to be called */
-	uint8_t in_txn;
+    uint8_t released;
+    /* if true, commit or rollBack is allowed to be called */
+    uint8_t in_txn;
     uint8_t state;
     uint8_t handshake;
     swString *buffer;
@@ -259,41 +259,41 @@ static int mysql_handshake(mysql_connector *connector, char *buf, int len)
     //auth-response
     if (connector->password && connector->password_len > 0)
     {
-		char hash_0[20];
-		bzero(hash_0, sizeof(hash_0));
-		php_swoole_sha1(connector->password, connector->password_len, (uchar *) hash_0);
+        char hash_0[20];
+        bzero(hash_0, sizeof(hash_0));
+        php_swoole_sha1(connector->password, connector->password_len, (uchar *) hash_0);
 
-		char hash_1[20];
-		bzero(hash_1, sizeof(hash_1));
-		php_swoole_sha1(hash_0, sizeof(hash_0), (uchar *) hash_1);
+        char hash_1[20];
+        bzero(hash_1, sizeof(hash_1));
+        php_swoole_sha1(hash_0, sizeof(hash_0), (uchar *) hash_1);
 
-		char str[40];
-		memcpy(str, request.auth_plugin_data, 20);
-		memcpy(str + 20, hash_1, 20);
+        char str[40];
+        memcpy(str, request.auth_plugin_data, 20);
+        memcpy(str + 20, hash_1, 20);
 
-		char hash_2[20];
-		php_swoole_sha1(str, sizeof(str), (uchar *) hash_2);
+        char hash_2[20];
+        php_swoole_sha1(str, sizeof(str), (uchar *) hash_2);
 
-		char hash_3[20];
+        char hash_3[20];
 
-		int *a = (int *) hash_2;
-		int *b = (int *) hash_0;
-		int *c = (int *) hash_3;
+        int *a = (int *) hash_2;
+        int *b = (int *) hash_0;
+        int *c = (int *) hash_3;
 
-		int i;
-		for (i = 0; i < 5; i++)
-		{
-			c[i] = a[i] ^ b[i];
-		}
+        int i;
+        for (i = 0; i < 5; i++)
+        {
+            c[i] = a[i] ^ b[i];
+        }
 
-		*tmp = 20;
-		memcpy(tmp + 1, hash_3, 20);
-		tmp += 21;
+        *tmp = 20;
+        memcpy(tmp + 1, hash_3, 20);
+        tmp += 21;
     }
     else
     {
-    	*tmp = 0;
-    	tmp += 1;
+        *tmp = 0;
+        tmp += 1;
     }
 
     //string[NUL]    database
@@ -337,13 +337,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->catalog_length = size;
@@ -358,13 +358,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->db_length = size;
@@ -379,13 +379,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->table_length = size;
@@ -400,13 +400,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->org_table_length = size;
@@ -421,13 +421,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->name_length = size;
@@ -442,13 +442,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
     if (tmp_len == -1)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_BAD_LCB;
     }
     i += tmp_len;
     if (i + size > len)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
     col->org_name_length = size;
@@ -462,7 +462,7 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
     /* check len */
     if (i + 13 > len)
     {
-    		swoole_efree(col->buffer);
+            swoole_efree(col->buffer);
         return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
     }
 
@@ -498,13 +498,13 @@ static int mysql_decode_field(char *buf, int len, mysql_field *col)
         tmp_len = mysql_length_coded_binary(&buf[i], &size, &nul, len - i);
         if (tmp_len == -1)
         {
-        		swoole_efree(col->buffer);
+                swoole_efree(col->buffer);
             return -SW_MYSQL_ERR_BAD_LCB;
         }
         i += tmp_len;
         if (i + size > len)
         {
-        		swoole_efree(col->buffer);
+                swoole_efree(col->buffer);
             return -SW_MYSQL_ERR_LEN_OVER_BUFFER;
         }
         col->def_length = size;
@@ -959,303 +959,303 @@ static int mysql_get_result(mysql_connector *connector, char *buf, int len)
 
 size_t mysql_escape_slashes(char *newstr, const char * escapestr, size_t escapestr_len)
 {
-	const char 	*newstr_s = newstr;
-	const char 	*newstr_e = newstr + 2 * escapestr_len;
-	const char 	*end = escapestr + escapestr_len;
-	int	escape_overflow = 0;
+    const char  *newstr_s = newstr;
+    const char  *newstr_e = newstr + 2 * escapestr_len;
+    const char  *end = escapestr + escapestr_len;
+    int escape_overflow = 0;
 
-	for (;escapestr < end; escapestr++) {
-		char esc = '\0';
+    for (;escapestr < end; escapestr++) {
+        char esc = '\0';
 
         {
-			switch (*escapestr) {
-				case 0:
-					esc = '0';
-					break;
-				case '\n':
-					esc = 'n';
-					break;
-				case '\r':
-					esc = 'r';
-					break;
-				case '\\':
-				case '\'':
-				case '"':
-					esc = *escapestr;
-					break;
-				case '\032':
-					esc = 'Z';
-					break;
-			}
-		}
-		if (esc) {
-			if (newstr + 2 > newstr_e) {
-				escape_overflow = 0;
-				break;
-			}
-			/* copy escaped character */
-			*newstr++ = '\\';
-			*newstr++ = esc;
-		} else {
-			if (newstr + 1 > newstr_e) {
-				escape_overflow = 1;
-				break;
-			}
-			/* copy non escaped character */
-			*newstr++ = *escapestr;
-		}
-	}
-	*newstr = '\0';
+            switch (*escapestr) {
+                case 0:
+                    esc = '0';
+                    break;
+                case '\n':
+                    esc = 'n';
+                    break;
+                case '\r':
+                    esc = 'r';
+                    break;
+                case '\\':
+                case '\'':
+                case '"':
+                    esc = *escapestr;
+                    break;
+                case '\032':
+                    esc = 'Z';
+                    break;
+            }
+        }
+        if (esc) {
+            if (newstr + 2 > newstr_e) {
+                escape_overflow = 0;
+                break;
+            }
+            /* copy escaped character */
+            *newstr++ = '\\';
+            *newstr++ = esc;
+        } else {
+            if (newstr + 1 > newstr_e) {
+                escape_overflow = 1;
+                break;
+            }
+            /* copy non escaped character */
+            *newstr++ = *escapestr;
+        }
+    }
+    *newstr = '\0';
 
-	if (escape_overflow)
-	{
-		return((ulong)~0);
-	}
+    if (escape_overflow)
+    {
+        return((ulong)~0);
+    }
 
-	return((ulong)(newstr - newstr_s));
+    return((ulong)(newstr - newstr_s));
 }
 
 int mysql_handle_quoter(const char *unquoted, size_t unquotedlen, char **quoted, size_t *quotedlen)
 {
-	*quoted = safe_emalloc(2, unquotedlen, 3);
-	*quotedlen = mysql_escape_slashes( *quoted + 1, unquoted, unquotedlen);
-	(*quoted)[0] =(*quoted)[++*quotedlen] = '\'';
-	(*quoted)[++*quotedlen] = '\0';
+    *quoted = safe_emalloc(2, unquotedlen, 3);
+    *quotedlen = mysql_escape_slashes( *quoted + 1, unquoted, unquotedlen);
+    (*quoted)[0] =(*quoted)[++*quotedlen] = '\'';
+    (*quoted)[++*quotedlen] = '\0';
     return 1;
 }
 
 static int mysql_parse_params(struct mysql_bound_param_stmt stmt, char *inquery, size_t inquery_len,
-												char **outquery, size_t *outquery_len TSRMLS_DC)
+                                                char **outquery, size_t *outquery_len TSRMLS_DC)
 {
-	swScanner s;
-	char *ptr = NULL, *newbuffer = NULL;
-	int t;
-	uint32_t bindno = 0;
-	int ret = 0;
-	size_t newbuffer_len = 0;
-	HashTable *params = NULL;
-	struct mysql_bound_param_data *param = NULL;
-	int query_type = MYSQL_PLACEHOLDER_NONE;
-	struct swPlaceholder *placeholders = NULL, *placetail = NULL, *plc = NULL;
+    swScanner s;
+    char *ptr = NULL, *newbuffer = NULL;
+    int t;
+    uint32_t bindno = 0;
+    int ret = 0;
+    size_t newbuffer_len = 0;
+    HashTable *params = NULL;
+    struct mysql_bound_param_data *param = NULL;
+    int query_type = MYSQL_PLACEHOLDER_NONE;
+    struct swPlaceholder *placeholders = NULL, *placetail = NULL, *plc = NULL;
 
-	ptr = *outquery;
-	s.cur = inquery;
-	s.end = inquery + inquery_len + 1;
+    ptr = *outquery;
+    s.cur = inquery;
+    s.end = inquery + inquery_len + 1;
 
-	/* phase 1: look for args */
-	while((t = sql_scan(&s)) != MYSQL_PARSER_EOI) {
-		if (t == MYSQL_PARSER_BIND || t == MYSQL_PARSER_BIND_POS) {
-			if (t == MYSQL_PARSER_BIND) {
-				int len = s.cur - s.tok;
-				if ((inquery < (s.cur - len)) && isalnum(*(s.cur - len - 1))) {
-					continue;
-				}
-				query_type |= MYSQL_PLACEHOLDER_NAMED;
-			} else {
-				query_type |= MYSQL_PLACEHOLDER_POSITIONAL;
-			}
+    /* phase 1: look for args */
+    while((t = sql_scan(&s)) != MYSQL_PARSER_EOI) {
+        if (t == MYSQL_PARSER_BIND || t == MYSQL_PARSER_BIND_POS) {
+            if (t == MYSQL_PARSER_BIND) {
+                int len = s.cur - s.tok;
+                if ((inquery < (s.cur - len)) && isalnum(*(s.cur - len - 1))) {
+                    continue;
+                }
+                query_type |= MYSQL_PLACEHOLDER_NAMED;
+            } else {
+                query_type |= MYSQL_PLACEHOLDER_POSITIONAL;
+            }
 
-			plc = emalloc(sizeof(struct swPlaceholder));
-			memset(plc, 0, sizeof(struct swPlaceholder));
-			plc->next = NULL;
-			plc->pos = s.tok;
-			plc->len = s.cur - s.tok;
-			plc->bindno = bindno++;
+            plc = emalloc(sizeof(struct swPlaceholder));
+            memset(plc, 0, sizeof(struct swPlaceholder));
+            plc->next = NULL;
+            plc->pos = s.tok;
+            plc->len = s.cur - s.tok;
+            plc->bindno = bindno++;
 
-			if (placetail) {
-				placetail->next = plc;
-			} else {
-				placeholders = plc;
-			}
-			placetail = plc;
-		}
-	}
+            if (placetail) {
+                placetail->next = plc;
+            } else {
+                placeholders = plc;
+            }
+            placetail = plc;
+        }
+    }
 
-	if (bindno == 0) {
-		/* nothing to do; good! */
-		return 0;
-	}
+    if (bindno == 0) {
+        /* nothing to do; good! */
+        return 0;
+    }
 
-	/* did the query make sense to me? */
-	if (query_type == (MYSQL_PLACEHOLDER_NAMED|MYSQL_PLACEHOLDER_POSITIONAL))
-	{
-		/* they mixed both types; punt */
-		swoole_php_fatal_error(E_WARNING,"mixed named and positional parameters");
-		ret = -1;
-		goto clean_up;
-	}
+    /* did the query make sense to me? */
+    if (query_type == (MYSQL_PLACEHOLDER_NAMED|MYSQL_PLACEHOLDER_POSITIONAL))
+    {
+        /* they mixed both types; punt */
+        swoole_php_fatal_error(E_WARNING,"mixed named and positional parameters");
+        ret = -1;
+        goto clean_up;
+    }
 
-	params = stmt.bound_params;
+    params = stmt.bound_params;
 
-	/* Do we have placeholders but no bound params */
-	if (bindno && !params && stmt.supports_placeholders == MYSQL_PLACEHOLDER_NONE)
-	{
-		swoole_php_fatal_error(E_WARNING,"no parameters were bound");
-		ret = -1;
-		goto clean_up;
-	}
+    /* Do we have placeholders but no bound params */
+    if (bindno && !params && stmt.supports_placeholders == MYSQL_PLACEHOLDER_NONE)
+    {
+        swoole_php_fatal_error(E_WARNING,"no parameters were bound");
+        ret = -1;
+        goto clean_up;
+    }
 
-	if (params && bindno != zend_hash_num_elements(params) && stmt.supports_placeholders == MYSQL_PLACEHOLDER_NONE)
-	{
-		/* extra bit of validation for instances when same params are bound more than once */
-		if (query_type != MYSQL_PLACEHOLDER_POSITIONAL && bindno > zend_hash_num_elements(params))
-		{
-			int ok = 1;
-			for (plc = placeholders; plc != NULL; plc = plc->next)
-			{
+    if (params && bindno != zend_hash_num_elements(params) && stmt.supports_placeholders == MYSQL_PLACEHOLDER_NONE)
+    {
+        /* extra bit of validation for instances when same params are bound more than once */
+        if (query_type != MYSQL_PLACEHOLDER_POSITIONAL && bindno > zend_hash_num_elements(params))
+        {
+            int ok = 1;
+            for (plc = placeholders; plc != NULL; plc = plc->next)
+            {
 #if PHP_MAJOR_VERSION < 7
- 				if (zend_hash_find(params, plc->pos, plc->len, (void**) &param) == FAILURE)
+                if (zend_hash_find(params, plc->pos, plc->len, (void**) &param) == FAILURE)
 #else
-				if ((param = zend_hash_str_find_ptr(params, plc->pos, plc->len)) == NULL)
+                if ((param = zend_hash_str_find_ptr(params, plc->pos, plc->len)) == NULL)
 #endif
-				{
-					ok = 0;
-					break;
-				}
-			}
+                {
+                    ok = 0;
+                    break;
+                }
+            }
 
-			if (ok)
-			{
-				goto safe;
-			}
-		}
+            if (ok)
+            {
+                goto safe;
+            }
+        }
 
-		swoole_php_fatal_error(E_WARNING,"number of bound variables does not match number of tokens");
-		ret = -1;
-		goto clean_up;
-	}
+        swoole_php_fatal_error(E_WARNING,"number of bound variables does not match number of tokens");
+        ret = -1;
+        goto clean_up;
+    }
 safe:
-	/* what are we going to do ? */
-	if (stmt.supports_placeholders == MYSQL_PLACEHOLDER_NONE) {
-		/* query generation */
+    /* what are we going to do ? */
+    if (stmt.supports_placeholders == MYSQL_PLACEHOLDER_NONE) {
+        /* query generation */
 
-		newbuffer_len = inquery_len;
+        newbuffer_len = inquery_len;
 
-		/* let's quote all the values */
-		for (plc = placeholders; plc != NULL; plc = plc->next) {
+        /* let's quote all the values */
+        for (plc = placeholders; plc != NULL; plc = plc->next) {
 #if PHP_MAJOR_VERSION < 7
 
- 			if (query_type == MYSQL_PLACEHOLDER_POSITIONAL)
- 			{
- 				ret = zend_hash_index_find(params, plc->bindno, (void**) &param);
- 			}
- 			else
- 			{
- 				ret = zend_hash_find(params, plc->pos, plc->len, (void**) &param);
- 			}
- 			if (ret == FAILURE)
+            if (query_type == MYSQL_PLACEHOLDER_POSITIONAL)
+            {
+                ret = zend_hash_index_find(params, plc->bindno, (void**) &param);
+            }
+            else
+            {
+                ret = zend_hash_find(params, plc->pos, plc->len, (void**) &param);
+            }
+            if (ret == FAILURE)
  #else
-			param =  query_type == MYSQL_PLACEHOLDER_POSITIONAL?
-								   zend_hash_index_find_ptr(params, plc->bindno):
-								   zend_hash_str_find_ptr(params, plc->pos, plc->len);
+            param =  query_type == MYSQL_PLACEHOLDER_POSITIONAL?
+                                   zend_hash_index_find_ptr(params, plc->bindno):
+                                   zend_hash_str_find_ptr(params, plc->pos, plc->len);
 
-			if (param == NULL)
+            if (param == NULL)
 #endif
-			{
-				/* parameter was not defined */
-				ret = -1;
-				swoole_php_fatal_error(E_WARNING,"parameter was not defined");
-				goto clean_up;
-			}
-			{
+            {
+                /* parameter was not defined */
+                ret = -1;
+                swoole_php_fatal_error(E_WARNING,"parameter was not defined");
+                goto clean_up;
+            }
+            {
 #if PHP_MAJOR_VERSION < 7
-			    zval tmp_param = *param->parameter;
-			    zval_copy_ctor(&tmp_param);
+                zval tmp_param = *param->parameter;
+                zval_copy_ctor(&tmp_param);
 #else
-				zval *parameter = Z_ISREF(param->parameter)? Z_REFVAL(param->parameter):&param->parameter;
-				zval tmp_param;
-				ZVAL_DUP(&tmp_param, parameter);
+                zval *parameter = Z_ISREF(param->parameter)? Z_REFVAL(param->parameter):&param->parameter;
+                zval tmp_param;
+                ZVAL_DUP(&tmp_param, parameter);
 #endif
-				switch (Z_TYPE(tmp_param))
-				{
-					case IS_NULL:
-						plc->quoted = "NULL";
-						plc->qlen = sizeof("NULL")-1;
-						plc->freeq = 0;
-						break;
+                switch (Z_TYPE(tmp_param))
+                {
+                    case IS_NULL:
+                        plc->quoted = "NULL";
+                        plc->qlen = sizeof("NULL")-1;
+                        plc->freeq = 0;
+                        break;
 #if PHP_MAJOR_VERSION < 7
-					case IS_BOOL:
+                    case IS_BOOL:
 #else
-					case IS_FALSE:
-					case IS_TRUE:
+                    case IS_FALSE:
+                    case IS_TRUE:
 #endif
-						convert_to_long(&tmp_param);
-					/* fall through */
-					case IS_LONG:
-					case IS_DOUBLE:
-						convert_to_string(&tmp_param);
-						plc->qlen = Z_STRLEN(tmp_param);
-						plc->quoted = estrdup(Z_STRVAL(tmp_param));
-						plc->freeq = 1;
-						break;
+                        convert_to_long(&tmp_param);
+                    /* fall through */
+                    case IS_LONG:
+                    case IS_DOUBLE:
+                        convert_to_string(&tmp_param);
+                        plc->qlen = Z_STRLEN(tmp_param);
+                        plc->quoted = estrdup(Z_STRVAL(tmp_param));
+                        plc->freeq = 1;
+                        break;
 
-					default:
-						convert_to_string(&tmp_param);
-						if (!mysql_handle_quoter(Z_STRVAL(tmp_param),
-						Z_STRLEN(tmp_param), &plc->quoted, &plc->qlen))
-						{
-							/* bork */
-							ret = -1;
-							goto clean_up;
-						}
+                    default:
+                        convert_to_string(&tmp_param);
+                        if (!mysql_handle_quoter(Z_STRVAL(tmp_param),
+                        Z_STRLEN(tmp_param), &plc->quoted, &plc->qlen))
+                        {
+                            /* bork */
+                            ret = -1;
+                            goto clean_up;
+                        }
 
-						plc->freeq = 1;
-				}
+                        plc->freeq = 1;
+                }
 
-				zval_dtor(&tmp_param);
-			}
+                zval_dtor(&tmp_param);
+            }
 
-			newbuffer_len += plc->qlen;
-		}
+            newbuffer_len += plc->qlen;
+        }
 
 //rewrite:
-		/* allocate output buffer */
-		newbuffer = emalloc(newbuffer_len + 1);
-		bzero(newbuffer,newbuffer_len + 1);
-		*outquery = newbuffer;
+        /* allocate output buffer */
+        newbuffer = emalloc(newbuffer_len + 1);
+        bzero(newbuffer,newbuffer_len + 1);
+        *outquery = newbuffer;
 
-		/* and build the query */
-		plc = placeholders;
-		ptr = inquery;
+        /* and build the query */
+        plc = placeholders;
+        ptr = inquery;
 
-		do {
-			t = plc->pos - ptr;
-			if (t) {
-				memcpy(newbuffer, ptr, t);
-				newbuffer += t;
-			}
-			memcpy(newbuffer, plc->quoted, plc->qlen);
-			newbuffer += plc->qlen;
-			ptr = plc->pos + plc->len;
+        do {
+            t = plc->pos - ptr;
+            if (t) {
+                memcpy(newbuffer, ptr, t);
+                newbuffer += t;
+            }
+            memcpy(newbuffer, plc->quoted, plc->qlen);
+            newbuffer += plc->qlen;
+            ptr = plc->pos + plc->len;
 
-			plc = plc->next;
-		} while (plc);
+            plc = plc->next;
+        } while (plc);
 
-		t = (inquery + inquery_len) - ptr;
-		if (t) {
-			memcpy(newbuffer, ptr, t);
-			newbuffer += t;
-		}
-		*newbuffer = '\0';
-		*outquery_len = newbuffer - *outquery;
+        t = (inquery + inquery_len) - ptr;
+        if (t) {
+            memcpy(newbuffer, ptr, t);
+            newbuffer += t;
+        }
+        *newbuffer = '\0';
+        *outquery_len = newbuffer - *outquery;
 
-		ret = 1;
-		goto clean_up;
+        ret = 1;
+        goto clean_up;
 
-	}
+    }
 clean_up:
 
-	while (placeholders) {
-		plc = placeholders;
-		placeholders = plc->next;
+    while (placeholders) {
+        plc = placeholders;
+        placeholders = plc->next;
 
-		if (plc->freeq) {
-			swoole_efree(plc->quoted);
-		}
+        if (plc->freeq) {
+            swoole_efree(plc->quoted);
+        }
 
-		swoole_efree(plc);
-	}
+        swoole_efree(plc);
+    }
 
-	return ret;
+    return ret;
 }
 #endif /* SWOOLE_MYSQL_H_ */
