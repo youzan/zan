@@ -41,8 +41,8 @@ enum swWorker_status
 
 enum swResponseType
 {
-	SW_RESPONSE_SMALL = 0,
-	SW_RESPONSE_BIG   = 1,
+    SW_RESPONSE_SMALL = 0,
+    SW_RESPONSE_BIG   = 1,
 };
 
 enum swTaskType
@@ -54,7 +54,7 @@ enum swTaskType
 
 enum swProcessType
 {
-	SW_PROCESS_OTHERS     = 0,
+    SW_PROCESS_OTHERS     = 0,
     SW_PROCESS_MASTER     = 1,
     SW_PROCESS_WORKER     = 2,
     SW_PROCESS_MANAGER    = 3,
@@ -62,7 +62,7 @@ enum swProcessType
     SW_PROCESS_USERWORKER = 5,
 };
 
-#define swIsOthers()		  (SwooleG.process_type==SW_PROCESS_OTHERS)
+#define swIsOthers()          (SwooleG.process_type==SW_PROCESS_OTHERS)
 #define swIsMaster()          (SwooleG.process_type==SW_PROCESS_MASTER)
 #define swIsWorker()          (SwooleG.process_type==SW_PROCESS_WORKER)
 #define swIsTaskWorker()      (SwooleG.process_type==SW_PROCESS_TASKWORKER)
@@ -99,8 +99,8 @@ typedef struct
 
 typedef struct
 {
-	int length;
-	int worker_id;
+    int length;
+    int worker_id;
 } swPackage_response;
 
 int swWorker_create(swWorker *worker);
@@ -127,8 +127,8 @@ int swTaskWorker_finish(swServer *serv, char *data, int data_len, int flags);
 #define swTask_type(task)                  ((task)->info.from_fd)
 
 #define swTaskWorker_large_unpack(task, __malloc, _buf, _length)   swPackage_task _pkg;\
-	memcpy(&_pkg, task->data, sizeof(_pkg));\
-	_length = _pkg.length;\
+    memcpy(&_pkg, task->data, sizeof(_pkg));\
+    _length = _pkg.length;\
     if (_length > SwooleG.serv->listen_list->protocol.package_max_length) {\
         swWarn("task package[length=%d] is too big.", _length);\
     }\

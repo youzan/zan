@@ -68,8 +68,8 @@ int swPort_set_option(swListenPort *ls)
 #ifdef HAVE_REUSEPORT
     if (SwooleG.reuse_port && setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &option, sizeof(int)) < 0)
     {
-		swSysError("setsockopt(SO_REUSEPORT) failed.");
-		SwooleG.reuse_port = 0;
+        swSysError("setsockopt(SO_REUSEPORT) failed.");
+        SwooleG.reuse_port = 0;
     }
 #endif
 
@@ -97,7 +97,7 @@ int swPort_set_option(swListenPort *ls)
         }
         if (ls->ssl_client_cert_file && swSSL_set_client_certificate(ls->ssl_context, ls->ssl_client_cert_file, ls->ssl_verify_depth) == SW_ERR)
         {
-        	swError("swSSL_set_client_certificate() error.");
+            swError("swSSL_set_client_certificate() error.");
             return SW_ERR;
         }
         if (ls->open_http_protocol)
@@ -111,15 +111,15 @@ int swPort_set_option(swListenPort *ls)
         }
         if (swSSL_server_set_cipher(ls->ssl_context, &ls->ssl_config) < 0)
         {
-        	swError("swSSL_server_set_cipher() error.");
+            swError("swSSL_server_set_cipher() error.");
             return SW_ERR;
         }
     }
 
     if (ls->ssl && (!ls->ssl_cert_file || !ls->ssl_key_file))
     {
-		swWarn("need to set [ssl_cert_file] or [ssl_key_file] option.");
-		return SW_ERR;
+        swWarn("need to set [ssl_cert_file] or [ssl_key_file] option.");
+        return SW_ERR;
     }
 #endif
 
@@ -132,7 +132,7 @@ int swPort_set_option(swListenPort *ls)
 
 #ifdef TCP_DEFER_ACCEPT
     if (ls->tcp_defer_accept && setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT,
-    								(const void*) &ls->tcp_defer_accept, sizeof(int)) < 0)
+                                    (const void*) &ls->tcp_defer_accept, sizeof(int)) < 0)
     {
         swSysError("setsockopt(TCP_DEFER_ACCEPT) failed.");
     }
@@ -140,7 +140,7 @@ int swPort_set_option(swListenPort *ls)
 
 #ifdef TCP_FASTOPEN
     if (ls->tcp_fastopen && setsockopt(sock, IPPROTO_TCP, TCP_FASTOPEN,
-    		(const void*) &ls->tcp_fastopen, sizeof(int)) < 0)
+            (const void*) &ls->tcp_fastopen, sizeof(int)) < 0)
     {
         swSysError("setsockopt(TCP_FASTOPEN) failed.");
     }
@@ -427,7 +427,7 @@ recv_data:
         buffer->length += n;
         if (request->method == 0 && swHttpRequest_get_protocol(request) < 0)
         {
-        	/// 数据没有接收全，继续接收
+            /// 数据没有接收全，继续接收
             if (request->buffer->length < SW_HTTP_HEADER_MAX_SIZE)
             {
                 return SW_OK;
@@ -443,105 +443,105 @@ recv_data:
             goto close_fd;
         }
 
-        //support method:get post put delete patch head options   
+        //support method:get post put delete patch head options
         if ((request->method > 0 && request->method <= HTTP_PATCH) || request->method == HTTP_OPTIONS)
         {
-        	//receive data of http header
-			if (request->header_length == 0)
-			{
-				if (swHttpRequest_get_header_length(request) < 0)
-				{
-					if (buffer->size == buffer->length)
-					{
-						swWarn("http header is too long.");
-						goto close_fd;
-					}
-					else
-					{
-						goto recv_data;
-					}
-				}
-			}
-			//handle http body
-			if (request->content_length == 0)
-			{
-				//http_no_entity
-				if (swHttpRequest_get_content_length(request) < 0)
-				{
-					if (memcmp(buffer->str + buffer->length - 4, "\r\n\r\n", 4) == 0)
-					{
-						swReactorThread_dispatch(conn, buffer->str, buffer->length);
-						swHttpRequest_free(conn);
-						return SW_OK;
-					}
-					else if (buffer->size == buffer->length)
-					{
-						swWarn("http header is too long.");
-						goto close_fd;
-					}
-					else
-					{
-						goto recv_data;
-					}
-				}
-				//content_length overflow
-				else if (request->content_length > (protocol->package_max_length - SW_HTTP_HEADER_MAX_SIZE))
-				{
-					swWarn("Content-Length more than the package_max_length[%d].", protocol->package_max_length - SW_HTTP_HEADER_MAX_SIZE);
-					goto close_fd;
-				}
-			}
-			//http_entity
-			uint32_t request_size = request->content_length + request->header_length;
-			int needExtentBuf = request_size > buffer->size;
-			if (needExtentBuf && swString_extend(buffer, request_size) < 0)
-			{
-				goto close_fd;
-			}
+            //receive data of http header
+            if (request->header_length == 0)
+            {
+                if (swHttpRequest_get_header_length(request) < 0)
+                {
+                    if (buffer->size == buffer->length)
+                    {
+                        swWarn("http header is too long.");
+                        goto close_fd;
+                    }
+                    else
+                    {
+                        goto recv_data;
+                    }
+                }
+            }
+            //handle http body
+            if (request->content_length == 0)
+            {
+                //http_no_entity
+                if (swHttpRequest_get_content_length(request) < 0)
+                {
+                    if (memcmp(buffer->str + buffer->length - 4, "\r\n\r\n", 4) == 0)
+                    {
+                        swReactorThread_dispatch(conn, buffer->str, buffer->length);
+                        swHttpRequest_free(conn);
+                        return SW_OK;
+                    }
+                    else if (buffer->size == buffer->length)
+                    {
+                        swWarn("http header is too long.");
+                        goto close_fd;
+                    }
+                    else
+                    {
+                        goto recv_data;
+                    }
+                }
+                //content_length overflow
+                else if (request->content_length > (protocol->package_max_length - SW_HTTP_HEADER_MAX_SIZE))
+                {
+                    swWarn("Content-Length more than the package_max_length[%d].", protocol->package_max_length - SW_HTTP_HEADER_MAX_SIZE);
+                    goto close_fd;
+                }
+            }
+            //http_entity
+            uint32_t request_size = request->content_length + request->header_length;
+            int needExtentBuf = request_size > buffer->size;
+            if (needExtentBuf && swString_extend(buffer, request_size) < 0)
+            {
+                goto close_fd;
+            }
 
-			//discard the redundant data
-			buffer->length = (buffer->length > request_size)? request_size:buffer->length;
-			if (buffer->length == request_size)
-			{
-				swReactorThread_dispatch(conn, buffer->str, buffer->length);
-				swHttpRequest_free(conn);
-			}
-			else
-			{
+            //discard the redundant data
+            buffer->length = (buffer->length > request_size)? request_size:buffer->length;
+            if (buffer->length == request_size)
+            {
+                swReactorThread_dispatch(conn, buffer->str, buffer->length);
+                swHttpRequest_free(conn);
+            }
+            else
+            {
 #ifdef SW_HTTP_100_CONTINUE
-				//Expect: 100-continue
-				if (swHttpRequest_has_expect_header(request))
-				{
-					swSendData _send;
-					_send.data = "HTTP/1.1 100 Continue\r\n\r\n";
-					_send.length = strlen(_send.data);
+                //Expect: 100-continue
+                if (swHttpRequest_has_expect_header(request))
+                {
+                    swSendData _send;
+                    _send.data = "HTTP/1.1 100 Continue\r\n\r\n";
+                    _send.length = strlen(_send.data);
 
-					int send_times = 0;
-					direct_send:
-					n = swConnection_send(conn, _send.data, _send.length, 0);
-					if (n < _send.length)
-					{
-						_send.data += n;
-						_send.length -= n;
-						send_times++;
-						if (send_times < 10)
-						{
-							goto direct_send;
-						}
-						else
-						{
-							swWarn("send http header failed");
-						}
-					}
-				}
-				else
-				{
-					swTrace("PostWait: request->content_length=%d, buffer->length=%zd, request->header_length=%d\n",
-							request->content_length, buffer->length, request->header_length);
-				}
+                    int send_times = 0;
+                    direct_send:
+                    n = swConnection_send(conn, _send.data, _send.length, 0);
+                    if (n < _send.length)
+                    {
+                        _send.data += n;
+                        _send.length -= n;
+                        send_times++;
+                        if (send_times < 10)
+                        {
+                            goto direct_send;
+                        }
+                        else
+                        {
+                            swWarn("send http header failed");
+                        }
+                    }
+                }
+                else
+                {
+                    swTrace("PostWait: request->content_length=%d, buffer->length=%zd, request->header_length=%d\n",
+                            request->content_length, buffer->length, request->header_length);
+                }
 #endif
-				goto recv_data;
-			}
+                goto recv_data;
+            }
         }
 #ifdef SW_USE_HTTP2
         else if (request->method == HTTP_PRI)

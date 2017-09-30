@@ -37,28 +37,28 @@ static void handle_defer_call(swReactor* reactor);
 
 int swReactor_init(swReactor *reactor, int max_event)
 {
-	if (!reactor)
-	{
-		return SW_ERR;
-	}
+    if (!reactor)
+    {
+        return SW_ERR;
+    }
 
-	bzero(reactor, sizeof(swReactor));
+    bzero(reactor, sizeof(swReactor));
 
-	int ret = 0;
+    int ret = 0;
 #ifdef HAVE_EPOLL
-	ret = swReactorEpoll_create(reactor, max_event);
+    ret = swReactorEpoll_create(reactor, max_event);
 #elif defined(HAVE_KQUEUE)
-	ret = swReactorKqueue_create(reactor, max_event);
+    ret = swReactorKqueue_create(reactor, max_event);
 #elif defined(SW_MAINREACTOR_USE_POLL)
-	ret = swReactorPoll_create(reactor, max_event);
+    ret = swReactorPoll_create(reactor, max_event);
 #else
-	ret = swReactorSelect_create(reactor);
+    ret = swReactorSelect_create(reactor);
 #endif
 
-	if (ret < 0)
-	{
-		return SW_ERR;
-	}
+    if (ret < 0)
+    {
+        return SW_ERR;
+    }
 
     reactor->running = 1;
     reactor->setHandle = swReactor_setHandle;
@@ -84,12 +84,12 @@ swReactor_handle swReactor_getHandle(swReactor *reactor, int event_type, int fdt
     if (event_type == SW_EVENT_WRITE)
     {
         return (reactor->write_handle[fdtype] != NULL) ?
-        		reactor->write_handle[fdtype] : reactor->handle[SW_FD_WRITE];
+                reactor->write_handle[fdtype] : reactor->handle[SW_FD_WRITE];
     }
     if (event_type == SW_EVENT_ERROR)
     {
         return (reactor->error_handle[fdtype] != NULL) ?
-        		reactor->error_handle[fdtype] : reactor->handle[SW_FD_CLOSE];
+                reactor->error_handle[fdtype] : reactor->handle[SW_FD_CLOSE];
     }
 
     return reactor->handle[fdtype];
@@ -166,7 +166,6 @@ static int swReactor_defer(swReactor *reactor, swCallback callback, void *data)
 
 swConnection* swReactor_get(swReactor *reactor, int fd)
 {
-    //assert(fd < SwooleG.max_sockets);
     assert(fd < ServerG.max_sockets);
 
     if (reactor->thread)
@@ -283,25 +282,24 @@ static void swReactor_onFinish(swReactor *reactor)
         swSignal_callback(reactor->singal_no);
         reactor->singal_no = 0;
     }
-
     swReactor_onTimeout_and_Finish(reactor);
 }
 
 static void handle_defer_call(swReactor* reactor)
 {
-	reactor->defer_list_backup = reactor->defer_callback_list;
-	reactor->defer_callback_list = NULL;
+    reactor->defer_list_backup = reactor->defer_callback_list;
+    reactor->defer_callback_list = NULL;
 
-	swDefer_callback *cb = NULL;
-	swDefer_callback *tmp = NULL;
+    swDefer_callback *cb = NULL;
+    swDefer_callback *tmp = NULL;
 
-	LL_FOREACH_SAFE(reactor->defer_list_backup, cb, tmp)
-	{
-		cb->callback(cb->data);
-		sw_free(cb);
-	}
+    LL_FOREACH_SAFE(reactor->defer_list_backup, cb, tmp)
+    {
+        cb->callback(cb->data);
+        sw_free(cb);
+    }
 
-	reactor->defer_list_backup = NULL;
+    reactor->defer_list_backup = NULL;
 }
 
 int swReactor_close(swReactor *reactor, int fd)
@@ -327,14 +325,14 @@ int swReactor_close(swReactor *reactor, int fd)
 
     if (!reactor->thread && socket && !socket->removed)
     {
-    	reactor->del(reactor,fd);
+        reactor->del(reactor,fd);
     }
 
     if (socket)
     {
-    	bzero(socket, sizeof(swConnection));
-    	socket->removed = 1;
-    	socket->closed = 1;
+        bzero(socket, sizeof(swConnection));
+        socket->removed = 1;
+        socket->closed = 1;
     }
 
     return close(fd);
@@ -535,7 +533,7 @@ int swReactor_wait_write_buffer(swReactor *reactor, int fd)
 
     if (conn->out_buffer)
     {
-    	swSetNonBlock(fd,0);
+        swSetNonBlock(fd,0);
         event.fd = fd;
         return swReactor_onWrite(reactor, &event);
     }

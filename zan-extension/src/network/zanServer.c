@@ -462,8 +462,6 @@ swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port
 
 int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId)
 {
-    zanWarn("swServer_tcp_deny_exit");
-
     swEventData ev_data;
     ev_data.info.fd = 0;
     ev_data.info.worker_id = nWorkerId;
@@ -484,20 +482,18 @@ int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId)
         return ZAN_ERR;
     }
 
-    ///TODO:::
-    int ret = //(ServerG.main_reactor)?
-              ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_worker, &ev_data, sendn);
-              //swSocket_write_blocking(worker->pipe_worker, &ev_data, sendn);
+    int ret = ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_worker, &ev_data, sendn);
 
     return ret;
 }
 
-void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id)
+void zanServer_connection_ready(zanServer *serv, int fd, int reactor_id, int networker_id)
 {
     swDataHead connect_event;
     connect_event.type = SW_EVENT_CONNECT;
     connect_event.from_id = reactor_id;
     connect_event.fd = fd;
+    connect_event.networker_id = networker_id;
 
     if (serv->factory.notify(&serv->factory, &connect_event) < 0)
     {
@@ -510,7 +506,7 @@ int zanServer_send(zanServer *serv, swSendData *resp)
     return swWrite(resp->info.fd, resp->data, resp->info.len);
 }
 
-int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length)
+int zanServer_tcp_send(zanServer *serv, int session_id, void *data, uint32_t length)
 {
     swSendData _send;
     zanFactory   *factory = &(serv->factory);
@@ -525,9 +521,10 @@ int zanServer_tcp_send(zanServer *serv, int fd, void *data, uint32_t length)
 
     //fd: session_id
     memset(&_send, 0, sizeof(swSendData));
-    _send.info.fd = fd;
+    _send.info.fd   = session_id;
     _send.info.type = SW_EVENT_TCP;
-    _send.data = data;
+    _send.data      = data;
+    _send.info.worker_id = ServerWG.worker_id;   //src worker, for test
 
     if (length >= SW_IPC_MAX_SIZE - sizeof(swDataHead))
     {
@@ -816,4 +813,45 @@ int zanServer_adduserworker(zanServer *serv, zanWorker *worker)
     }
 
     return worker->worker_id;
+}
+
+int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId)
+{
+    zanTrace("deny_request: dstworker_id=%ld", nWorkerId);
+    if (nWorkerId < 0 || nWorkerId >= ServerG.servSet.worker_num)
+    {
+        zanError("workerid=%ld is error, worker_num=%d", nWorkerId, ServerG.servSet.worker_num);
+        return ZAN_ERR;
+    }
+
+    if (nWorkerId == ServerWG.worker_id)
+    {
+        ServerGS->event_workers.workers[nWorkerId].deny_request = 1;
+        zanDebug("set self worker deny_request, [dst_work_id=%ld], src_worker_id=%d", nWorkerId, ServerWG.worker_id);
+        return ZAN_OK;
+    }
+
+    swEventData ev_data;
+    ev_data.info.fd = 0;
+    ev_data.info.worker_id = nWorkerId;
+    ev_data.info.type = SW_EVENT_DENY_REQUEST;
+    //copy data
+    memcpy(ev_data.data, "0", 1);
+
+    ev_data.info.len = 1;
+    ev_data.info.from_fd = SW_RESPONSE_SMALL;
+    ev_data.info.from_id = 0;
+    int sendn = ev_data.info.len + sizeof(swDataHead);
+
+    zanWorker *worker = zanServer_get_worker(serv, nWorkerId);
+    int ret = 0;
+    if (ServerG.main_reactor)
+    {
+        ret = ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_worker, &ev_data, sendn);
+    }
+    else
+    {
+        ret = swSocket_write_blocking(worker->pipe_worker, &ev_data, sendn);
+    }
+    return ret;
 }

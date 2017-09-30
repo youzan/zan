@@ -87,30 +87,30 @@ typedef struct _swRequest
 } swRequest;
 
 typedef struct _swWorker swWorker;
-typedef struct _swProcessPool	swProcessPool;
+typedef struct _swProcessPool   swProcessPool;
 
 struct _swWorker
 {
-	/**
-	 * worker process
-	 */
-	pid_t pid;
+    /**
+     * worker process
+     */
+    pid_t pid;
 
-	/**
-	 * worker thread
-	 */
-	pthread_t tid;
+    /**
+     * worker thread
+     */
+    pthread_t tid;
 
-	swProcessPool *pool;
-	swMemoryPool *pool_output;
-	swMsgQueue *queue;
+    swProcessPool *pool;
+    swMemoryPool *pool_output;
+    swMsgQueue *queue;
 
-	/**
-	 * redirect stdout to pipe_master
-	 */
-	uint8_t redirect_stdout;
+    /**
+     * redirect stdout to pipe_master
+     */
+    uint8_t redirect_stdout;
 
-	/**
+    /**
      * redirect stdin to pipe_worker
      */
     uint8_t redirect_stdin;
@@ -120,9 +120,9 @@ struct _swWorker
      */
     uint8_t redirect_stderr;
 
-	/**
-	 * worker status, IDLE or BUSY
-	 */
+    /**
+     * worker status, IDLE or BUSY
+     */
     uint8_t status;
     uint8_t type;
     uint8_t ipc_mode;
@@ -140,23 +140,23 @@ struct _swWorker
      */
     sw_atomic_t tasking_num;
 
-	/**
-	 * worker id
-	 */
-	uint32_t id;
+    /**
+     * worker id
+     */
+    uint32_t id;
 
-	swLock lock;
+    swLock lock;
 
-	void *send_shm;
+    void *send_shm;
 
-	swPipe *pipe_object;
+    swPipe *pipe_object;
 
-	int pipe_master;
-	int pipe_worker;
+    int pipe_master;
+    int pipe_worker;
 
-	int pipe;
-	void *ptr;
-	void *ptr2;
+    int pipe;
+    void *ptr;
+    void *ptr2;
 };
 
 typedef struct _swUserWorker_node
@@ -265,8 +265,8 @@ typedef struct _swThreadPool swThreadPool;
 
 typedef struct _swThreadParam
 {
-	void *object;
-	int pti;
+    void *object;
+    int pti;
 } swThreadParam;
 
 struct _swThreadPool

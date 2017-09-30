@@ -124,7 +124,7 @@ static int swTCPThread_start(swServer *serv)
     {
         if (!swSocket_is_dgram(ls->type))
         {
-        	SwooleG.main_reactor->add(SwooleG.main_reactor, ls->sock, SW_FD_LISTEN);
+            SwooleG.main_reactor->add(SwooleG.main_reactor, ls->sock, SW_FD_LISTEN);
         }
     }
 
@@ -232,8 +232,8 @@ static int swReactorThread_loop_stream(swThreadParam *param)
                 swBuffer *buffer = swBuffer_new(sizeof(swEventData));
                 if (!buffer)
                 {
-                	swError("create buffer failed.");
-                	break;
+                    swError("create buffer failed.");
+                    break;
                 }
                 serv->connection_list[pipe_fd].in_buffer = buffer;
 
@@ -296,7 +296,7 @@ static void swHeartbeatThread_start(swServer *serv)
 
     if (pthread_create(&thread_id, NULL, (void * (*)(void *)) swHeartbeatThread_loop, (void *) param) < 0)
     {
-    	swSysError("pthread_create[hbcheck] fail.");
+        swSysError("pthread_create[hbcheck] fail.");
     }
     SwooleG.heartbeat_pidt = thread_id;
 }
@@ -748,10 +748,10 @@ static int swReactorThread_onPipeReceive(swReactor *reactor, swEvent *ev)
 
 static int swReactorThread_onRead(swReactor *reactor, swEvent *event)
 {
-	if (event->socket->from_fd == 0)
-	{
-		return SW_OK;
-	}
+    if (event->socket->from_fd == 0)
+    {
+        return SW_OK;
+    }
 
     swServer *serv = reactor->ptr;
     swListenPort *port = swServer_get_port(serv, event->fd);
@@ -869,7 +869,7 @@ int swReactorThread_close(swReactor *reactor, int fd)
 
     if (!conn->removed)
     {
-    	reactor->del(reactor, fd);
+        reactor->del(reactor, fd);
     }
 
     if (serv->factory_mode == SW_MODE_PROCESS)
@@ -1061,7 +1061,7 @@ int swReactorThread_send(swSendData *_send)
         }
         else
         {
-        	swNotice("send event$[%d] failed, session#%d does not exist.", _send->info.type, session_id);
+            swNotice("send event$[%d] failed, session#%d does not exist.", _send->info.type, session_id);
         }
 
         return SW_ERR;
@@ -1164,7 +1164,7 @@ int swReactorThread_send(swSendData *_send)
         //connection output buffer overflow
         if (conn->out_buffer->length >= serv->buffer_output_size)
         {
-        	swNotice("connection#%d output buffer overflow.", fd);
+            swNotice("connection#%d output buffer overflow.", fd);
             conn->overflow = 1;
         }
 
@@ -1207,7 +1207,7 @@ void swReactorThread_set_protocol(swServer *serv, swReactor *reactor)
     {
         if (!swSocket_is_dgram(ls->type))
         {
-        	swPort_set_protocol(ls);
+            swPort_set_protocol(ls);
         }
     }
 }
@@ -1430,14 +1430,14 @@ void swReactorThread_free(swServer *serv)
 
     if (serv->have_tcp_sock == 1)
     {
-    	int i = 0;
-    	swReactorThread *thread = NULL;
+        int i = 0;
+        swReactorThread *thread = NULL;
         for (i = 0; i < serv->reactor_num; i++)
         {
             thread = &(serv->reactor_threads[i]);
             if (thread->reactor.running && thread->thread_id && pthread_cancel(thread->thread_id) != 0)
             {
-            	swSysError("pthread_cancel(%ld) failed.",(long)thread->thread_id);
+                swSysError("pthread_cancel(%ld) failed.",(long)thread->thread_id);
             }
             thread->reactor.running = 0;
 
@@ -1464,12 +1464,12 @@ void swReactorThread_free(swServer *serv)
             {
                 if (ls->thread_id && pthread_cancel(ls->thread_id) != 0)
                 {
-                	swSysError("pthread_cancel(%ld) failed.",(long)ls->thread_id);
+                    swSysError("pthread_cancel(%ld) failed.",(long)ls->thread_id);
                 }
 
                 if (ls->thread_id && pthread_join(ls->thread_id, NULL) != 0)
                 {
-                	swSysError("pthread_join(%ld) failed.", (long)ls->thread_id);
+                    swSysError("pthread_join(%ld) failed.", (long)ls->thread_id);
                 }
             }
         }

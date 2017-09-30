@@ -58,8 +58,8 @@ int swAio_init(void)
 
     if (swMutex_create(&SwooleAIO.wLock,0) < 0)
     {
-		swError("create async lock error.");
-		return SW_ERR;
+        swError("create async lock error.");
+        return SW_ERR;
     }
 
     int ret = swAioBase_init(SW_AIO_EVENT_NUM);
@@ -114,9 +114,9 @@ static int swAioBase_onFinish(swReactor *reactor, swEvent *event)
 
 static int swAioBase_onError(swReactor *reactor, swEvent *event)
 {
-	swError("asyncIO read pipe fd error,process will exit.");
-	exit(1);
-	return SW_OK;
+    swError("asyncIO read pipe fd error,process will exit.");
+    exit(1);
+    return SW_OK;
 }
 
 static int swAioBase_init(int max_aio_events)
@@ -167,7 +167,7 @@ int swAio_dns_lookup(int flags,void *hostname, void *ip_addr, size_t size)
     swAio_event *aio_ev = (swAio_event *) sw_malloc(sizeof(swAio_event));
     if (aio_ev == NULL)
     {
-    	swFatalError("malloc failed.");
+        swFatalError("malloc failed.");
         return SW_ERR;
     }
 
@@ -181,7 +181,7 @@ int swAio_dns_lookup(int flags,void *hostname, void *ip_addr, size_t size)
 
     if (swThreadPool_dispatch(&swAioBase_thread_pool, aio_ev, sizeof(aio_ev)) < 0)
     {
-    	sw_free(aio_ev);
+        sw_free(aio_ev);
         return SW_ERR;
     }
     else
@@ -206,18 +206,18 @@ start_switch:
         ret = (event->nbytes <= 0)? 0: pread(event->fd, event->buf, event->nbytes, event->offset);
         break;
     case SW_AIO_DNS_LOOKUP:
-		{
-			char ipaddr[SW_IP_MAX_LENGTH] = {0};
-			ret = swoole_gethostbyname(event->fd, event->buf,ipaddr,SW_IP_MAX_LENGTH);
-			
-			if (ret >= 0)
-			{
-				bzero(event->buf, event->nbytes);
-				memcpy(event->buf, ipaddr, strnlen(ipaddr, SW_IP_MAX_LENGTH) + 1);
-			}
-			
-		}
-		break;
+        {
+            char ipaddr[SW_IP_MAX_LENGTH] = {0};
+            ret = swoole_gethostbyname(event->fd, event->buf,ipaddr,SW_IP_MAX_LENGTH);
+
+            if (ret >= 0)
+            {
+                bzero(event->buf, event->nbytes);
+                memcpy(event->buf, ipaddr, strnlen(ipaddr, SW_IP_MAX_LENGTH) + 1);
+            }
+
+        }
+        break;
     default:
         swError("unknow aio task.");
         break;
@@ -240,12 +240,12 @@ start_switch:
 
     do
     {
-    	SwooleAIO.wLock.lock(&SwooleAIO.wLock);
+        SwooleAIO.wLock.lock(&SwooleAIO.wLock);
         ret = write(swAioBase_pipe_write, &task, sizeof(task));
         SwooleAIO.wLock.unlock(&SwooleAIO.wLock);
         if (ret < 0 && (errno == EAGAIN || errno == EINTR))
         {
-        	 if (errno == EAGAIN)	swYield();
+             if (errno == EAGAIN)   swYield();
              continue;
         }
 
@@ -288,7 +288,7 @@ static int swAioBase_read(int fd, void *inbuf, size_t size, off_t offset)
     swAio_event *aio_ev = (swAio_event *) sw_malloc(sizeof(swAio_event));
     if (aio_ev == NULL)
     {
-    	swFatalError("malloc failed.");
+        swFatalError("malloc failed.");
         return SW_ERR;
     }
 
@@ -302,7 +302,7 @@ static int swAioBase_read(int fd, void *inbuf, size_t size, off_t offset)
 
     if (swThreadPool_dispatch(&swAioBase_thread_pool, aio_ev, sizeof(aio_ev)) < 0)
     {
-    	sw_free(aio_ev);
+        sw_free(aio_ev);
         return SW_ERR;
     }
     else

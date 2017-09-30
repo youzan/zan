@@ -491,7 +491,7 @@ int zan_master_process_loop(zanServer *serv)
 			{
 				new_pid = zanrelaod_worker(&index, status, 2, serv, &pid, &(ServerGS->net_workers));
 			}
-						
+
 			if(serv->user_worker_map != NULL)
 			{
 				zanMaster_waituserworker(&(ServerGS->event_workers), pid);
