@@ -346,17 +346,17 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 					if(worker_type == 0)
 					{
 						new_pid = zanMaster_spawnworker(reload_worker, &(reload_worker->workers[i-reload_worker->start_id]));
-						zanWarn("worker_pid=%d", new_pid);
+						zanWarn("new_worker_pid=%d", new_pid);
 					}
 					else if(worker_type == 1)
 					{
 						new_pid = zanTaskWorker_spawn(&(reload_worker->workers[i-reload_worker->start_id]));
-						zanWarn("task_worker_pid=%d", new_pid);
+						zanWarn("new_task_worker_pid=%d", new_pid);
 					}
 					else
 					{
 						new_pid = zanNetWorker_spawn(&(reload_worker->workers[i-reload_worker->start_id]));
-						zanWarn("net_worker_pid=%d", new_pid);
+						zanWarn("new_net_worker_pid=%d", new_pid);
 					}
 					
 					if (new_pid < 0)
@@ -452,15 +452,7 @@ int zan_master_process_loop(zanServer *serv)
                     memcpy(reload_workers + ServerG.servSet.worker_num, ServerGS->task_workers.workers, sizeof(zanWorker) * ServerG.servSet.task_worker_num);
                     reloadworker_num += ServerG.servSet.task_worker_num;
                 }
-
                 reloadworker_index = 0;
-                //MasterProcess.reload_event_worker = 0;
-				//result = zanworker_freeprocess(&reloadworker_index, reload_workers, reloadworker_num);
-				//if(result < 0)
-				//{
-				//	zanWarn("kill worker failed");
-				//}
-				//goto kill_worker;
 			}
 			else if(MasterProcess.reload_task_worker == 1)
 			{
@@ -475,13 +467,6 @@ int zan_master_process_loop(zanServer *serv)
 				memcpy(reload_workers, ServerGS->task_workers.workers, sizeof(zanWorker) * ServerG.servSet.task_worker_num);
                 reloadworker_num = SwooleG.task_worker_num;
                 reloadworker_index = 0;
-                //MasterProcess.reload_task_worker = 0;
-				//goto kill_worker;
-				//result = zanworker_freeprocess(&reloadworker_index, reload_workers, reloadworker_num);
-				//if(result < 0)
-				//{
-				//	zanWarn("kill task worker failed");
-				//}
 			}
 			else
 			{
