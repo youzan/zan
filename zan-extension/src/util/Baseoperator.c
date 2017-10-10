@@ -23,6 +23,8 @@
 #endif
 
 #include <stdlib.h>
+#include <pthread.h>
+#include <sched.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <sys/ioctl.h>
@@ -33,7 +35,6 @@
 #include "swAtomic.h"
 #include "swClient.h"
 #include "swBaseOperator.h"
-//#include "swLog.h"
 #include "zanLog.h"
 
 #ifdef HAVE_EXECINFO
@@ -612,7 +613,7 @@ void swoole_cpu_setAffinity(int threadid, zanServer *serv)
     }
 
     //cpu affinity setting
-    if (serv->open_cpu_affinity)
+    if (ServerG.servSet.open_cpu_affinity)
     {
         cpu_set_t cpu_set;
         CPU_ZERO(&cpu_set);
