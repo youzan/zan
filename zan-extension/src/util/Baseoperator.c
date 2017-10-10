@@ -22,13 +22,6 @@
 #define daemon daemon_is_deprecated_in_os_x_10_5
 #endif
 
-#include <stdlib.h>
-#include <pthread.h>
-#include <sched.h>
-#include <sys/stat.h>
-#include <sys/resource.h>
-#include <sys/ioctl.h>
-
 #include "swoole.h"
 #include "swSignal.h"
 #include "swError.h"
@@ -36,6 +29,13 @@
 #include "swClient.h"
 #include "swBaseOperator.h"
 #include "zanLog.h"
+
+#include <stdlib.h>
+#include <pthread.h>
+#include <sched.h>
+#include <sys/stat.h>
+#include <sys/resource.h>
+#include <sys/ioctl.h>
 
 #ifdef HAVE_EXECINFO
 #include <execinfo.h>
