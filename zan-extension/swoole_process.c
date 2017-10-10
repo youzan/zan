@@ -813,9 +813,9 @@ static PHP_METHOD(swoole_process, setaffinity)
         RETURN_FALSE;
     }
 
-    if (!array || Z_ARRVAL_P(array)->nNumOfElements == 0 || Z_ARRVAL_P(array)->nNumOfElements > SW_CPU_NUM)
+    if (!array || Z_ARRVAL_P(array)->nNumOfElements == 0 || Z_ARRVAL_P(array)->nNumOfElements > ZAN_CPU_NUM)
     {
-        zanWarn("array number of CPU between 0 and %d.",SW_CPU_NUM);
+        zanWarn("array number of CPU between 0 and %d.",ZAN_CPU_NUM);
         RETURN_FALSE;
     }
 
@@ -825,7 +825,7 @@ static PHP_METHOD(swoole_process, setaffinity)
 
     SW_HASHTABLE_FOREACH_START(Z_ARRVAL_P(array), value)
         convert_to_long(value);
-        if (Z_LVAL_P(value) >= SW_CPU_NUM)
+        if (Z_LVAL_P(value) >= ZAN_CPU_NUM)
         {
             zanWarn("invalid cpu id [%d]", (int) Z_LVAL_P(value));
             RETURN_FALSE;
