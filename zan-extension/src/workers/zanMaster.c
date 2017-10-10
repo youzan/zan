@@ -301,15 +301,15 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 	switch(worker_type)
     {
 		//worker
-		case 0:
+		case ZAN_PROCESS_WORKER:
 			worker_sum = ServerG.servSet.worker_num;
 			break;
 		//task_worker
-		case 1:
+		case ZAN_PROCESS_TASKWORKER:
 			worker_sum = ServerG.servSet.worker_num + ServerG.servSet.task_worker_num;
 			break;
-		//user_worker
-		case 2:
+		//net_worker
+		case ZAN_PROCESS_NETWORKER:
 			worker_sum = ServerG.servSet.worker_num + ServerG.servSet.task_worker_num + ServerG.servSet.net_worker_num;
 			break;
 		default:
@@ -335,20 +335,13 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 				*pid = -1;
 				while (1)
 				{
-					if((reload_worker->workers[i-reload_worker->start_id].deleted) == 1)
-					{
-						reload_worker->workers[i-reload_worker->start_id].deleted = 0;
-						reload_worker->workers[i-reload_worker->start_id].worker_pid = -1;
-						
-						break;
-					}
-					
-					if(worker_type == 0)
+				
+					if(worker_type == ZAN_PROCESS_WORKER)
 					{
 						new_pid = zanMaster_spawnworker(reload_worker, &(reload_worker->workers[i-reload_worker->start_id]));
 						zanWarn("new_worker_pid=%d", new_pid);
 					}
-					else if(worker_type == 1)
+					else if(worker_type == ZAN_PROCESS_TASKWORKER)
 					{
 						new_pid = zanTaskWorker_spawn(&(reload_worker->workers[i-reload_worker->start_id]));
 						zanWarn("new_task_worker_pid=%d", new_pid);
@@ -369,6 +362,15 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 						reload_worker->workers[i-reload_worker->start_id].worker_pid = new_pid;
 						break;
 					}
+					
+					if((reload_worker->workers[i-reload_worker->start_id].deleted) == 1)
+					{
+						reload_worker->workers[i-reload_worker->start_id].deleted = 0;
+						reload_worker->workers[i-reload_worker->start_id].worker_pid = -1;
+						
+						break;
+					}
+					
 				}
 			}
 		}
@@ -480,16 +482,16 @@ int zan_master_process_loop(zanServer *serv)
 		else if((pid > 0) && (ServerG.running == 1))
 		{
 			index = 0;
-			new_pid = zanrelaod_worker(&index, status, 0, serv, &pid, &(ServerGS->event_workers));
+			new_pid = zanrelaod_worker(&index, status, ZAN_PROCESS_WORKER, serv, &pid, &(ServerGS->event_workers));
 			//reload task_worker
 			if(pid > 0)
 			{
-				new_pid = zanrelaod_worker(&index, status, 1, serv, &pid, &(ServerGS->task_workers));
+				new_pid = zanrelaod_worker(&index, status, ZAN_PROCESS_TASKWORKER, serv, &pid, &(ServerGS->task_workers));
 			}
 			//reload net_worker
 			if(pid > 0)
 			{
-				new_pid = zanrelaod_worker(&index, status, 2, serv, &pid, &(ServerGS->net_workers));
+				new_pid = zanrelaod_worker(&index, status, ZAN_PROCESS_NETWORKER, serv, &pid, &(ServerGS->net_workers));
 			}
 
 			if(serv->user_worker_map != NULL)
