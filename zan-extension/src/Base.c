@@ -24,12 +24,11 @@
 #include "swAtomic.h"
 #include "swClient.h"
 #include "swBaseOperator.h"
-#include "swGlobalVars.h"
-#include "swLog.h"
 
 #include "zanGlobalVar.h"
 #include "zanLog.h"
 
+#if 0
 void swoole_init(void)
 {
     if (SwooleG.running)
@@ -175,6 +174,7 @@ void set_log_level(int level)
     SwooleGS->log_level = level;
     SwooleGS->log_lock.unlock(&SwooleGS->log_lock);
 }
+#endif
 
 void zan_init(void)
 {

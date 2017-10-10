@@ -43,7 +43,7 @@ static sw_inline void http2_onRequest(http_context *ctx, int server_fd TSRMLS_DC
     zval *zrequest_object = ctx->request.zobject;
     zval *zresponse_object = ctx->response.zobject;
     SW_SEPARATE_ZVAL(zrequest_object);
-	SW_SEPARATE_ZVAL(zresponse_object);
+    SW_SEPARATE_ZVAL(zresponse_object);
 
     args[0] = &zrequest_object;
     args[1] = &zresponse_object;
@@ -251,7 +251,7 @@ static int http2_build_header(http_context *ctx, uchar *buffer, int body_length 
 
 int swoole_http2_do_response(http_context *ctx, swString *body)
 {
-	SWOOLE_FETCH_TSRMLS;
+    SWOOLE_FETCH_TSRMLS;
 
     char header_buffer[8192] = {0};
 
@@ -298,7 +298,7 @@ int swoole_http2_do_response(http_context *ctx, swString *body)
 
 static int http2_parse_header(swoole_http_client *client, http_context *ctx, int flags, char *in, size_t inlen)
 {
-	SWOOLE_FETCH_TSRMLS;
+    SWOOLE_FETCH_TSRMLS;
 
     nghttp2_hd_inflater *inflater = client->inflater;
 
@@ -453,7 +453,7 @@ static int http2_parse_header(swoole_http_client *client, http_context *ctx, int
  */
 int swoole_http2_onFrame(swoole_http_client *client, swEventData *req)
 {
-	SWOOLE_FETCH_TSRMLS;
+    SWOOLE_FETCH_TSRMLS;
 
     int fd = req->info.fd;
 
@@ -501,7 +501,7 @@ int swoole_http2_onFrame(swoole_http_client *client, swEventData *req)
         sw_add_assoc_long_ex(zserver, ZEND_STRS("request_time"), SwooleGS->now);
 
         // Add REQUEST_TIME_FLOAT
-        double now_float = swoole_microtime();
+        double now_float = get_microtime();
         sw_add_assoc_double_ex(zserver, ZEND_STRS("request_time_float"), now_float);
 
         add_assoc_long(zserver, "server_port", swConnection_get_port(&SwooleG.serv->connection_list[conn->from_fd]));

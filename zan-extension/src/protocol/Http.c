@@ -82,17 +82,17 @@ int swHttpRequest_get_protocol(swHttpRequest *request)
         if (memcmp(buf, SW_HTTP2_PRI_STRING, sizeof(SW_HTTP2_PRI_STRING) - 1) == 0)
         {
             request->buffer->offset = sizeof(SW_HTTP2_PRI_STRING) - 1;
-            return SW_OK;
+            return ZAN_OK;
         }
         else
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
     }
 #endif
     else
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     //http version
@@ -108,7 +108,7 @@ int swHttpRequest_get_protocol(swHttpRequest *request)
         {
             if (p + 8 > pe)
             {
-                return SW_ERR;
+                return ZAN_ERR;
             }
             if (memcmp(p, "HTTP/1.1", 8) == 0)
             {
@@ -122,13 +122,13 @@ int swHttpRequest_get_protocol(swHttpRequest *request)
             }
             else
             {
-                return SW_ERR;
+                return ZAN_ERR;
             }
         }
     }
     p += 8;
     request->buffer->offset = p - request->buffer->str;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void swHttpRequest_free(swConnection *conn)
@@ -164,34 +164,34 @@ int swHttpRequest_get_content_length(swHttpRequest *request)
     {
         if (*p == '\r' && *(p + 1) == '\n')
         {
-        	buffer->offset = p - buffer->str;
-			if (strncasecmp(p + 2, SW_STRL("Content-Length") - 1) == 0)
-			{
-				p += 2 + (sizeof("Content-Length:") - 1);
-				eol = strstr(p,"\r\n");
-				if (NULL == eol)
-				{
-					return SW_ERR;
-				}
+            buffer->offset = p - buffer->str;
+            if (strncasecmp(p + 2, SW_STRL("Content-Length") - 1) == 0)
+            {
+                p += 2 + (sizeof("Content-Length:") - 1);
+                eol = strstr(p,"\r\n");
+                if (NULL == eol)
+                {
+                    return ZAN_ERR;
+                }
 
-				while (isspace(*p) && p != eol)
-				{
-					p++;
-				}
+                while (isspace(*p) && p != eol)
+                {
+                    p++;
+                }
 
-				if (p == eol)
-				{
-					return SW_ERR;
-				}
+                if (p == eol)
+                {
+                    return ZAN_ERR;
+                }
 
-				request->content_length = atoi(p);
-				buffer->offset = eol - buffer->str;
-				return SW_OK;
-			}
+                request->content_length = atoi(p);
+                buffer->offset = eol - buffer->str;
+                return ZAN_OK;
+            }
         }
     }
 
-    return SW_ERR;
+    return ZAN_ERR;
 }
 
 #ifdef SW_HTTP_100_CONTINUE
@@ -243,9 +243,9 @@ int swHttpRequest_get_header_length(swHttpRequest *request)
     int n = swoole_strnpos(buffer->str, buffer->length, "\r\n\r\n", 4);
     if (n < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     request->header_length = n + 4;
-    return SW_OK;
+    return ZAN_OK;
 }

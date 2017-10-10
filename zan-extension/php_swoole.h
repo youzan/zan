@@ -43,9 +43,7 @@
 #endif
 
 #include "swoole.h"
-#include "swServer.h"
 #include "swClient.h"
-#include "swAsyncIO.h"
 
 #include "zanGlobalVar.h"
 

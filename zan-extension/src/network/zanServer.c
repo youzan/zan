@@ -16,17 +16,18 @@
   +----------------------------------------------------------------------+
 */
 
+#include <stdlib.h>
+#include <time.h>
 #include "list.h"
 #include "swWork.h"
 #include "swError.h"
 #include "swSignal.h"
-#include "swExecutor.h"
+//#include "swExecutor.h"
 #include "swProtocol/http.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"
 
-#include <stdlib.h>
-#include <time.h>
+#include "swMemory/memoryPool.h"
 #include "zanSystem.h"
 #include "zanServer.h"
 #include "zanWorkers.h"
@@ -95,10 +96,10 @@ int zanServer_create(zanServer *serv)
 {
     ServerG.factory = &serv->factory;
 
-    serv->session_list = sw_shm_calloc(SW_SESSION_LIST_SIZE, sizeof(swSession));
+    serv->session_list = sw_shm_calloc(SW_SESSION_LIST_SIZE, sizeof(zanSession));
     if (!serv->session_list)
     {
-        zanError("sw_shm_calloc(%ld) for session_list failed", SW_SESSION_LIST_SIZE * sizeof(swSession));
+        zanError("sw_shm_calloc(%ld) for session_list failed", SW_SESSION_LIST_SIZE * sizeof(zanSession));
         return ZAN_ERR;
     }
 

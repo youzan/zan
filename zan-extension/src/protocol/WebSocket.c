@@ -16,12 +16,14 @@
  +----------------------------------------------------------------------+
  */
 
+#include <sys/time.h>
+
 #include "swoole.h"
-#include "swLog.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"
 #include "swProtocol/websocket.h"
-#include <sys/time.h>
+#include "zanLog.h"
+
 
 /*  The following is websocket data frame:
  +-+-+-+-+-------+-+-------------+-------------------------------+
@@ -66,8 +68,8 @@ int swWebSocket_get_package_length(swProtocol *protocol, swConnection *conn, cha
     {
         if (swConnection_recv(conn, buf, sizeof(uint16_t), 0) < 0)
         {
-            swWarn("recv(%d, 2) extended payload length failed.", conn->fd);
-            return SW_ERR;
+            zanWarn("recv(%d, 2) extended payload length failed.", conn->fd);
+            return ZAN_ERR;
         }
         payload_length = ntohs(*((uint16_t *) buf));
         header_length += sizeof(uint16_t);
@@ -79,8 +81,8 @@ int swWebSocket_get_package_length(swProtocol *protocol, swConnection *conn, cha
     {
         if (swConnection_recv(conn, buf, sizeof(uint64_t), 0) < 0)
         {
-            swWarn("recv(%d, 8) extended payload length failed.", conn->fd);
-            return SW_ERR;
+            zanWarn("recv(%d, 8) extended payload length failed.", conn->fd);
+            return ZAN_ERR;
         }
 
         payload_length = swoole_ntoh64(*((uint64_t *) buf));
@@ -92,8 +94,8 @@ int swWebSocket_get_package_length(swProtocol *protocol, swConnection *conn, cha
     {
         if (swConnection_recv(conn, buf, SW_WEBSOCKET_MASK_LEN, 0) < 0)
         {
-            swWarn("recv(%d, %d) masking-key failed.", conn->fd, SW_WEBSOCKET_MASK_LEN);
-            return SW_ERR;
+            zanWarn("recv(%d, %d) masking-key failed.", conn->fd, SW_WEBSOCKET_MASK_LEN);
+            return ZAN_ERR;
         }
         header_length += SW_WEBSOCKET_MASK_LEN;
         buffer->length += SW_WEBSOCKET_MASK_LEN;

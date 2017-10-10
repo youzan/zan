@@ -22,19 +22,19 @@
 #define daemon daemon_is_deprecated_in_os_x_10_5
 #endif
 
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/resource.h>
+#include <sys/ioctl.h>
+
 #include "swoole.h"
 #include "swSignal.h"
 #include "swError.h"
 #include "swAtomic.h"
 #include "swClient.h"
 #include "swBaseOperator.h"
-#include "swLog.h"
-
-#include <stdlib.h>
-
-#include <sys/stat.h>
-#include <sys/resource.h>
-#include <sys/ioctl.h>
+//#include "swLog.h"
+#include "zanLog.h"
 
 #ifdef HAVE_EXECINFO
 #include <execinfo.h>
@@ -67,7 +67,7 @@ int swoole_mkdir_recursive(const char *dir)
     int len = strlen(dir);
     if (len + 1 > 1024)
     {
-        swWarn("mkdir(%s) failed,Path exceeds %d characters limit.",dir,1023);
+        zanWarn("mkdir(%s) failed,Path exceeds %d characters limit.",dir,1023);
         return -1;
     }
 
@@ -88,7 +88,7 @@ int swoole_mkdir_recursive(const char *dir)
             {
                 if (mkdir(tmp, 0755) == -1)
                 {
-                    swSysError("mkdir(%s) failed.", tmp);
+                    zanError("mkdir(%s) failed.", tmp);
                     return -1;
                 }
             }
@@ -107,7 +107,7 @@ char* swoole_dirname(char *file)
     char *dirname = strdup(file);
     if (dirname == NULL)
     {
-        swWarn("strdup() failed.");
+        zanWarn("strdup() failed.");
         return NULL;
     }
 
@@ -127,7 +127,7 @@ char* swoole_dirname(char *file)
 
 int get_env_log_level()
 {
-    int level = SW_LOG_LEVEL_UNKNOW;
+    int level = ZAN_LOG_LEVEL_UNKNOW;
     char* tmp = getenv("ZANEXT_DEBUG_LOG_LEVEL");
     if (tmp)
     {
@@ -193,7 +193,7 @@ int swoole_sync_writefile(int fd, void *data, int len)
         }
         else
         {
-            swSysError("write() failed.");
+            zanError("write() failed.");
             break;
         }
     }
@@ -243,7 +243,7 @@ int swoole_system_random(int min, int max)
 
     if (read(dev_random_fd, next_random_byte, bytes_to_read) < 0)
     {
-        swSysError("read() failed.");
+        zanError("read() failed.");
         return SW_ERR;
     }
 
@@ -335,7 +335,7 @@ int swoole_tmpfile(char *filename)
 
     if (tmp_fd < 0)
     {
-        swSysError("mkstemp/mkostemp(%s) failed.", filename);
+        zanError("mkstemp/mkostemp(%s) failed.", filename);
         return SW_ERR;
     }
     else
@@ -358,25 +358,25 @@ swString* swoole_file_get_contents(char *filename)
     struct stat file_stat;
     if (lstat(filename, &file_stat) < 0)
     {
-        swSysError("lstat(%s) failed.", filename);
+        zanError("lstat(%s) failed.", filename);
         return NULL;
     }
     if (file_stat.st_size > SW_MAX_FILE_CONTENT)
     {
-        swWarn("file is too big");
+        zanWarn("file is too big");
         return NULL;
     }
     int fd = open(filename, O_RDONLY);
     if (fd < 0)
     {
-        swSysError("open(%s) failed.", filename);
+        zanError("open(%s) failed.", filename);
         return NULL;
     }
 
     swString *content = swString_new(file_stat.st_size);
     if (!content)
     {
-        swWarn("malloc failed");
+        zanWarn("malloc failed");
         close(fd);
         return NULL;
     }
@@ -395,7 +395,7 @@ swString* swoole_file_get_contents(char *filename)
             }
             else
             {
-                swSysError("pread() failed.");
+                zanError("pread() failed.");
                 swString_free(content);
                 close(fd);
                 return NULL;
@@ -461,11 +461,11 @@ void swoole_redirect_stdout(int new_fd)
 {
     if (dup2(new_fd, STDOUT_FILENO) < 0)
     {
-        swSysError("dup2(STDOUT_FILENO) failed.");
+        zanError("dup2(STDOUT_FILENO) failed.");
     }
     if (dup2(new_fd, STDERR_FILENO) < 0)
     {
-        swSysError("dup2(STDERR_FILENO) failed.");
+        zanError("dup2(STDERR_FILENO) failed.");
     }
 }
 
@@ -604,7 +604,7 @@ void swoole_print_trace(void)
 }
 #endif
 
-void swoole_cpu_setAffinity(int threadid,swServer *serv)
+void swoole_cpu_setAffinity(int threadid, zanServer *serv)
 {
 #ifdef HAVE_CPU_AFFINITY
     if (!serv){
@@ -628,7 +628,7 @@ void swoole_cpu_setAffinity(int threadid,swServer *serv)
 
         if (0 != pthread_setaffinity_np(pthread_self(), sizeof(cpu_set), &cpu_set))
         {
-            swSysError("pthread_setaffinity_np() failed");
+            zanError("pthread_setaffinity_np() failed");
         }
     }
 #endif
@@ -664,7 +664,7 @@ int swoole_daemon(int nochdir, int noclose)
 #ifndef HAVE_DAEMON
     if (!nochdir && chdir("/") != 0)
     {
-        swSysError("chdir() failed.");
+        zanError("chdir() failed.");
         return -1;
     }
 
@@ -673,14 +673,14 @@ int swoole_daemon(int nochdir, int noclose)
         int fd = open("/dev/null", O_RDWR);
         if (fd < 0)
         {
-            swSysError("open() failed.");
+            zanError("open() failed.");
             return -1;
         }
 
         if (dup2(fd, 0) < 0 || dup2(fd, 1) < 0 || dup2(fd, 2) < 0)
         {
             close(fd);
-            swSysError("dup2() failed.");
+            zanError("dup2() failed.");
             return -1;
         }
 
@@ -690,7 +690,7 @@ int swoole_daemon(int nochdir, int noclose)
     pid_t pid = fork();
     if (pid < 0)
     {
-        swSysError("fork() failed.");
+        zanError("fork() failed.");
         return -1;
     }
     if (pid > 0)
@@ -699,7 +699,7 @@ int swoole_daemon(int nochdir, int noclose)
     }
     if (setsid() < 0)
     {
-        swSysError("setsid() failed.");
+        zanError("setsid() failed.");
         return -1;
     }
 

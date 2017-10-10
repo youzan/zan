@@ -20,13 +20,40 @@
 #define _ZAN_ZANASYNCIO_H_
 
 #include "zanIpc.h"
-#include "swAsyncIO.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 //=========================================
+enum swAioMode
+{
+    SW_AIO_BASE = 0,
+    SW_AIO_LINUX,
+};
+
+enum
+{
+    SW_AIO_READ = 0,
+    SW_AIO_WRITE = 1,
+    SW_AIO_DNS_LOOKUP = 2,
+};
+
+#define SW_FILE_MAX_LEN_ONCE        1*1024*1024
+
+typedef struct _swAio_event
+{
+    int fd;
+    int task_id;
+    uint8_t type;
+    off_t offset;
+    size_t nbytes;
+    void *buf;
+    void *req;
+    int ret;
+    int error;
+} swAio_event;
+
 typedef struct _zanAsyncIO
 {
     uint8_t  init;
