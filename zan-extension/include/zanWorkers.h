@@ -56,6 +56,7 @@ enum zanProcessType
     ZAN_PROCESS_NETWORKER  = 5,
 };
 
+#define is_unknown()    (ServerG.process_type == ZAN_PROCESS_UNKNOWN)
 #define is_master()     (ServerG.process_type == ZAN_PROCESS_MASTER)
 #define is_networker()  (ServerG.process_type == ZAN_PROCESS_NETWORKER)
 #define is_worker()     (ServerG.process_type == ZAN_PROCESS_WORKER)

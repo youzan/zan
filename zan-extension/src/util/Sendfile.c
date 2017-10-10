@@ -17,8 +17,9 @@
 */
 
 #include "swoole.h"
-#include "swLog.h"
 #include "swSendfile.h"
+
+#include "zanLog.h"
 
 #ifdef HAVE_KQUEUE
 
@@ -68,7 +69,7 @@ do_sendfile:
     }
     else
     {
-        swSysError("sendfile failed.");
+        zanError("sendfile failed.");
         return SW_ERR;
     }
 
@@ -91,7 +92,7 @@ int swoole_sendfile(int out_fd, int in_fd, off_t *offset, size_t size)
         ret = write(out_fd, buf, n);
         if (ret < 0)
         {
-            swSysError("write() failed.");
+            zanError("write() failed.");
         }
         else
         {
@@ -103,7 +104,7 @@ int swoole_sendfile(int out_fd, int in_fd, off_t *offset, size_t size)
     }
     else
     {
-        swSysError("pread() failed.");
+        zanError("pread() failed.");
         swoole_efree(buf);
         return SW_ERR;
     }
@@ -136,7 +137,7 @@ int swoole_sync_readfile(int fd, void *buf, int len)
         }
         else
         {
-            swSysError("read() failed.");
+            zanError("read() failed.");
             break;
         }
     }

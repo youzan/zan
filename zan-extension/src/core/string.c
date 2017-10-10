@@ -16,7 +16,7 @@
  +----------------------------------------------------------------------+
  */
 
-#include "swLog.h"
+#include "zanLog.h"
 #include "swError.h"
 #include "swBaseData.h"
 #include "swBaseOperator.h"
@@ -27,7 +27,7 @@ swString *swString_new(size_t size)
     swString *str = sw_malloc(sizeof(swString));
     if (str == NULL)
     {
-        swFatalError("malloc[1] failed.");
+        zanFatalError("malloc[1] failed.");
         return NULL;
     }
     bzero(str, sizeof(swString));
@@ -35,8 +35,8 @@ swString *swString_new(size_t size)
     str->str = sw_malloc(size);
     if (str->str == NULL)
     {
-    	sw_free(str);
-    	swFatalError("malloc[2](%ld) failed.", size);
+        sw_free(str);
+        zanFatalError("malloc[2](%ld) failed.", size);
         return NULL;
     }
     return str;
@@ -59,7 +59,7 @@ swString *swString_dup2(swString *src)
     swString *dst = swString_new(src->size);
     if (dst)
     {
-        swTrace("string dup2.  new=%p, old=%p\n", dst, src);
+        zanTrace("string dup2.  new=%p, old=%p\n", dst, src);
         dst->length = src->length;
         dst->offset = src->offset;
         memcpy(dst->str, src->str, src->length);
@@ -72,7 +72,8 @@ swString *swString_dup(const char *src_str, int length)
     swString *str = sw_malloc(sizeof(swString));
     if (str == NULL)
     {
-        swFatalError("malloc[1] failed.");
+        zanFatalError("malloc[1] failed.");
+        zanFatalError("malloc[1] failed.");
         return NULL;
     }
 
@@ -82,8 +83,8 @@ swString *swString_dup(const char *src_str, int length)
     str->str = sw_malloc(str->size);
     if (str->str == NULL)
     {
-    	sw_free(str);
-    	swFatalError("malloc[2] failed.");
+        sw_free(str);
+        zanFatalError("malloc[2] failed.");
         return NULL;
     }
 
@@ -95,7 +96,7 @@ int swString_append(swString *str, swString *append_str)
 {
     int new_size = str->length + append_str->length;
     if ((new_size > str->size) &&
-    		swString_extend(str, swoole_size_align(new_size * 2, sysconf(_SC_PAGESIZE))) < 0)
+            swString_extend(str, swoole_size_align(new_size * 2, sysconf(_SC_PAGESIZE))) < 0)
     {
         return SW_ERR;
     }
@@ -112,7 +113,7 @@ int swString_append_int(swString *str, int value)
 
     int new_size = str->length + s_len;
     if (new_size > str->size &&
-    		swString_extend(str, swoole_size_align(new_size * 2, sysconf(_SC_PAGESIZE))) < 0)
+            swString_extend(str, swoole_size_align(new_size * 2, sysconf(_SC_PAGESIZE))) < 0)
     {
         return SW_ERR;
     }
@@ -126,7 +127,7 @@ int swString_append_ptr(swString *str, char *append_str, int length)
 {
     int new_size = str->length + length;
     if (new_size > str->size &&
-    		swString_extend(str, swoole_size_align(new_size * 2, sysconf(_SC_PAGESIZE))) < 0)
+            swString_extend(str, swoole_size_align(new_size * 2, sysconf(_SC_PAGESIZE))) < 0)
     {
         return SW_ERR;
     }
@@ -140,7 +141,7 @@ int swString_write(swString *str, off_t offset, swString *write_str)
 {
     int new_length = offset + write_str->length;
     if (new_length > str->size &&
-    		swString_extend(str, swoole_size_align(new_length * 2, sysconf(_SC_PAGESIZE))) < 0)
+            swString_extend(str, swoole_size_align(new_length * 2, sysconf(_SC_PAGESIZE))) < 0)
     {
         return SW_ERR;
     }
@@ -155,7 +156,7 @@ int swString_write_ptr(swString *str, off_t offset, char *write_str, int length)
 {
     int new_length = offset + length;
     if (new_length > str->size &&
-    		swString_extend(str, swoole_size_align(new_length * 2, sysconf(_SC_PAGESIZE))) < 0)
+            swString_extend(str, swoole_size_align(new_length * 2, sysconf(_SC_PAGESIZE))) < 0)
     {
         return SW_ERR;
     }
@@ -172,7 +173,7 @@ int swString_extend(swString *str, size_t new_size)
     char *new_str = sw_realloc(str->str, new_size);
     if (!new_str)
     {
-        swSysError("realloc(%ld) failed.", new_size);
+        zanError("realloc(%ld) failed.", new_size);
         return SW_ERR;
     }
 

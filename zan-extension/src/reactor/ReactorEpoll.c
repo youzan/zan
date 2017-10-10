@@ -18,9 +18,10 @@
 
 
 #include "swoole.h"
-#include "swLog.h"
 #include "swError.h"
 #include "swReactor.h"
+
+#include "zanLog.h"
 
 #ifdef HAVE_EPOLL
 
@@ -80,8 +81,8 @@ int swReactorEpoll_create(swReactor *reactor, int max_event_num)
     swReactorEpoll *reactor_object = sw_malloc(sizeof(swReactorEpoll));
     if (reactor_object == NULL)
     {
-        swWarn("malloc[0] failed.");
-        return SW_ERR;
+        zanWarn("malloc[0] failed.");
+        return ZAN_ERR;
     }
     bzero(reactor_object, sizeof(swReactorEpoll));
     reactor->object = reactor_object;
@@ -91,18 +92,18 @@ int swReactorEpoll_create(swReactor *reactor, int max_event_num)
 
     if (reactor_object->events == NULL)
     {
-        swWarn("malloc[1] failed.");
+        zanWarn("malloc[1] failed.");
         sw_free(reactor_object);
-        return SW_ERR;
+        return ZAN_ERR;
     }
     //epoll create
     reactor_object->epfd = epoll_create(512);
     if (reactor_object->epfd < 0)
     {
-        swSysError("epoll_create failed.");
+        zanError("epoll_create failed.");
         sw_free(reactor_object->events);
         sw_free(reactor_object);
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     //binding method
@@ -112,7 +113,7 @@ int swReactorEpoll_create(swReactor *reactor, int max_event_num)
     reactor->wait = swReactorEpoll_wait;
     reactor->free = swReactorEpoll_free;
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static void swReactorEpoll_free(swReactor *reactor)
@@ -127,7 +128,7 @@ static int swReactorEpoll_add(swReactor *reactor, int fd, int fdtype)
 {
     if (swReactor_add(reactor, fd, fdtype) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swReactorEpoll *object = reactor->object;
@@ -144,13 +145,13 @@ static int swReactorEpoll_add(swReactor *reactor, int fd, int fdtype)
     ret = epoll_ctl(object->epfd, EPOLL_CTL_ADD, fd, &e);
     if (ret < 0)
     {
-        swSysError("add events[fd=%d#%d, type=%d, events=%d] failed.", fd, reactor->id, fd_.fdtype, e.events);
-        return SW_ERR;
+        zanError("add events[fd=%d#%d, type=%d, events=%d] failed.", fd, reactor->id, fd_.fdtype, e.events);
+        return ZAN_ERR;
     }
 
-    swTrace("add event[reactor_id=%d|fd=%d]", reactor->id, fd);
+    zanTrace("add event[reactor_id=%d|fd=%d]", reactor->id, fd);
     reactor->event_num++;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactorEpoll_del(swReactor *reactor, int fd)
@@ -160,23 +161,23 @@ static int swReactorEpoll_del(swReactor *reactor, int fd)
 
     if (fd < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
     ret = epoll_ctl(object->epfd, EPOLL_CTL_DEL, fd, NULL);
     if (ret < 0)
     {
-        swSysError("epoll remove fd[%d#%d] failed.", fd, reactor->id);
-        return SW_ERR;
+        zanError("epoll remove fd[%d#%d] failed.", fd, reactor->id);
+        return ZAN_ERR;
     }
 
     if (swReactor_del(reactor, fd) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     reactor->event_num = reactor->event_num <= 0 ? 0 : reactor->event_num - 1;
-    swTrace("remove event[reactor_id=%d|fd=%d]", reactor->id, fd);
-    return SW_OK;
+    zanTrace("remove event[reactor_id=%d|fd=%d]", reactor->id, fd);
+    return ZAN_OK;
 }
 
 static int swReactorEpoll_set(swReactor *reactor, int fd, int fdtype)
@@ -201,12 +202,12 @@ static int swReactorEpoll_set(swReactor *reactor, int fd, int fdtype)
     ret = epoll_ctl(object->epfd, EPOLL_CTL_MOD, fd, &e);
     if (ret < 0)
     {
-        swSysError("reactor#%d->set(fd=%d|type=%d|events=%d) failed.", reactor->id, fd, fd_.fdtype, e.events);
-        return SW_ERR;
+        zanError("reactor#%d->set(fd=%d|type=%d|events=%d) failed.", reactor->id, fd, fd_.fdtype, e.events);
+        return ZAN_ERR;
     }
     //execute parent method
     swReactor_set(reactor, fd, fdtype);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactorEpoll_wait(swReactor *reactor, struct timeval *timeo)
@@ -223,7 +224,7 @@ static int swReactorEpoll_wait(swReactor *reactor, struct timeval *timeo)
 
     if (reactor->timeout_msec == 0)
     {
-    		reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
+            reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
     }
 
     while (reactor->running > 0)
@@ -237,8 +238,8 @@ static int swReactorEpoll_wait(swReactor *reactor, struct timeval *timeo)
         {
             if (swReactor_error(reactor) < 0)
             {
-                swSysError("[Reactor#%d] epoll_wait failed.", reactor_id);
-                return SW_ERR;
+                zanError("[Reactor#%d] epoll_wait failed.", reactor_id);
+                return ZAN_ERR;
             }
             else
             {
@@ -260,60 +261,60 @@ static int swReactorEpoll_wait(swReactor *reactor, struct timeval *timeo)
             event.type = events[i].data.u64 >> 32;
             event.socket = swReactor_get(reactor, event.fd);
             if (event.socket->fd != event.fd) {
-                swDebug("EPOLL event.socket->fd[%d] != event.fd[%d]",event.socket->fd,event.fd);
+                zanDebug("EPOLL event.socket->fd[%d] != event.fd[%d]",event.socket->fd,event.fd);
             }
 
             event.socket->event_trigger = 1;
             //error
 #ifndef NO_EPOLLRDHUP
             if ((events[i].events & (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) &&
-            		!event.socket->removed && event.socket->event_trigger)
+                    !event.socket->removed && event.socket->event_trigger)
 #else
             if ((events[i].events & (EPOLLERR | EPOLLHUP)) &&
-            		!event.socket->removed && event.socket->event_trigger)
+                    !event.socket->removed && event.socket->event_trigger)
 #endif
             {
-				handle = swReactor_getHandle(reactor, SW_EVENT_ERROR, event.type);
-				if (handle)
-				{
-					ret = handle(reactor, &event);
-					if (ret < 0)
-					{
-						swWarn("EPOLLERR handle failed. fd=%d.", event.fd);
-					}
-				}
+                handle = swReactor_getHandle(reactor, SW_EVENT_ERROR, event.type);
+                if (handle)
+                {
+                    ret = handle(reactor, &event);
+                    if (ret < 0)
+                    {
+                        zanWarn("EPOLLERR handle failed. fd=%d.", event.fd);
+                    }
+                }
 
-				event.socket->event_trigger = 0;
-				continue;
+                event.socket->event_trigger = 0;
+                continue;
             }
 
             //read
             if ((events[i].events & EPOLLIN) &&
-            		!event.socket->removed && event.socket->event_trigger)
+                    !event.socket->removed && event.socket->event_trigger)
             {
-				handle = swReactor_getHandle(reactor, SW_EVENT_READ, event.type);
-				if (handle)
-				{
-					ret =  handle(reactor, &event);
-					if (ret < 0)
-					{
-						swWarn("EPOLLIN handle failed. fd=%d.", event.fd);
-					}
-				}
+                handle = swReactor_getHandle(reactor, SW_EVENT_READ, event.type);
+                if (handle)
+                {
+                    ret =  handle(reactor, &event);
+                    if (ret < 0)
+                    {
+                        zanWarn("EPOLLIN handle failed. fd=%d.", event.fd);
+                    }
+                }
             }
             //write
             if ((events[i].events & EPOLLOUT) &&
-            		!event.socket->removed && event.socket->event_trigger)
+                    !event.socket->removed && event.socket->event_trigger)
             {
-				handle = swReactor_getHandle(reactor, SW_EVENT_WRITE, event.type);
-				if (handle)
-				{
-					ret = handle(reactor, &event);
-					if (ret < 0)
-					{
-						swWarn("EPOLLOUT handle failed. fd=%d.", event.fd);
-					}
-				}
+                handle = swReactor_getHandle(reactor, SW_EVENT_WRITE, event.type);
+                if (handle)
+                {
+                    ret = handle(reactor, &event);
+                    if (ret < 0)
+                    {
+                        zanWarn("EPOLLOUT handle failed. fd=%d.", event.fd);
+                    }
+                }
             }
 
             event.socket->event_trigger = 0;

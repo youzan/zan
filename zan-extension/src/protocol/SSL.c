@@ -19,10 +19,10 @@
 
 
 #include "swoole.h"
-#include "swLog.h"
 #include "swError.h"
 #include "swConnection.h"
 #include "swProtocol/ssl.h"
+#include "zanLog.h"
 
 #ifdef SW_USE_OPENSSL
 
@@ -122,7 +122,7 @@ void swSSL_server_http_advise(SSL_CTX* ssl_context, swSSL_config *cfg)
 int swSSL_server_set_cipher(SSL_CTX* ssl_context, swSSL_config *cfg)
 {
 #ifndef TLS1_2_VERSION
-    return SW_OK;
+    return ZAN_OK;
 #endif
     SSL_CTX_set_read_ahead(ssl_context, 1);
 
@@ -130,8 +130,8 @@ int swSSL_server_set_cipher(SSL_CTX* ssl_context, swSSL_config *cfg)
     {
         if (SSL_CTX_set_cipher_list(ssl_context, cfg->ciphers) == 0)
         {
-            swWarn("SSL_CTX_set_cipher_list(\"%s\") failed", cfg->ciphers);
-            return SW_ERR;
+            zanWarn("SSL_CTX_set_cipher_list(\"%s\") failed", cfg->ciphers);
+            return ZAN_ERR;
         }
         if (cfg->prefer_server_ciphers)
         {
@@ -148,7 +148,7 @@ int swSSL_server_set_cipher(SSL_CTX* ssl_context, swSSL_config *cfg)
         swSSL_set_dhparam(ssl_context);
         swSSL_set_ecdh_curve(ssl_context);
     }
-    return SW_OK;
+    return ZAN_OK;
 }
 
 SSL_CTX* swSSL_get_context(int method, char *cert_file, char *key_file)
@@ -197,7 +197,7 @@ SSL_CTX* swSSL_get_context(int method, char *cert_file, char *key_file)
          */
         if (!SSL_CTX_check_private_key(ssl_context))
         {
-            swWarn("Private key does not match the public certificate");
+            zanWarn("Private key does not match the public certificate");
             return NULL;
         }
     }
@@ -222,7 +222,7 @@ static int swSSL_verify_callback(int ok, X509_STORE_CTX *x509_store)
 
     iname = X509_get_issuer_name(cert);
     issuer = iname ? X509_NAME_oneline(iname, NULL, 0) : "(none)";
-    swWarn("verify:%d, error:%d, depth:%d, subject:\"%s\", issuer:\"%s\"", ok, err, depth, subject, issuer);
+    zanWarn("verify:%d, error:%d, depth:%d, subject:\"%s\", issuer:\"%s\"", ok, err, depth, subject, issuer);
 
     if (sname)
     {
@@ -246,22 +246,22 @@ int swSSL_set_client_certificate(SSL_CTX *ctx, char *cert_file, int depth)
 
     if (SSL_CTX_load_verify_locations(ctx, cert_file, NULL) == 0)
     {
-        swWarn("SSL_CTX_load_verify_locations(\"%s\") failed.", cert_file);
-        return SW_ERR;
+        zanWarn("SSL_CTX_load_verify_locations(\"%s\") failed.", cert_file);
+        return ZAN_ERR;
     }
 
     ERR_clear_error();
     list = SSL_load_client_CA_file(cert_file);
     if (list == NULL)
     {
-        swWarn("SSL_load_client_CA_file(\"%s\") failed.", cert_file);
-        return SW_ERR;
+        zanWarn("SSL_load_client_CA_file(\"%s\") failed.", cert_file);
+        return ZAN_ERR;
     }
 
     ERR_clear_error();
     SSL_CTX_set_client_CA_list(ctx, list);
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swSSL_get_client_certificate(SSL *ssl, char *buffer, size_t length)
@@ -273,27 +273,27 @@ int swSSL_get_client_certificate(SSL *ssl, char *buffer, size_t length)
     cert = SSL_get_peer_certificate(ssl);
     if (cert == NULL)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     bio = BIO_new(BIO_s_mem());
     if (bio == NULL)
     {
-		swError("BIO_new() failed.");
-		X509_free(cert);
-		return SW_ERR;
+        zanError("BIO_new() failed.");
+        X509_free(cert);
+        return ZAN_ERR;
     }
 
     if (PEM_write_bio_X509(bio, cert) == 0)
     {
-        swWarn("PEM_write_bio_X509() failed.");
+        zanWarn("PEM_write_bio_X509() failed.");
         goto failed;
     }
 
     len = BIO_pending(bio);
     if (len < 0 && len > length)
     {
-        swWarn("certificate length[%ld] is too big.", len);
+        zanWarn("certificate length[%ld] is too big.", len);
         goto failed;
     }
 
@@ -309,7 +309,7 @@ failed:
     BIO_free(bio);
     X509_free(cert);
 
-    return SW_ERR;
+    return ZAN_ERR;
 }
 
 int swSSL_accept(swConnection *conn)
@@ -339,18 +339,18 @@ int swSSL_accept(swConnection *conn)
     }
     else if (err == SSL_ERROR_SSL)
     {
-    	char addr[SW_IP_MAX_LENGTH] = {0};
-    	swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
-        swWarn("bad SSL client[%s:%d].", addr, swConnection_get_port(conn));
-        return SW_ERROR;
+        char addr[SW_IP_MAX_LENGTH] = {0};
+        swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
+        zanWarn("bad SSL client[%s:%d].", addr, swConnection_get_port(conn));
+        return ZAN_ERR;
     }
     //EOF was observed
     else if (err == SSL_ERROR_SYSCALL && n == 0)
     {
-        return SW_ERROR;
+        return ZAN_ERR;
     }
-    swWarn("swSSL_accept() failed. Error: %s[%ld]", ERR_reason_error_string(err), err);
-    return SW_ERROR;
+    zanWarn("swSSL_accept() failed. Error: %s[%ld]", ERR_reason_error_string(err), err);
+    return ZAN_ERR;
 }
 
 int swSSL_connect(swConnection *conn)
@@ -359,19 +359,19 @@ int swSSL_connect(swConnection *conn)
     if (n == 1)
     {
         conn->ssl_state = SW_SSL_STATE_READY;
-        return SW_OK;
+        return ZAN_OK;
     }
     long err = SSL_get_error(conn->ssl, n);
     if (err == SSL_ERROR_WANT_READ)
     {
-        return SW_OK;
+        return ZAN_OK;
     }
     else if (err == SSL_ERROR_WANT_WRITE)
     {
-        return SW_OK;
+        return ZAN_OK;
     }
-    swWarn("SSL_connect() failed. Error: %s[%ld]", ERR_reason_error_string(err), err);
-    return SW_ERR;
+    zanWarn("SSL_connect() failed. Error: %s[%ld]", ERR_reason_error_string(err), err);
+    return ZAN_ERR;
 }
 
 void swSSL_close(swConnection *conn)
@@ -395,26 +395,26 @@ ssize_t swSSL_recv(swConnection *conn, void *__buf, size_t __n)
         case SSL_ERROR_WANT_READ:
             conn->ssl_want_read = 1;
             errno = EAGAIN;
-            return SW_ERR;
+            return ZAN_ERR;
             break;
 
         case SSL_ERROR_WANT_WRITE:
             conn->ssl_want_write = 1;
             errno = EAGAIN;
-            return SW_ERR;
+            return ZAN_ERR;
         case SSL_ERROR_SSL:
-        	{
-				int reason = ERR_GET_REASON(ERR_peek_error());
-				swWarn("SSL_read(%d, %ld) failed, Reason: %s[%d].", conn->fd, __n, ERR_reason_error_string(reason), reason);
-				errno = SW_ERROR_SSL_BAD_CLIENT;
-				return SW_ERR;
-        	}
+            {
+                int reason = ERR_GET_REASON(ERR_peek_error());
+                zanWarn("SSL_read(%d, %ld) failed, Reason: %s[%d].", conn->fd, __n, ERR_reason_error_string(reason), reason);
+                errno = SW_ERROR_SSL_BAD_CLIENT;
+                return ZAN_ERR;
+            }
         case SSL_ERROR_SYSCALL:
-            return SW_ERR;
+            return ZAN_ERR;
 
         default:
-            swWarn("SSL_read(%d, %ld) failed, errno=%d.", conn->fd, __n, _errno);
-            return SW_ERR;
+            zanWarn("SSL_read(%d, %ld) failed, errno=%d.", conn->fd, __n, _errno);
+            return ZAN_ERR;
         }
     }
     return n;
@@ -430,21 +430,21 @@ ssize_t swSSL_send(swConnection *conn, void *__buf, size_t __n)
         case SSL_ERROR_WANT_READ:
             conn->ssl_want_read = 1;
             errno = EAGAIN;
-            return SW_ERR;
+            return ZAN_ERR;
 
         case SSL_ERROR_WANT_WRITE:
             conn->ssl_want_write = 1;
             errno = EAGAIN;
-            return SW_ERR;
+            return ZAN_ERR;
         case SSL_ERROR_SSL:
-        	{
-				 int reason = ERR_GET_REASON(ERR_peek_error());
-				 swWarn("SSL_write(%d, %ld) failed, Reason: %s[%d].", conn->fd, __n, ERR_reason_error_string(reason), reason);
-				 errno = SW_ERROR_SSL_BAD_CLIENT;
-				 return SW_ERR;
-        	}
+            {
+                 int reason = ERR_GET_REASON(ERR_peek_error());
+                 zanWarn("SSL_write(%d, %ld) failed, Reason: %s[%d].", conn->fd, __n, ERR_reason_error_string(reason), reason);
+                 errno = SW_ERROR_SSL_BAD_CLIENT;
+                 return ZAN_ERR;
+            }
         default:
-            return SW_ERR;
+            return ZAN_ERR;
         }
     }
     return n;
@@ -455,14 +455,14 @@ int swSSL_create(swConnection *conn, SSL_CTX* ssl_context, int flags)
     SSL *ssl = SSL_new(ssl_context);
     if (ssl == NULL)
     {
-        swError("SSL_new() failed.");
-        return SW_ERR;
+        zanError("SSL_new() failed.");
+        return ZAN_ERR;
     }
     if (!SSL_set_fd(ssl, conn->fd))
     {
         long err = ERR_get_error();
-        swWarn("SSL_set_fd() failed. Error: %s[%ld]", ERR_reason_error_string(err), err);
-        return SW_ERR;
+        zanWarn("SSL_set_fd() failed. Error: %s[%ld]", ERR_reason_error_string(err), err);
+        return ZAN_ERR;
     }
     if (flags & SW_SSL_CLIENT)
     {
@@ -474,7 +474,7 @@ int swSSL_create(swConnection *conn, SSL_CTX* ssl_context, int flags)
     }
     conn->ssl = ssl;
     conn->ssl_state = 0;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void swSSL_free_context(SSL_CTX* ssl_context)
@@ -517,8 +517,8 @@ static int swSSL_set_dhparam(SSL_CTX* ssl_context)
     dh = DH_new();
     if (dh == NULL)
     {
-    	swError( "DH_new() failed");
-        return SW_ERR;
+        zanError( "DH_new() failed");
+        return ZAN_ERR;
     }
 
     dh->p = BN_bin2bn(dh1024_p, sizeof(dh1024_p), NULL);
@@ -530,7 +530,7 @@ static int swSSL_set_dhparam(SSL_CTX* ssl_context)
     }
     SSL_CTX_set_tmp_dh(ssl_context, dh);
     DH_free(dh);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swSSL_set_ecdh_curve(SSL_CTX* ssl_context)
@@ -548,15 +548,15 @@ static int swSSL_set_ecdh_curve(SSL_CTX* ssl_context)
     int nid = OBJ_sn2nid(SW_SSL_ECDH_CURVE);
     if (nid == 0)
     {
-        swWarn("Unknown curve name \"%s\"", SW_SSL_ECDH_CURVE);
-        return SW_ERR;
+        zanWarn("Unknown curve name \"%s\"", SW_SSL_ECDH_CURVE);
+        return ZAN_ERR;
     }
 
     ecdh = EC_KEY_new_by_curve_name(nid);
     if (ecdh == NULL)
     {
-        swWarn("Unable to create curve \"%s\"", SW_SSL_ECDH_CURVE);
-        return SW_ERR;
+        zanWarn("Unable to create curve \"%s\"", SW_SSL_ECDH_CURVE);
+        return ZAN_ERR;
     }
 
     SSL_CTX_set_options(ssl_context, SSL_OP_SINGLE_ECDH_USE);
@@ -566,7 +566,7 @@ static int swSSL_set_ecdh_curve(SSL_CTX* ssl_context)
 #endif
 #endif
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 #ifdef TLSEXT_TYPE_application_layer_protocol_negotiation

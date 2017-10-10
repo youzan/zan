@@ -21,6 +21,8 @@
 
 #include "php_swoole.h"
 #include "swBaseOperator.h"
+#include "zanGlobalVar.h"
+#include "zanLog.h"
 
 static char *callback[PHP_SERVER_PORT_CALLBACK_NUM] = {
         "Connect",
@@ -69,12 +71,12 @@ void swoole_server_port_init(int module_number TSRMLS_DC)
     int index = 0;
     for (index = 0; index < PHP_SERVER_PORT_CALLBACK_NUM; index++)
     {
-    	int l_property_name = 2;
-		int callbackLen = strlen(callback[index]);
-		memcpy(property_name + l_property_name, callback[index],callbackLen);
-		l_property_name += callbackLen;
-		property_name[l_property_name] = '\0';
-		zend_declare_property_null(swoole_server_port_class_entry_ptr,property_name,l_property_name,ZEND_ACC_PUBLIC TSRMLS_CC);
+        int l_property_name = 2;
+        int callbackLen = strlen(callback[index]);
+        memcpy(property_name + l_property_name, callback[index],callbackLen);
+        l_property_name += callbackLen;
+        property_name[l_property_name] = '\0';
+        zend_declare_property_null(swoole_server_port_class_entry_ptr,property_name,l_property_name,ZEND_ACC_PUBLIC TSRMLS_CC);
     }
 }
 
@@ -94,18 +96,18 @@ static PHP_METHOD(swoole_server_port, __destruct)
 
 static PHP_METHOD(swoole_server_port, set)
 {
-	swListenPort *port = swoole_get_object(getThis());
-	swoole_server_port_property *property = swoole_get_property(getThis(), swoole_property_common);
-	if (port == NULL || property == NULL)
-	{
-		swoole_php_fatal_error(E_ERROR, "Please use the swoole_server->listen method.");
-		return;
-	}
+    swListenPort *port = swoole_get_object(getThis());
+    swoole_server_port_property *property = swoole_get_property(getThis(), swoole_property_common);
+    if (port == NULL || property == NULL)
+    {
+        swoole_php_fatal_error(E_ERROR, "Please use the swoole_server->listen method.");
+        RETURN_FALSE;
+    }
 
     zval *zset = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS()TSRMLS_CC, "z", &zset))
     {
-        return;
+        RETURN_FALSE;
     }
 
     php_swoole_array_separate(zset);
@@ -153,10 +155,10 @@ static PHP_METHOD(swoole_server_port, set)
     if (sw_zend_hash_find(vht, ZEND_STRS("package_eof"), (void **) &value) == SUCCESS)
     {
         if (sw_convert_to_string(value) < 0)
-		{
-			swWarn("convert to string failed.");
-			RETURN_FALSE;
-		}
+        {
+            zanWarn("convert to string failed.");
+            RETURN_FALSE;
+        }
 
         port->protocol.package_eof_len = Z_STRLEN_P(value);
         if (port->protocol.package_eof_len > SW_DATA_EOF_MAXLEN)
@@ -231,10 +233,10 @@ static PHP_METHOD(swoole_server_port, set)
     if (sw_zend_hash_find(vht, ZEND_STRS("package_length_type"), (void **) &value) == SUCCESS)
     {
         if (sw_convert_to_string(value) < 0)
-		{
-			swWarn("convert to string failed.");
-			RETURN_FALSE;
-		}
+        {
+            zanWarn("convert to string failed.");
+            RETURN_FALSE;
+        }
         port->protocol.package_length_type = Z_STRVAL_P(value)[0];
         port->protocol.package_length_size = swoole_type_size(port->protocol.package_length_type);
 
@@ -269,7 +271,7 @@ static PHP_METHOD(swoole_server_port, set)
     }
 
     /// swoole_packet_mode
-    if (SwooleG.serv->packet_mode == 1)
+    if (ServerG.serv->packet_mode == 1)
     {
         port->protocol.package_max_length = 64 * 1024 * 1024;
         port->open_length_check = 1;
@@ -282,14 +284,14 @@ static PHP_METHOD(swoole_server_port, set)
 #ifdef SW_USE_OPENSSL
     if (port->ssl)
     {
-    	value = NULL;
+        value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_cert_file"), (void **) &value) == SUCCESS)
         {
-        	if (sw_convert_to_string(value) < 0)
-			{
-				swWarn("convert to string failed.");
-				RETURN_FALSE;
-			}
+            if (sw_convert_to_string(value) < 0)
+            {
+                zanWarn("convert to string failed.");
+                RETURN_FALSE;
+            }
 
             if (access(Z_STRVAL_P(value), R_OK) < 0)
             {
@@ -302,11 +304,11 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_key_file"), (void **) &value) == SUCCESS)
         {
-        	if (sw_convert_to_string(value) < 0)
-			{
-				swWarn("convert to string failed.");
-				RETURN_FALSE;
-			}
+            if (sw_convert_to_string(value) < 0)
+            {
+                zanWarn("convert to string failed.");
+                RETURN_FALSE;
+            }
 
             if (access(Z_STRVAL_P(value), R_OK) < 0)
             {
@@ -325,11 +327,11 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_client_cert_file"), (void **) &value) == SUCCESS)
         {
-        	if (sw_convert_to_string(value) < 0)
-			{
-				swWarn("convert to string failed.");
-				RETURN_FALSE;
-			}
+            if (sw_convert_to_string(value) < 0)
+            {
+                zanWarn("convert to string failed.");
+                RETURN_FALSE;
+            }
 
             if (access(Z_STRVAL_P(value), R_OK) < 0)
             {
@@ -348,7 +350,7 @@ static PHP_METHOD(swoole_server_port, set)
         if (port->open_ssl_encrypt && !port->ssl_key_file)
         {
             swoole_php_fatal_error(E_ERROR, "ssl require key file.");
-            return;
+            RETURN_FALSE;
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_prefer_server_ciphers"), (void **) &value) == SUCCESS)
@@ -359,22 +361,22 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_ciphers"), (void **) &value) == SUCCESS)
         {
-        	if (sw_convert_to_string(value) < 0)
-			{
-				swWarn("convert to string failed.");
-				RETURN_FALSE;
-			}
+            if (sw_convert_to_string(value) < 0)
+            {
+                zanWarn("convert to string failed.");
+                RETURN_FALSE;
+            }
 
             port->ssl_config.ciphers = strdup(Z_STRVAL_P(value));
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_ecdh_curve"), (void **) &value) == SUCCESS)
         {
-        	if (sw_convert_to_string(value) < 0)
-			{
-				swWarn("convert to string failed.");
-				RETURN_FALSE;
-			}
+            if (sw_convert_to_string(value) < 0)
+            {
+                zanWarn("convert to string failed.");
+                RETURN_FALSE;
+            }
             port->ssl_config.ecdh_curve = strdup(Z_STRVAL_P(value));
         }
 
@@ -386,37 +388,37 @@ static PHP_METHOD(swoole_server_port, set)
 
 static PHP_METHOD(swoole_server_port, on)
 {
-    if (SwooleGS->start > 0)
+    if (ServerGS->started > 0)
     {
-        swWarn("Server is running. Unable to set event callback now.");
+        zanWarn("Server is running. Unable to set event callback now.");
         RETURN_FALSE;
     }
 
     swListenPort *port = swoole_get_object(getThis());
-	swoole_server_port_property *property = swoole_get_property(getThis(), swoole_property_common);
-	if (port == NULL || property == NULL)
-	{
-		swoole_php_fatal_error(E_ERROR, "Please use the swoole_server->listen method.");
-		return;
-	}
+    swoole_server_port_property *property = swoole_get_property(getThis(), swoole_property_common);
+    if (port == NULL || property == NULL)
+    {
+        swoole_php_fatal_error(E_ERROR, "Please use the swoole_server->listen method.");
+        RETURN_FALSE;
+    }
 
     char *name = NULL;
-	zend_size_t len = 0;
-	zval *cb = NULL;
+    zend_size_t len = 0;
+    zval *cb = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS()TSRMLS_CC, "sz", &name, &len, &cb))
     {
-        return;
+        RETURN_FALSE;
     }
 
     if (!name || len <= 0)
     {
-    	return;
+        RETURN_FALSE;
     }
 
 
     if (swoole_check_callable(cb TSRMLS_CC) < 0)
     {
-    	return;
+        RETURN_FALSE;
     }
 
     port->ptr = (!port->ptr)? property:port->ptr;
@@ -437,13 +439,13 @@ static PHP_METHOD(swoole_server_port, on)
             property->callbacks[index] = sw_zend_read_property(swoole_server_port_class_entry_ptr, getThis(), property_name, l_property_name, 0 TSRMLS_CC);
             sw_copy_to_stack(property->callbacks[index], property->_callbacks[index]);
 
-            if (index == SW_SERVER_CB_onConnect && !SwooleG.serv->onConnect)
+            if (index == SW_SERVER_CB_onConnect && !ServerG.serv->onConnect)
             {
-                SwooleG.serv->onConnect = php_swoole_onConnect;
+                ServerG.serv->onConnect = php_swoole_onConnect;
             }
-            else if (index == SW_SERVER_CB_onClose && !SwooleG.serv->onClose)
+            else if (index == SW_SERVER_CB_onClose && !ServerG.serv->onClose)
             {
-                SwooleG.serv->onClose = php_swoole_onClose;
+                ServerG.serv->onClose = php_swoole_onClose;
             }
 
             break;
@@ -452,7 +454,7 @@ static PHP_METHOD(swoole_server_port, on)
 
     if (index == PHP_SERVER_PORT_CALLBACK_NUM)
     {
-        swWarn("Unknown event types[%s]", name);
+        zanWarn("Unknown event types[%s]", name);
         RETURN_FALSE;
     }
 

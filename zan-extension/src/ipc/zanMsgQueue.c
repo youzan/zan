@@ -77,7 +77,7 @@ int zanMsgQueue_push(zanMsgQueue *pMq, zanQueue_Data *in, int length)
             }
             else if (errno == EAGAIN)
             {
-                zanYield();
+                swYield();
                 continue;
             }
         }

@@ -578,7 +578,7 @@ int zanPool_dispatch_to_taskworker(zanProcessPool *pool, swEventData *data, int 
     }
     else
     {
-        sw_stats_incr(&worker->tasking_num);
+        zan_stats_incr(&worker->tasking_num);
     }
 
     return ret;

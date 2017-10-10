@@ -20,7 +20,7 @@
 #include "list.h"
 #include "swBaseOperator.h"
 #include "swSocket.h"
-#include "swStats.h"
+//#include "swStats.h"
 
 #include "zanServer.h"
 #include "zanAtomic.h"

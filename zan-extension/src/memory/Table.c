@@ -35,9 +35,9 @@ static void swTableColumn_free(swTableColumn *col);
 
 static void swTableColumn_free(swTableColumn *col)
 {
-	if (!col){
-		return ;
-	}
+    if (!col){
+        return ;
+    }
 
     swString_free(col->name);
     sw_free(col);
@@ -45,9 +45,9 @@ static void swTableColumn_free(swTableColumn *col)
 
 static void swTable_compress_list(swTable *table)
 {
-	if (!table){
-		return;
-	}
+    if (!table){
+        return;
+    }
 
     table->lock.lock(&table->lock);
     swTableRow **tmp = sw_malloc(sizeof(swTableRow *) * table->size);
@@ -95,13 +95,13 @@ swTable* swTable_new(uint32_t rows_size)
     swTable *table = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swTable));
     if (table == NULL)
     {
-    	swFatalError("malloc failed.");
+        swFatalError("malloc failed.");
         return NULL;
     }
 
     if (swMutex_create(&table->lock, 1) < 0)
     {
-        swWarn("mutex create failed.");
+        zanWarn("mutex create failed.");
         SwooleG.memory_pool->free(SwooleG.memory_pool,table);
         return NULL;
     }
@@ -109,8 +109,8 @@ swTable* swTable_new(uint32_t rows_size)
     table->iterator = sw_malloc(sizeof(swTable_iterator));
     if (!table->iterator)
     {
-    	table->lock.free(&table->lock);
-    	SwooleG.memory_pool->free(SwooleG.memory_pool,table);
+        table->lock.free(&table->lock);
+        SwooleG.memory_pool->free(SwooleG.memory_pool,table);
         swFatalError("malloc failed.");
         return NULL;
     }
@@ -118,9 +118,9 @@ swTable* swTable_new(uint32_t rows_size)
     table->columns = swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, (swHashMap_dtor)swTableColumn_free);
     if (!table->columns)
     {
-    	sw_free(table->iterator);
-    	table->lock.free(&table->lock);
-    	SwooleG.memory_pool->free(SwooleG.memory_pool,table);
+        sw_free(table->iterator);
+        table->lock.free(&table->lock);
+        SwooleG.memory_pool->free(SwooleG.memory_pool,table);
         return NULL;
     }
 
@@ -136,13 +136,13 @@ int swTableColumn_add(swTable *table, char *name, int len, int type, int size)
 {
     swTableColumn *col = sw_malloc(sizeof(swTableColumn));
     if (!col){
-    	return SW_ERR;
+        return SW_ERR;
     }
 
     col->name = swString_dup(name, len);
     if (!col->name)
     {
-    	sw_free(col);
+        sw_free(col);
         return SW_ERR;
     }
 
@@ -180,7 +180,7 @@ int swTableColumn_add(swTable *table, char *name, int len, int type, int size)
         col->type = SW_TABLE_STRING;
         break;
     default:
-        swError("unkown column type.");
+        zanError("unkown column type.");
         return SW_ERR;
     }
 
@@ -192,9 +192,9 @@ int swTableColumn_add(swTable *table, char *name, int len, int type, int size)
 
 int swTable_create(swTable *table)
 {
-	if (!table){
-		return SW_ERR;
-	}
+    if (!table){
+        return SW_ERR;
+    }
 
     uint32_t row_num = table->size * (1 + SW_TABLE_CONFLICT_PROPORTION);
 
@@ -253,10 +253,10 @@ int swTable_create(swTable *table)
 
 void swTable_free(swTable *table)
 {
-	if (!table)
-	{
-		return ;
-	}
+    if (!table)
+    {
+        return ;
+    }
 
 #ifdef SW_TABLE_DEBUG
     printf("swoole_table: size=%d, conflict_count=%d, insert_count=%d\n", table->size, conflict_count, insert_count);
@@ -291,9 +291,9 @@ void swTable_iterator_rewind(swTable *table)
 
 swTableRow* swTable_iterator_current(swTable *table)
 {
-	if (!table){
-		return NULL;
-	}
+    if (!table){
+        return NULL;
+    }
 
     swTableRow *row = NULL;
     for (; table->iterator->absolute_index < table->list_n; table->iterator->absolute_index++)
@@ -321,9 +321,9 @@ swTableRow* swTable_iterator_current(swTable *table)
 
 void swTable_iterator_forward(swTable *table)
 {
-	if (!table){
-		return ;
-	}
+    if (!table){
+        return ;
+    }
 
     for ( ; table->iterator->absolute_index < table->list_n; table->iterator->absolute_index++)
     {
@@ -345,20 +345,20 @@ void swTable_iterator_forward(swTable *table)
                 row = row->next;
                 if (index != table->iterator->collision_index)
                 {
-                	continue;
+                    continue;
                 }
 
                 if (row == NULL)
-				{
-					table->iterator->absolute_index++;
-					table->iterator->collision_index = 0;
-				}
-				else
-				{
-					table->iterator->collision_index++;
-				}
+                {
+                    table->iterator->absolute_index++;
+                    table->iterator->collision_index = 0;
+                }
+                else
+                {
+                    table->iterator->collision_index++;
+                }
 
-				return;
+                return;
             }
         }
     }
@@ -366,11 +366,11 @@ void swTable_iterator_forward(swTable *table)
 
 swTableRow* swTableRow_get(swTable *table, char *key, int keylen, sw_atomic_t **rowlock)
 {
-	if (!table){
-		return NULL;
-	}
+    if (!table){
+        return NULL;
+    }
 
-	keylen = (keylen > SW_TABLE_KEY_SIZE)? SW_TABLE_KEY_SIZE:keylen;
+    keylen = (keylen > SW_TABLE_KEY_SIZE)? SW_TABLE_KEY_SIZE:keylen;
     swTableRow *row = swTable_hash(table, key, keylen);
     sw_atomic_t *lock = &row->lock;
     sw_spinlock(lock);
@@ -403,11 +403,11 @@ swTableRow* swTableRow_get(swTable *table, char *key, int keylen, sw_atomic_t **
 
 swTableRow* swTableRow_set(swTable *table, char *key, int keylen, sw_atomic_t **rowlock)
 {
-	if (!table){
-			return NULL;
-	}
+    if (!table){
+            return NULL;
+    }
 
-	keylen = (keylen > SW_TABLE_KEY_SIZE)? SW_TABLE_KEY_SIZE:keylen;
+    keylen = (keylen > SW_TABLE_KEY_SIZE)? SW_TABLE_KEY_SIZE:keylen;
 
     swTableRow *row = swTable_hash(table, key, keylen);
     sw_atomic_t *lock = &row->lock;
@@ -475,11 +475,11 @@ swTableRow* swTableRow_set(swTable *table, char *key, int keylen, sw_atomic_t **
 
 int swTableRow_del(swTable *table, char *key, int keylen)
 {
-	if (!table){
-		return SW_ERR;
-	}
+    if (!table){
+        return SW_ERR;
+    }
 
-	keylen = (keylen > SW_TABLE_KEY_SIZE)? SW_TABLE_KEY_SIZE:keylen;
+    keylen = (keylen > SW_TABLE_KEY_SIZE)? SW_TABLE_KEY_SIZE:keylen;
 
     swTableRow *row = swTable_hash(table, key, keylen);
     sw_atomic_t *lock = &row->lock;
@@ -559,4 +559,37 @@ int swTableRow_del(swTable *table, char *key, int keylen)
     sw_spinlock_release(lock);
 
     return SW_OK;
+}
+
+void swTableRow_set_value(swTableRow *row, swTableColumn * col, void *value, int vlen)
+{
+    switch(col->type)
+    {
+        case SW_TABLE_INT8:
+            memcpy(row->data + col->index, value, 1);
+            break;
+        case SW_TABLE_INT16:
+            memcpy(row->data + col->index, value, 2);
+            break;
+        case SW_TABLE_INT32:
+            memcpy(row->data + col->index, value, 4);
+            break;
+#ifdef __x86_64__
+        case SW_TABLE_INT64:
+            memcpy(row->data + col->index, value, 8);
+            break;
+#endif
+        case SW_TABLE_FLOAT:
+            memcpy(row->data + col->index, value, sizeof(double));
+            break;
+        default:
+            if (vlen > (col->size - sizeof(swTable_string_length_t)))
+            {
+                swWarn("string is too long.");
+                vlen = col->size - sizeof(swTable_string_length_t);
+            }
+            memcpy(row->data + col->index, &vlen, sizeof(swTable_string_length_t));
+            memcpy(row->data + col->index + sizeof(swTable_string_length_t), value, vlen);
+            break;
+    }
 }
