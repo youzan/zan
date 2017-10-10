@@ -33,8 +33,10 @@
 
 static swHashMap *swoole_dns_cache_v4 = NULL;
 static swHashMap *swoole_dns_cache_v6 = NULL;
-static swLock    *dns_cache_v4_lock = NULL;
-static swLock    *dns_cache_v6_lock = NULL;
+//static swLock    *dns_cache_v4_lock = NULL;
+//static swLock    *dns_cache_v6_lock = NULL;
+static zanLock    *dns_cache_v4_lock = NULL;
+static zanLock    *dns_cache_v6_lock = NULL;
 static int       dns_inited = 0;
 
 enum swDNS_type
@@ -578,13 +580,13 @@ void dns_lookup_init()
     if (!dns_cache_v4_lock)
     {
         dns_cache_v4_lock = sw_malloc(sizeof(swLock));
-        swMutex_create(dns_cache_v4_lock,0);
+        zanLock_create(dns_cache_v4_lock, ZAN_MUTEX, 0);
     }
 
     if (!dns_cache_v6_lock)
     {
         dns_cache_v6_lock = sw_malloc(sizeof(swLock));
-        swMutex_create(dns_cache_v6_lock,0);
+        zanLock_create(dns_cache_v6_lock, ZAN_MUTEX, 0);
     }
 }
 

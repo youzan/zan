@@ -29,46 +29,30 @@
 #include "swProtocol/http.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"
-#include "swGlobalVars.h"
+//#include "swGlobalVars.h"
 
 
+#if 0
 swServerG SwooleG;              /// 超全局本地变量，此全局变量子进程中修改，其它进程不感知
 swServerGS *SwooleGS = NULL;        /// 超全局共享变量，此全局变量是基于共享内存的，修改字段，其它进程可感知
 swWorkerG SwooleWG;             /// 进程内全局变量，此全局变量在worker进程内初始化
 swServerStats *SwooleStats = NULL;
 __thread swThreadG SwooleTG;   /// 线程独立变量
-
-
-#if SW_REACTOR_SCHEDULE == 3
-static sw_inline void swServer_reactor_schedule(swServer *serv)
-{
-    //以第1个为基准进行排序，取出最小值
-    int index = 0, event_num = serv->reactor_threads[0].reactor.event_num;
-    serv->reactor_next_i = 0;
-    for (index = 1; index < serv->reactor_num; index++)
-    {
-        if (serv->reactor_threads[index].reactor.event_num < event_num)
-        {
-            serv->reactor_next_i = index;
-            event_num = serv->reactor_threads[index].reactor.event_num;
-        }
-    }
-}
-
 #endif
 
-static int swServer_start_check(swServer *serv);
+//static int swServer_start_check(swServer *serv);
 
-static void swServer_signal_init(void);
-static void swServer_signal_hanlder(int sig);
+//static void swServer_signal_init(void);
+//static void swServer_signal_hanlder(int sig);
 
-static int swServer_send1(swServer *serv, swSendData *resp);
-static int swServer_send2(swServer *serv, swSendData *resp);
+//static int swServer_send1(swServer *serv, swSendData *resp);
+//static int swServer_send2(swServer *serv, swSendData *resp);
 
-static void (*onConnect_callback)(swServer *, int, int);
-static int (*onReceive_callback)(swServer *, char *, int, int, int);
-static void (*onClose_callback)(swServer *, int, int);
+//static void (*onConnect_callback)(swServer *, int, int);
+//static int (*onReceive_callback)(swServer *, char *, int, int, int);
+//static void (*onClose_callback)(swServer *, int, int);
 
+#if 0
 static int swServer_start_check(swServer *serv)
 {
     if (serv->onReceive == NULL && serv->onPacket == NULL)
@@ -251,6 +235,7 @@ static int swServer_send2(swServer *serv, swSendData *resp)
 
     return ret;
 }
+
 
 void swServer_store_listen_socket(swServer *serv)
 {
@@ -1180,3 +1165,5 @@ void swServer_connection_ready(swServer *serv, int fd, int reactor_id)
         //swWarn("send notification [fd=%d] failed.", fd);
     }
 }
+
+#endif

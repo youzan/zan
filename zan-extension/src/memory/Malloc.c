@@ -17,7 +17,7 @@
 */
 
 #include "swMemory/memoryPool.h"
-#include "swLog.h"
+#include "zanLog.h"
 
 static void* swMalloc_alloc(swMemoryPool *pool, uint32_t size);
 static void swMalloc_free(swMemoryPool *pool, void *ptr);
@@ -25,15 +25,15 @@ static void swMalloc_destroy(swMemoryPool *pool);
 
 void* malloc_debug(const char* file,int line,const char* func,int __size)
 {
-	void *ptr = malloc(__size);
-	swDebug("malloc debug %s,%d,%s malloc %p",file,line,func,ptr);
-	return ptr;
+    void *ptr = malloc(__size);
+    zanDebug("malloc debug %s,%d,%s malloc %p",file,line,func,ptr);
+    return ptr;
 }
 
 void free_debug(const char* file,int line,const char* func,void* ptr)
 {
-	free(ptr);
-	swDebug("free debug %s,%d,%s free %p",file,line,func,ptr);
+    free(ptr);
+    zanDebug("free debug %s,%d,%s free %p",file,line,func,ptr);
 }
 
 swMemoryPool* swMalloc_new()
@@ -41,7 +41,7 @@ swMemoryPool* swMalloc_new()
     swMemoryPool *pool = sw_malloc(sizeof(swMemoryPool));
     if (pool == NULL)
     {
-        swSysError("mallc() failed.");
+        zanError("mallc() failed.");
         return NULL;
     }
     pool->alloc = swMalloc_alloc;

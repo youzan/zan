@@ -23,10 +23,9 @@
 #include "swoole.h"
 #include "swBaseData.h"
 #include "swAtomic.h"
-#include "swGlobalVars.h"
 
 #include "zanAtomic.h"
-
+#include "zanGlobalVar.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -69,7 +68,8 @@ static sw_inline void sw_spinlock(sw_atomic_t *lock)
             return;
         }
 
-        if (SW_CPU_NUM > 1)
+        //if (SW_CPU_NUM > 1)
+        if (ZAN_CPU_NUM > 1)
         {
             for (n = 1; n < SW_SPINLOCK_LOOP_N; n <<= 1)
             {
@@ -285,7 +285,7 @@ static inline void swoole_strtolower(char *str, int length)
 
 void swBreakPoint(void);
 
-void swoole_cpu_setAffinity(int threadid,swServer *serv);
+//void swoole_cpu_setAffinity(int threadid, swServer *serv);
 
 uint64_t swoole_hash_key(char *str, int str_len);
 uint32_t swoole_common_multiple(uint32_t u, uint32_t v);
@@ -349,7 +349,7 @@ static sw_inline void zan_spinlock(zan_atomic_t *lock)
             return;
         }
 
-        if (SW_CPU_NUM > 1)
+        if (ZAN_CPU_NUM > 1)
         {
             for (n = 1; n < SW_SPINLOCK_LOOP_N; n <<= 1)
             {

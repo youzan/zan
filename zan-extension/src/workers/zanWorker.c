@@ -334,7 +334,7 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
                             serv->listen_list->protocol.package_max_length:
                             SW_BUFFER_SIZE_BIG;
 
-    int buffer_num = serv->dgram_port_num;
+    int buffer_num = ServerG.servSet.net_worker_num + serv->dgram_port_num;
 
     ServerWG.buffer_input = sw_malloc(sizeof(swString*) * buffer_num);
     if (!ServerWG.buffer_input)
@@ -429,6 +429,8 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
     zanWorker *worker = zanServer_get_worker(serv, ServerWG.worker_id);
     zan_stats_set_worker_status(worker, ZAN_WORKER_BUSY);
 
+    int networker_index = zanServer_get_networker_index(task->info.networker_id);
+
     zanDebug("worker_onTask: fd=%d, from_id=%d, info.type=%d", task->info.fd, task->info.from_id, task->info.type);
     switch (task->info.type)
     {
@@ -441,14 +443,12 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             {
                 break;
             }
-            do_task:
-            {
-                serv->onReceive(serv, task);
-                ServerWG.request_count++;
-                sw_stats_incr(&ServerStatsG->request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
-            }
+			serv->onReceive(serv, task);
+			ServerWG.request_count++;
+			sw_stats_incr(&ServerStatsG->request_count);
+			sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
+			sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
+			
             if (task->info.type == SW_EVENT_PACKAGE_END)
             {
                 package->length = 0;
@@ -471,7 +471,13 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             //package end
             if (task->info.type == SW_EVENT_PACKAGE_END)
             {
-                goto do_task;
+                //goto do_task;
+				serv->onReceive(serv, task);
+                ServerWG.request_count++;
+                sw_stats_incr(&ServerStatsG->request_count);
+                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
+                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
+				package->length = 0;
             }
             break;
 

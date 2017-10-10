@@ -16,7 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swLog.h"
+#include "zanLog.h"
 #include "swError.h"
 #include "swMemory/memoryPool.h"
 
@@ -39,7 +39,7 @@ swMemoryPool *swRingBuffer_new(uint32_t size, uint8_t shared)
     void *mem = (shared == 1) ? sw_shm_malloc(size) : sw_malloc(size);
     if (mem == NULL)
     {
-        swFatalError("malloc(%d) failed.", size);
+        zanFatalError("malloc(%d) failed.", size);
         return NULL;
     }
 
@@ -60,7 +60,7 @@ swMemoryPool *swRingBuffer_new(uint32_t size, uint8_t shared)
 
     object->memory = mem;
 
-    swDebug("memory: ptr=%p", mem);
+    zanDebug("memory: ptr=%p", mem);
 
     return pool;
 }
@@ -84,7 +84,7 @@ static void swRingBuffer_collect(swRingBuffer *object)
             object->collect_offset += n_size;
 
             if (object->collect_offset + sizeof(swRingBuffer_item) >object->size ||
-            		object->collect_offset >= object->size)
+                    object->collect_offset >= object->size)
             {
                 object->collect_offset = 0;
                 object->status = 0;
@@ -154,7 +154,7 @@ static void* swRingBuffer_alloc(swMemoryPool *pool, uint32_t size)
     object->alloc_offset += alloc_size;
     object->alloc_count ++;
 
-    swDebug("alloc: ptr=%ld", (void *)item->data - object->memory);
+    zanDebug("alloc: ptr=%ld", (void *)item->data - object->memory);
 
     return item->data;
 }
@@ -170,14 +170,14 @@ static void swRingBuffer_free(swMemoryPool *pool, void *ptr)
 
     if (item->lock != 1)
     {
-        swDebug("invalid free: index=%d, ptr = %ld\n", item->index,  (void * ) item->data - object->memory);
+        zanDebug("invalid free: index=%d, ptr = %ld\n", item->index,  (void * ) item->data - object->memory);
     }
     else
     {
         item->lock = 0;
     }
 
-    swDebug("free: ptr=%ld", (void * ) item->data - object->memory);
+    zanDebug("free: ptr=%ld", (void * ) item->data - object->memory);
 
     sw_atomic_t *free_count = &object->free_count;
     sw_atomic_fetch_add(free_count, 1);

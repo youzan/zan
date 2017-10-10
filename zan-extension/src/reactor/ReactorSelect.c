@@ -16,11 +16,13 @@
   +----------------------------------------------------------------------+
 */
 
+#include <sys/select.h>
+
 #include "swoole.h"
-#include "swLog.h"
 #include "swReactor.h"
 #include "list.h"
-#include <sys/select.h>
+
+#include "zanLog.h"
 
 typedef struct _swFdList_node
 {
@@ -55,8 +57,8 @@ int swReactorSelect_create(swReactor *reactor)
     swReactorSelect *object = sw_malloc(sizeof(swReactorSelect));
     if (object == NULL)
     {
-        swWarn("[swReactorSelect_create] malloc[0] fail\n");
-        return SW_ERR;
+        zanWarn("[swReactorSelect_create] malloc[0] fail\n");
+        return ZAN_ERR;
     }
 
     bzero(object, sizeof(swReactorSelect));
@@ -72,7 +74,7 @@ int swReactorSelect_create(swReactor *reactor)
     reactor->wait = swReactorSelect_wait;
     reactor->free = swReactorSelect_free;
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void swReactorSelect_free(swReactor *reactor)
@@ -91,12 +93,12 @@ int swReactorSelect_add(swReactor *reactor, int fd, int fdtype)
 {
     if (fd > FD_SETSIZE)
     {
-        swWarn("max fd value is FD_SETSIZE(%d).\n", FD_SETSIZE);
-        return SW_ERR;
+        zanWarn("max fd value is FD_SETSIZE(%d).\n", FD_SETSIZE);
+        return ZAN_ERR;
     }
     if (swReactor_add(reactor, fd, fdtype) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
     swReactorSelect *object = reactor->object;
     swFdList_node *ev = sw_malloc(sizeof(swFdList_node));
@@ -109,7 +111,7 @@ int swReactorSelect_add(swReactor *reactor, int fd, int fdtype)
     {
         object->maxfd = fd;
     }
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactorSelect_cmp(swFdList_node *a, swFdList_node *b)
@@ -125,14 +127,14 @@ int swReactorSelect_del(swReactor *reactor, int fd)
 
     if (swReactor_del(reactor, fd) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     LL_SEARCH(object->fds, s_ev, &ev, swReactorSelect_cmp);
     if (s_ev == NULL)
     {
-        swWarn("swReactorSelect: fd[%d] not found", fd);
-        return SW_ERR;
+        zanWarn("swReactorSelect: fd[%d] not found", fd);
+        return ZAN_ERR;
     }
     LL_DELETE(object->fds, s_ev);
     SW_FD_CLR(fd, &object->rfds);
@@ -140,7 +142,7 @@ int swReactorSelect_del(swReactor *reactor, int fd)
     SW_FD_CLR(fd, &object->efds);
     reactor->event_num = reactor->event_num <= 0 ? 0 : reactor->event_num - 1;
     sw_free(s_ev);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swReactorSelect_set(swReactor *reactor, int fd, int fdtype)
@@ -151,13 +153,13 @@ int swReactorSelect_set(swReactor *reactor, int fd, int fdtype)
     LL_SEARCH(object->fds, s_ev, &ev, swReactorSelect_cmp);
     if (s_ev == NULL)
     {
-        swWarn("swReactorSelect: sock[%d] not found.", fd);
-        return SW_ERR;
+        zanWarn("swReactorSelect: sock[%d] not found.", fd);
+        return ZAN_ERR;
     }
     s_ev->fdtype = fdtype;
     //execute parent method
     swReactor_set(reactor, fd, fdtype);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swReactorSelect_wait(swReactor *reactor, struct timeval *timeo)
@@ -171,7 +173,7 @@ int swReactorSelect_wait(swReactor *reactor, struct timeval *timeo)
 
     if (reactor->timeout_msec == 0)
     {
-    	reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
+        reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
     }
 
     while (reactor->running > 0)
@@ -209,7 +211,7 @@ int swReactorSelect_wait(swReactor *reactor, struct timeval *timeo)
         {
             if (swReactor_error(reactor) < 0)
             {
-                swSysError("select error.");
+                zanError("select error.");
             }
 
             continue;
@@ -233,42 +235,42 @@ int swReactorSelect_wait(swReactor *reactor, struct timeval *timeo)
 
                 event.socket->event_trigger = 1;
                 //error
-				if (SW_FD_ISSET(ev->fd, &(object->efds)) &&
-						!event.socket->removed && event.socket->event_trigger)
-				{
-					handle = swReactor_getHandle(reactor, SW_EVENT_ERROR, event.type);
-					ret = handle(reactor, &event);
-					if (ret < 0)
-					{
-						swWarn("[Reactor#%d] select event[type=SW_FD_ERROR] handler fail. fd=%d|errno=%d", reactor->id,
-								ev->fd, errno);
-					}
+                if (SW_FD_ISSET(ev->fd, &(object->efds)) &&
+                        !event.socket->removed && event.socket->event_trigger)
+                {
+                    handle = swReactor_getHandle(reactor, SW_EVENT_ERROR, event.type);
+                    ret = handle(reactor, &event);
+                    if (ret < 0)
+                    {
+                        zanWarn("[Reactor#%d] select event[type=SW_FD_ERROR] handler fail. fd=%d|errno=%d", reactor->id,
+                                ev->fd, errno);
+                    }
 
-					event.socket->event_trigger = 0;
-					continue;
-				}
+                    event.socket->event_trigger = 0;
+                    continue;
+                }
 
                 //read
                 if (SW_FD_ISSET(ev->fd, &(object->rfds)) &&
-                		!event.socket->removed && event.socket->event_trigger)
+                        !event.socket->removed && event.socket->event_trigger)
                 {
                     handle = swReactor_getHandle(reactor, SW_EVENT_READ, event.type);
                     ret = handle(reactor, &event);
                     if (ret < 0)
                     {
-                        swWarn("[Reactor#%d] select event[type=%d] handler fail. fd=%d|errno=%d", reactor->id,
+                        zanWarn("[Reactor#%d] select event[type=%d] handler fail. fd=%d|errno=%d", reactor->id,
                                 event.type, ev->fd, errno);
                     }
                 }
                 //write
                 if (SW_FD_ISSET(ev->fd, &(object->wfds)) &&
-                		!event.socket->removed && event.socket->event_trigger)
+                        !event.socket->removed && event.socket->event_trigger)
                 {
                     handle = swReactor_getHandle(reactor, SW_EVENT_WRITE, event.type);
                     ret = handle(reactor, &event);
                     if (ret < 0)
                     {
-                        swWarn("[Reactor#%d] select event[type=SW_FD_WRITE] handler fail. fd=%d|errno=%d", reactor->id,
+                        zanWarn("[Reactor#%d] select event[type=SW_FD_WRITE] handler fail. fd=%d|errno=%d", reactor->id,
                                 ev->fd, errno);
                     }
                 }
@@ -278,9 +280,9 @@ int swReactorSelect_wait(swReactor *reactor, struct timeval *timeo)
         }
 
         if (reactor->onFinish != NULL)
-		{
-			reactor->onFinish(reactor);
-		}
+        {
+            reactor->onFinish(reactor);
+        }
     }
-    return SW_OK;
+    return ZAN_OK;
 }

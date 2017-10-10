@@ -268,8 +268,8 @@ if test "$PHP_ZAN" != "no"; then
     fi
 
     swoole_source_file="swoole.c \
-        swoole_server1.c \
-        swoole_server_port1.c \
+        swoole_server.c \
+        swoole_server_port.c \
         swoole_connpool.c \
         swoole_client.c \
         swoole_event.c \
@@ -277,12 +277,12 @@ if test "$PHP_ZAN" != "no"; then
         swoole_async.c \
         swoole_process.c \
         swoole_buffer.c \
-dnl        swoole_http_server.c \
+        swoole_http_server.c \
 dnl        swoole_http_v2_server.c \
 dnl        swoole_websocket_server.c \
-dnl        swoole_http_client.c \
-        swoole_mysql.c \
+        swoole_http_client.c \
         swoole_redis.c \
+        swoole_mysql.c \
         swoole_nova.c \
         swoole_stats.c \
         src/Base.c \
@@ -292,20 +292,14 @@ dnl        swoole_http_client.c \
         src/core/array.c \
         src/core/list.c \
         src/core/heap.c \
-        src/core/log.c \
         src/core/rbtree.c \
         src/memory/ShareMemory.c \
-        src/memory/MemoryGlobal.c \
         src/memory/RingBuffer.c \
         src/memory/FixedPool.c \
         src/memory/Malloc.c \
-        src/memory/Table.c \
+dnl        src/memory/Table.c \
         src/memory/Buffer.c \
         src/memory/zanShmPool.c \
-        src/factory/Factory.c \
-        src/factory/FactoryThread.c \
-        src/factory/FactoryProcess.c \
-        src/factory/ProcessPool.c \
         src/factory/ThreadPool.c \
         src/factory/zanFactory.c \
         src/reactor/ReactorBase.c \
@@ -313,18 +307,6 @@ dnl        swoole_http_client.c \
         src/reactor/ReactorPoll.c \
         src/reactor/ReactorEpoll.c \
         src/reactor/ReactorKqueue.c \
-        src/pipe/PipeBase.c \
-        src/pipe/PipeEventfd.c \
-        src/pipe/PipeUnsock.c \
-        src/pipe/Channel.c \
-        src/pipe/Msgqueue.c \
-        src/lock/Semaphore.c \
-        src/lock/Mutex.c \
-        src/lock/RWLock.c \
-        src/lock/SpinLock.c \
-        src/lock/FileLock.c \
-        src/lock/AtomicLock.c \
-        src/lock/Cond.c \
         src/lock/zanSem.c \
         src/lock/zanMutex.c \
         src/lock/zanRWLock.c \
@@ -334,15 +316,8 @@ dnl        swoole_http_client.c \
         src/lock/zanLockBase.c \
         src/network/Client.c \
         src/network/Connection.c \
-        src/network/Manager.c \
-dnl        src/network/Port.c \
-        src/network/ReactorAccept.c \
-        src/network/ReactorProcess.c \
-        src/network/ReactorThread.c \
-        src/network/Server.c \
+dnl        src/network/Server.c \
         src/network/Socket.c \
-        src/network/TaskWorker.c \
-        src/network/Worker.c \
         src/network/zanConnection.c \
         src/network/zanSocket.c \
         src/network/zanServer.c \
@@ -372,7 +347,6 @@ dnl        src/network/Port.c \
         src/ipc/zanUnSock.c \
         src/ipc/zanMsgQueue.c \
         src/ipc/zanShm.c \
-dnl        src/aio/AsyncIO.c \
         src/aio/zanAio.c \
         src/timer/Timer.c \
         src/workers/zanWorker.c \

@@ -16,9 +16,9 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swLog.h"
-#include "swMemory/memoryPool.h"
 #include <sys/shm.h>
+#include "swMemory/memoryPool.h"
+#include "zanLog.h"
 
 void* sw_shm_malloc(size_t size)
 {
@@ -46,11 +46,11 @@ void* sw_shm_calloc(size_t num, size_t _size)
         return NULL;
     }
 
-	memcpy(mem, &object, sizeof(swShareMemory));
-	void *ret_mem = mem + sizeof(swShareMemory);
-	//calloc需要初始化
-	bzero(ret_mem, size - sizeof(swShareMemory));
-	return ret_mem;
+    memcpy(mem, &object, sizeof(swShareMemory));
+    void *ret_mem = mem + sizeof(swShareMemory);
+    //calloc需要初始化
+    bzero(ret_mem, size - sizeof(swShareMemory));
+    return ret_mem;
 }
 
 void sw_shm_free(void *ptr)
@@ -64,7 +64,7 @@ void* sw_shm_realloc(void *ptr, size_t new_size)
 {
     swShareMemory *object = ptr - sizeof(swShareMemory);
     if (object->size >= new_size){
-    	return ptr;
+        return ptr;
     }
 
     void *new_ptr = sw_shm_malloc(new_size);
@@ -74,14 +74,14 @@ void* sw_shm_realloc(void *ptr, size_t new_size)
     }
 
     memcpy(new_ptr, ptr, object->size);
-	sw_shm_free(ptr);
-	return new_ptr;
+    sw_shm_free(ptr);
+    return new_ptr;
 }
 
 void *swShareMemory_mmap_create(swShareMemory *object, int size, char *mapfile)
 {
     if (!object || size <= 0){
-    	return NULL;
+        return NULL;
     }
 
     bzero(object, sizeof(swShareMemory));
@@ -110,7 +110,7 @@ void *swShareMemory_mmap_create(swShareMemory *object, int size, char *mapfile)
     if (!mem)
 #endif
     {
-        swSysError("mmap failed.");
+        zanError("mmap failed.");
         return NULL;
     }
     else
@@ -128,25 +128,25 @@ int swShareMemory_mmap_free(swShareMemory *object)
 
 void *swShareMemory_sysv_create(swShareMemory *object, int size, int key)
 {
-	if (!object || size <= 0){
-		return NULL;
-	}
+    if (!object || size <= 0){
+        return NULL;
+    }
 
-	bzero(object, sizeof(swShareMemory));
+    bzero(object, sizeof(swShareMemory));
     key = (key == 0)? IPC_PRIVATE:key;
 
     //SHM_R | SHM_W |
     int shmid = -1;
     if ((shmid = shmget(key, size, IPC_CREAT)) < 0)
     {
-    	swSysError("shmget() failed.");
+        zanError("shmget() failed.");
         return NULL;
     }
 
     void *mem = shmat(shmid, NULL, 0);
     if ((intptr_t)mem < 0)
     {
-    	swSysError("shmat() failed.");
+        zanError("shmat() failed.");
         return NULL;
     }
     else
@@ -161,9 +161,9 @@ void *swShareMemory_sysv_create(swShareMemory *object, int size, int key)
 
 int swShareMemory_sysv_free(swShareMemory *object, int rm)
 {
-	if (!object){
-		return -1;
-	}
+    if (!object){
+        return -1;
+    }
 
     int ret = shmdt(object->mem);
     if (rm)

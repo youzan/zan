@@ -17,11 +17,10 @@
 */
 
 #include "swoole.h"
-#include "swLog.h"
 #include "swReactor.h"
 #include "swSignal.h"
 #include "swConnection.h"
-#include "swAsyncIO.h"
+//#include "swAsyncIO.h"
 #include "list.h"
 
 #include "zanGlobalVar.h"
@@ -39,7 +38,7 @@ int swReactor_init(swReactor *reactor, int max_event)
 {
     if (!reactor)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     bzero(reactor, sizeof(swReactor));
@@ -57,7 +56,7 @@ int swReactor_init(swReactor *reactor, int max_event)
 
     if (ret < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     reactor->running = 1;
@@ -71,12 +70,12 @@ int swReactor_init(swReactor *reactor, int max_event)
     reactor->socket_array = swArray_create(1024, sizeof(swConnection));
     if (!reactor->socket_array)
     {
-        swWarn("create socket array failed.");
+        zanWarn("create socket array failed.");
         reactor->free(reactor);
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 swReactor_handle swReactor_getHandle(swReactor *reactor, int event_type, int fdtype)
@@ -103,7 +102,7 @@ int swReactor_add_event(swReactor *reactor, int fd, enum swEvent_type event_type
         return reactor->set(reactor, fd, conn->fdtype | conn->events | event_type);
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swReactor_del_event(swReactor *reactor, int fd, enum swEvent_type event_type)
@@ -114,7 +113,7 @@ int swReactor_del_event(swReactor *reactor, int fd, enum swEvent_type event_type
         return reactor->set(reactor, fd, conn->fdtype | (conn->events & (~event_type)));
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactor_setHandle(swReactor *reactor, int _fdtype, swReactor_handle handle)
@@ -123,8 +122,8 @@ static int swReactor_setHandle(swReactor *reactor, int _fdtype, swReactor_handle
 
     if (fdtype >= SW_MAX_FDTYPE)
     {
-        swWarn("fdtype > SW_MAX_FDTYPE[%d]", SW_MAX_FDTYPE);
-        return SW_ERR;
+        zanWarn("fdtype > SW_MAX_FDTYPE[%d]", SW_MAX_FDTYPE);
+        return ZAN_ERR;
     }
 
     if (swReactor_event_read(_fdtype))
@@ -141,11 +140,11 @@ static int swReactor_setHandle(swReactor *reactor, int _fdtype, swReactor_handle
     }
     else
     {
-        swWarn("unknow fdtype");
-        return SW_ERR;
+        zanWarn("unknow fdtype");
+        return ZAN_ERR;
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactor_defer(swReactor *reactor, swCallback callback, void *data)
@@ -153,15 +152,15 @@ static int swReactor_defer(swReactor *reactor, swCallback callback, void *data)
     swDefer_callback *cb = sw_malloc(sizeof(swDefer_callback));
     if (!cb)
     {
-        swWarn("malloc(%ld) failed.", sizeof(swDefer_callback));
-        return SW_ERR;
+        zanWarn("malloc(%ld) failed.", sizeof(swDefer_callback));
+        return ZAN_ERR;
     }
 
     memset(cb,0x00,sizeof(swDefer_callback));
     cb->data = data;
     cb->callback = callback;
     LL_APPEND(reactor->defer_callback_list, cb);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 swConnection* swReactor_get(swReactor *reactor, int fd)
@@ -199,7 +198,7 @@ int swReactor_add(swReactor *reactor, int fd, int fdtype)
 
     zanTrace("fd=%d, socket_type=%d, fdtype=%d, events=%d", fd, socket->socket_type, socket->fdtype, socket->events);
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swReactor_del(swReactor *reactor, int fd)
@@ -207,7 +206,7 @@ int swReactor_del(swReactor *reactor, int fd)
     swConnection *socket = swReactor_get(reactor, fd);
     socket->events = 0;
     socket->removed = 1;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void swReactor_set(swReactor *reactor, int fd, int fdtype)
@@ -224,7 +223,8 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
     //check timer
     if (reactor->check_timer)
     {
-        swTimer_select(&SwooleG.timer);
+        //swTimer_select(&SwooleG.timer);
+        swTimer_select(&ServerG.timer);
     }
     //server master
     //if (SwooleG.serv && SwooleTG.update_time)
@@ -349,9 +349,9 @@ int swReactor_error(swReactor *reactor)
             reactor->singal_no = 0;
         }
 
-        return SW_OK;
+        return ZAN_OK;
     }
-    return SW_ERR;
+    return ZAN_ERR;
 }
 
 static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
@@ -400,8 +400,8 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
                 buffer = swBuffer_new(sizeof(swEventData));
                 if (!buffer)
                 {
-                    swWarn("create worker buffer failed.");
-                    return SW_ERR;
+                    zanWarn("create worker buffer failed.");
+                    return ZAN_ERR;
                 }
                 socket->out_buffer = buffer;
             }
@@ -412,14 +412,14 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
             {
                 if (reactor->set(reactor, fd, socket->fdtype | socket->events) < 0)
                 {
-                    swSysError("reactor->set(%d, SW_EVENT_WRITE) failed.", fd);
+                    zanError("reactor->set(%d, SW_EVENT_WRITE) failed.", fd);
                 }
             }
             else
             {
                 if (reactor->add(reactor, fd, socket->fdtype | SW_EVENT_WRITE) < 0)
                 {
-                    swSysError("reactor->add(%d, SW_EVENT_WRITE) failed.", fd);
+                    zanError("reactor->add(%d, SW_EVENT_WRITE) failed.", fd);
                 }
             }
 
@@ -431,7 +431,7 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
         }
         else
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
     }
     else
@@ -443,11 +443,11 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
             //if (SwooleG.socket_dontwait)
             if (ServerG.socket_dontwait)
             {
-                return SW_ERR;
+                return ZAN_ERR;
             }
             else
             {
-                swWarn("socket[fd=%d, type=%d] output buffer overflow, reactor will block.", fd, socket->fdtype);
+                zanWarn("socket[fd=%d, type=%d] output buffer overflow, reactor will block.", fd, socket->fdtype);
                 swYield();
                 swSocket_wait(fd, SW_SOCKET_OVERFLOW_WAIT, SW_EVENT_WRITE);
             }
@@ -455,7 +455,7 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
 
         if (swBuffer_append(buffer, buf, n) < 0)
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
     }
 
@@ -498,7 +498,7 @@ int swReactor_onWrite(swReactor *reactor, swEvent *ev)
             }
             else if (socket->send_wait)
             {
-                return SW_OK;
+                return ZAN_OK;
             }
         }
     }
@@ -511,19 +511,19 @@ int swReactor_onWrite(swReactor *reactor, swEvent *ev)
             socket->events &= (~SW_EVENT_WRITE);
             if (reactor->set(reactor, fd, socket->fdtype | socket->events) < 0)
             {
-                swSysError("reactor->set(%d, SW_EVENT_READ) failed.", fd);
+                zanError("reactor->set(%d, SW_EVENT_READ) failed.", fd);
             }
         }
         else
         {
             if (reactor->del(reactor, fd) < 0)
             {
-                swSysError("reactor->del(%d) failed.", fd);
+                zanError("reactor->del(%d) failed.", fd);
             }
         }
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swReactor_wait_write_buffer(swReactor *reactor, int fd)
@@ -537,5 +537,5 @@ int swReactor_wait_write_buffer(swReactor *reactor, int fd)
         event.fd = fd;
         return swReactor_onWrite(reactor, &event);
     }
-    return SW_OK;
+    return ZAN_OK;
 }

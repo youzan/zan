@@ -18,16 +18,16 @@
 
 #include <stdio.h>
 #include "swError.h"
-#include "swLog.h"
+#include "zanLog.h"
 #include "swBaseData.h"
 
 #ifdef SW_USE_RINGQUEUE_TS
 
 int swRingQueue_init(swRingQueue *queue, int buffer_size)
 {
-	if (!queue){
-		return SW_ERR;
-	}
+    if (!queue){
+        return SW_ERR;
+    }
 
     queue->size = buffer_size;
     queue->flags = (char *)sw_malloc(queue->size);
@@ -108,14 +108,14 @@ int swRingQueue_pop(swRingQueue *queue, void **ele)
 
 int swRingQueue_init(swRingQueue *queue, int buffer_size)
 {
-	if (!queue){
-		return SW_ERR;
-	}
+    if (!queue){
+        return SW_ERR;
+    }
 
     queue->data = sw_calloc(buffer_size, sizeof(void*));
     if (queue->data == NULL)
     {
-        swFatalError("malloc failed.");
+        zanFatalError("malloc failed.");
         return SW_ERR;
     }
     queue->size = buffer_size;

@@ -22,11 +22,9 @@
 
 #include "swoole.h"
 #include "swError.h"
-#include "swServer.h"
-#include "swPipe.h"
-#include "swFactory.h"
+//#include "swServer.h"
 #include "swSendfile.h"
-#include "swLog.h"
+#include "zanLog.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,11 +60,13 @@ enum swProcessType
     SW_PROCESS_USERWORKER = 5,
 };
 
+#if 0
 #define swIsOthers()          (SwooleG.process_type==SW_PROCESS_OTHERS)
 #define swIsMaster()          (SwooleG.process_type==SW_PROCESS_MASTER)
 #define swIsWorker()          (SwooleG.process_type==SW_PROCESS_WORKER)
 #define swIsTaskWorker()      (SwooleG.process_type==SW_PROCESS_TASKWORKER)
 #define swIsManager()         (SwooleG.process_type==SW_PROCESS_MANAGER)
+#endif
 
 typedef struct _swPackage
 {
@@ -103,6 +103,7 @@ typedef struct
     int worker_id;
 } swPackage_response;
 
+#if 0
 int swWorker_create(swWorker *worker);
 int swWorker_onTask(swFactory *factory, swEventData *task);
 
@@ -121,22 +122,28 @@ int swTaskWorker_onTask(swProcessPool *pool, swEventData *task);
 int swTaskWorker_onFinish(swReactor *reactor, swEvent *event);
 void swTaskWorker_onStart(swProcessPool *pool, int worker_id);
 void swTaskWorker_onStop(swProcessPool *pool, int worker_id);
-int swTaskWorker_large_pack(swEventData *task, void *data, int data_len);
 int swTaskWorker_finish(swServer *serv, char *data, int data_len, int flags);
+
+int swManager_start(swFactory *factory);
+pid_t swManager_spawn_user_worker(swServer *serv, swWorker* worker);
+int swManager_wait_user_worker(swProcessPool *pool, pid_t pid);
+#endif
+
+int swTaskWorker_large_pack(swEventData *task, void *data, int data_len);
 
 #define swTask_type(task)                  ((task)->info.from_fd)
 
 #define swTaskWorker_large_unpack(task, __malloc, _buf, _length)   swPackage_task _pkg;\
     memcpy(&_pkg, task->data, sizeof(_pkg));\
     _length = _pkg.length;\
-    if (_length > SwooleG.serv->listen_list->protocol.package_max_length) {\
-        swWarn("task package[length=%d] is too big.", _length);\
+    if (_length > ServerG.serv->listen_list->protocol.package_max_length) {\
+        zanWarn("task package[length=%d] is too big.", _length);\
     }\
     _buf = __malloc(_length + 1);\
     _buf[_length] = 0;\
     int tmp_file_fd = open(_pkg.tmpfile, O_RDONLY);\
     if (tmp_file_fd < 0){\
-        swSysError("open(%s) failed.", task->data);\
+        zanError("open(%s) failed.", task->data);\
         _length = -1;\
     } else if (swoole_sync_readfile(tmp_file_fd, _buf, _length) > 0) {\
         close(tmp_file_fd);\
@@ -146,11 +153,6 @@ int swTaskWorker_finish(swServer *serv, char *data, int data_len, int flags);
         close(tmp_file_fd); \
         unlink(_pkg.tmpfile); \
     }
-
-
-int swManager_start(swFactory *factory);
-pid_t swManager_spawn_user_worker(swServer *serv, swWorker* worker);
-int swManager_wait_user_worker(swProcessPool *pool, pid_t pid);
 
 
 #ifdef __cplusplus

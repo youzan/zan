@@ -706,9 +706,11 @@ int zanNetworker_send(swSendData *_send)
     //Reset send buffer, Immediately close the connection.
     if (_send->info.type == SW_EVENT_CLOSE && conn->close_reset)
     {
-        goto close_fd;
+		reactor->close(reactor, fd);
+		return ZAN_OK;
     }
-
+  
+    int buffer_type = 0;	
     if (swBuffer_empty(conn->out_buffer))
     {
         /**
@@ -716,7 +718,6 @@ int zanNetworker_send(swSendData *_send)
          */
         if (_send->info.type == SW_EVENT_CLOSE)
         {
-            close_fd:
             reactor->close(reactor, fd);
             return ZAN_OK;
         }
@@ -726,39 +727,42 @@ int zanNetworker_send(swSendData *_send)
         {
             if (!conn->direct_send)
             {
-                goto buffer_send;
-            }
-
-            int n;
-
-        direct_send:
-            n = swConnection_send(conn, _send_data, _send_length, 0);
-            if (n == _send_length)
-            {
-                return ZAN_OK;
-            }
-            else if (n > 0)
-            {
-                _send_data += n;
-                _send_length -= n;
-                goto buffer_send;
-            }
-            else if (errno == EINTR)
-            {
-                goto direct_send;
+				buffer_type = 1;
             }
             else
-            {
-                goto buffer_send;
-            }
+			{
+				int n = 0;
+				while(!n)
+				{
+					n = swConnection_send(conn, _send_data, _send_length, 0);
+					if (n == _send_length)
+					{
+						return ZAN_OK;
+					}
+					else if(n > 0)
+					{
+						_send_data += n;
+						_send_length -= n;
+						buffer_type = 1;
+						break;
+					}
+					else if(errno == EINTR)
+					{
+						n = 0;
+					}
+					else
+					{
+						buffer_type = 1;
+						break;
+					}
+					
+				}
+			}		
         }
 #endif
         //buffer send
         else
         {
-#ifdef SW_REACTOR_SYNC_SEND
-            buffer_send:
-#endif
             if (!conn->out_buffer)
             {
                 conn->out_buffer = swBuffer_new(SW_BUFFER_SIZE);
@@ -770,6 +774,21 @@ int zanNetworker_send(swSendData *_send)
         }
     }
 
+	if(buffer_type == 1)
+	{
+		if (!conn->out_buffer)
+		{
+			conn->out_buffer = swBuffer_new(SW_BUFFER_SIZE);
+			if (conn->out_buffer == NULL)
+			{
+				return ZAN_ERR;
+			}
+		}
+		
+		buffer_type = 0;
+	}
+	
+	
     swBuffer_trunk *trunk;
     //close connection
     if (_send->info.type == SW_EVENT_CLOSE)
@@ -816,7 +835,8 @@ int zanNetworker_send(swSendData *_send)
     if (reactor->set(reactor, fd, SW_EVENT_TCP | SW_EVENT_WRITE | SW_EVENT_READ) < 0
             && (errno == EBADF || errno == ENOENT))
     {
-        goto close_fd;
+		reactor->close(reactor, fd);
+		return ZAN_OK;
     }
 
     return ZAN_OK;

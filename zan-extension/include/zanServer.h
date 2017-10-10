@@ -29,7 +29,6 @@
 extern "C" {
 #endif
 
-
 #define ZAN_SERVER_MAX_FD_INDEX          0 //max connection socket
 #define ZAN_SERVER_MIN_FD_INDEX          1 //min listen socket
 
@@ -41,6 +40,13 @@ extern "C" {
 #define zanServer_set_minfd(serv, networker_index, maxfd) (serv->connection_list[networker_index][ZAN_SERVER_MIN_FD_INDEX].fd=maxfd)
 #define zanServer_get_minfd(serv, networker_index) (serv->connection_list[networker_index][ZAN_SERVER_MIN_FD_INDEX].fd)
 
+#define SW_HEARTBEAT_IDLE          0   //心跳存活最大时间
+#define SW_HEARTBEAT_CHECK         0   //心跳定时侦测时间
+
+//UDP, UDP必然超过0x1000000
+//原因：IPv4的第4字节最小为1,而这里的conn_fd是网络字节序
+#define SW_MAX_SOCKET_ID             0x1000000
+#define swServer_is_udp(fd)          ((uint32_t) fd > SW_MAX_SOCKET_ID)
 
 /**************************************************************/
 void zanServer_init(zanServer *serv);

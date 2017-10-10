@@ -329,7 +329,7 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
 			}
 			else
 			{
-				sw_stats_incr(status == 0 ? &ServerStatsG->worker_normal_exit
+				zan_stats_incr(status == 0 ? &ServerStatsG->worker_normal_exit
 							  : &ServerStatsG->worker_abnormal_exit);
 				zanMaster_checkexitstatus(serv, i, *pid, status);
 				*pid = -1;
@@ -469,7 +469,7 @@ int zan_master_process_loop(zanServer *serv)
                 }
 				
 				memcpy(reload_workers, ServerGS->task_workers.workers, sizeof(zanWorker) * ServerG.servSet.task_worker_num);
-                reloadworker_num = SwooleG.task_worker_num;
+                reloadworker_num = ServerG.servSet.task_worker_num;
                 reloadworker_index = 0;
 			}
 			else
