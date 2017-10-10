@@ -624,7 +624,7 @@ void swoole_cpu_setAffinity(int threadid, zanServer *serv)
         }
         else
         {
-            CPU_SET(threadid % SW_CPU_NUM, &cpu_set);
+            CPU_SET(threadid % ZAN_CPU_NUM, &cpu_set);
         }
 
         if (0 != pthread_setaffinity_np(pthread_self(), sizeof(cpu_set), &cpu_set))

@@ -17,7 +17,7 @@
 */
 
 #include "zanLock.h"
-#include "zanLock.h"
+#include "zanLog.h"
 
 #ifdef HAVE_SPINLOCK
 static int zanSpinLock_lock(zanLock *lock);
@@ -73,7 +73,7 @@ static int zanSpinLock_unlock(zanLock *lock)
         return ZAN_ERR;
     }
 
-    ret = zanSpinLock_unlock(&lock->object.spinlock.lock_t);
+    ret = pthread_spin_unlock(&lock->object.spinlock.lock_t);
     if (0 != ret) {
         zanError("zanSpinLock_unlock return ret=%d, errno=%d:%s", ret, errno, strerror(errno));
         return ZAN_ERR;
