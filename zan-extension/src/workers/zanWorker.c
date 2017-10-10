@@ -68,7 +68,8 @@ void zanWorker_signal_init(void)
     swSignal_add(SIGPIPE, NULL);
     swSignal_add(SIGUSR1, zanWorker_signal_handler);
     swSignal_add(SIGUSR2, NULL);
-    //swSignal_add(SIGINT, swWorker_signal_handler);
+    swSignal_add(SIGINT, zanWorker_signal_handler);
+	swSignal_add(SIGQUIT, zanWorker_signal_handler);
     swSignal_add(SIGTERM, zanWorker_signal_handler);
     swSignal_add(SIGALRM, swSystemTimer_signal_handler);
     //for test
@@ -83,7 +84,9 @@ void zanWorker_signal_handler(int signo)
     switch (signo)
     {
 		case SIGTERM:
-			zanWarn("signal SIGTERM coming");
+		case SIGINT:
+	    case SIGQUIT:
+			//zanWarn("signal SIGTERM coming");
 			if (ServerG.main_reactor)
 			{
 				ServerG.main_reactor->running = 0;
