@@ -23,8 +23,6 @@
 #endif
 
 #include <stdlib.h>
-#include <pthread.h>
-#include <sched.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <sys/ioctl.h>
@@ -35,6 +33,7 @@
 #include "swAtomic.h"
 #include "swClient.h"
 #include "swBaseOperator.h"
+//#include "swLog.h"
 #include "zanLog.h"
 
 #ifdef HAVE_EXECINFO
