@@ -443,14 +443,12 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             {
                 break;
             }
-            do_task:
-            {
-                serv->onReceive(serv, task);
-                ServerWG.request_count++;
-                sw_stats_incr(&ServerStatsG->request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
-            }
+			serv->onReceive(serv, task);
+			ServerWG.request_count++;
+			sw_stats_incr(&ServerStatsG->request_count);
+			sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
+			sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
+			
             if (task->info.type == SW_EVENT_PACKAGE_END)
             {
                 package->length = 0;
@@ -473,7 +471,13 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             //package end
             if (task->info.type == SW_EVENT_PACKAGE_END)
             {
-                goto do_task;
+                //goto do_task;
+				serv->onReceive(serv, task);
+                ServerWG.request_count++;
+                sw_stats_incr(&ServerStatsG->request_count);
+                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
+                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
+				package->length = 0;
             }
             break;
 
