@@ -47,11 +47,11 @@ int swHttp2_parse_frame(swProtocol *protocol, swConnection *conn, char *data, ui
             package_length = protocol->get_package_length(protocol, conn, data, length);
             if (package_length < 0)
             {
-                return SW_ERR;
+                return ZAN_ERR;
             }
             else if (package_length == 0)
             {
-                return SW_OK;
+                return ZAN_OK;
             }
             else
             {
@@ -59,7 +59,7 @@ int swHttp2_parse_frame(swProtocol *protocol, swConnection *conn, char *data, ui
             }
         }
     }
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swHttp2_send_setting_frame(swProtocol *protocol, swConnection *conn)

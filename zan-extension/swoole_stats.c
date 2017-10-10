@@ -16,10 +16,10 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swWork.h"
-#include "swGlobalVars.h"
-#include "swLog.h"
 
+#include "zanGlobalVar.h"
+#include "zanLog.h"
+#if 0
 void sw_stats_set_worker_status(swWorker *worker, int status)
 {
     SwooleStats->lock.lock(&SwooleStats->lock);
@@ -60,4 +60,4 @@ void sw_stats_set_worker_status(swWorker *worker, int status)
     }
     SwooleStats->lock.unlock(&SwooleStats->lock);
 }
-
+#endif

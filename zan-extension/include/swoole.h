@@ -112,9 +112,6 @@ typedef unsigned long ulong_t;
 #define SW_STRL(s)             s, sizeof(s)
 #define SW_START_SLEEP         usleep(100000)  //sleep 1s,wait fork and pthread_create
 
-//#define METHOD_DEF(class,name,...)  class##_##name(class *object, ##__VA_ARGS__)
-//#define METHOD(class,name,...)      class##_##name(object, ##__VA_ARGS__)
-
 //-------------------------------------------------------------------------------
 #define SW_ASYNCERR            1
 #define SW_OK                  0
@@ -166,14 +163,6 @@ enum swBool_type
 };
 
 //-------------------------------------------------------------------------------
-enum swServer_mode
-{
-    SW_MODE_BASE          =  1,
-    SW_MODE_THREAD        =  2,
-    SW_MODE_PROCESS       =  3,
-    SW_MODE_SINGLE        =  4,
-};
-
 enum swCloseType
 {
     SW_CLOSE_PASSIVE = 32,          ///被动关闭
@@ -187,25 +176,15 @@ enum swClientTimeoutType
     SW_CLIENT_RECV_TIMEOUT = 2,
 };
 
-
 #define SW_MODE_PACKET         0x10
 #define SW_SOCK_SSL            (1u << 9)
 #define SW_MAX_FDTYPE          32 //32 kinds of event
 
 #define swYield()              sched_yield() //or usleep(1)
-#define zanYield()             sched_yield() //or usleep(1)
 
 #ifndef uchar
 typedef unsigned char uchar;
 #endif
-
-typedef struct
-{
-    uint32_t id;
-    uint32_t fd :24;
-    uint32_t reactor_id :8;
-    uint8_t  networker_id;
-} swSession;
 
 typedef struct _swDataHead
 {
@@ -223,12 +202,6 @@ typedef struct _swUdpFd
     struct sockaddr addr;
     int sock;
 } swUdpFd;
-
-void swoole_init(void);
-void swoole_clean(void);
-void swoole_update_time(void);
-double swoole_microtime(void);
-void set_log_level();
 
 //=============================
 typedef struct
@@ -249,8 +222,8 @@ enum zanServer_mode
 void zan_init(void);
 void zan_clean(void);
 void zan_update_time(void);
-double zan_microtime(void);
 void zan_set_loglevel(uint8_t);
+double get_microtime(void);
 
 #ifdef __cplusplus
 }

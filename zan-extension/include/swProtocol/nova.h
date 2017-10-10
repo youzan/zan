@@ -34,7 +34,7 @@ extern "C"
 #define NOVA_HEADER_COMMON_LEN  37
 
 #define CHECK_PACK  if (off > header->head_size) { \
-                        swWarn("unpack error,"); \
+                        zanWarn("unpack error,"); \
                         return SW_ERR; \
                     }
 

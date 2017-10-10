@@ -25,7 +25,6 @@
 #define SW_TABLE_H_
 
 #include "swAtomic.h"
-#include "swLog.h"
 #include "swBaseData.h"
 
 
@@ -148,38 +147,8 @@ static sw_inline swTableColumn* swTableColumn_get(swTable *table, char *column_k
 
 typedef uint32_t swTable_string_length_t;
 
-static sw_inline void swTableRow_set_value(swTableRow *row, swTableColumn * col, void *value, int vlen)
-{
-    switch(col->type)
-    {
-    case SW_TABLE_INT8:
-        memcpy(row->data + col->index, value, 1);
-        break;
-    case SW_TABLE_INT16:
-        memcpy(row->data + col->index, value, 2);
-        break;
-    case SW_TABLE_INT32:
-        memcpy(row->data + col->index, value, 4);
-        break;
-#ifdef __x86_64__
-    case SW_TABLE_INT64:
-        memcpy(row->data + col->index, value, 8);
-        break;
-#endif
-    case SW_TABLE_FLOAT:
-        memcpy(row->data + col->index, value, sizeof(double));
-        break;
-    default:
-        if (vlen > (col->size - sizeof(swTable_string_length_t)))
-        {
-            swWarn("string is too long.");
-            vlen = col->size - sizeof(swTable_string_length_t);
-        }
-        memcpy(row->data + col->index, &vlen, sizeof(swTable_string_length_t));
-        memcpy(row->data + col->index + sizeof(swTable_string_length_t), value, vlen);
-        break;
-    }
-}
+void swTableRow_set_value(swTableRow *row, swTableColumn * col, void *value, int vlen);
+
 
 #ifdef __cplusplus
 }

@@ -27,8 +27,7 @@
 #include "swWork.h"
 #include "swError.h"
 #include "swBaseOperator.h"
-#include "swLog.h"
-
+#include "zanLog.h"
 
 #if PHP_MAJOR_VERSION < 7
 #include "ext/standard/php_smart_str.h"
@@ -289,7 +288,7 @@ static void php_swoole_init_globals(zend_swoole_globals *swoole_globals)
 {
     swoole_globals->message_queue_key = 0;
     swoole_globals->aio_thread_num = SW_AIO_THREAD_NUM_DEFAULT;
-    swoole_globals->log_level = SW_LOG_WARNING;
+    swoole_globals->log_level = ZAN_LOG_WARNING;
     swoole_globals->socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
     swoole_globals->display_errors = 1;
     swoole_globals->use_namespace = 0;
@@ -316,7 +315,7 @@ void swoole_set_object(zval *object, void *ptr)
         void *new_ptr = realloc(old_ptr, sizeof(void*) * new_size);
         if (!new_ptr)
         {
-            swWarn("alloc global memory failed");
+            zanWarn("alloc global memory failed");
             return ;
         }
 
@@ -504,7 +503,7 @@ PHP_MINIT_FUNCTION(zan)
     REGISTER_STRINGL_CONSTANT("SWOOLE_VERSION", PHP_SWOOLE_VERSION, sizeof(PHP_SWOOLE_VERSION) - 1, CONST_CS | CONST_PERSISTENT);
 
     //
-    swoole_init();
+    //swoole_init();
 
     zan_init();
 
@@ -513,7 +512,7 @@ PHP_MINIT_FUNCTION(zan)
     swoole_server_port_init(module_number TSRMLS_CC);
 
     swoole_timer_init(module_number TSRMLS_CC);
-//    swoole_aio_init(module_number TSRMLS_CC);
+    swoole_aio_init(module_number TSRMLS_CC);
     swoole_process_init(module_number TSRMLS_CC);
     swoole_buffer_init(module_number TSRMLS_CC);
     swoole_connpool_init(module_number TSRMLS_CC);
@@ -522,8 +521,8 @@ PHP_MINIT_FUNCTION(zan)
 ///#ifdef SW_USE_REDIS
 ///    swoole_redis_init(module_number TSRMLS_CC);
 ///#endif
-////    swoole_http_client_init(module_number TSRMLS_CC);
-////    swoole_http_server_init(module_number TSRMLS_CC);
+    swoole_http_client_init(module_number TSRMLS_CC);
+    swoole_http_server_init(module_number TSRMLS_CC);
 ////    swoole_websocket_init(module_number TSRMLS_CC);
 ////    swoole_mysql_init(module_number TSRMLS_CC);
 
@@ -629,7 +628,8 @@ PHP_MINFO_FUNCTION(zan)
 PHP_RINIT_FUNCTION(zan)
 {
     //running
-    SwooleG.running = 1;
+    //SwooleG.running = 1;
+    ServerG.running = 1;
 
 #ifdef ZTS
     if (sw_thread_ctx == NULL)
@@ -648,12 +648,13 @@ PHP_RINIT_FUNCTION(zan)
 PHP_RSHUTDOWN_FUNCTION(zan)
 {
     //clear pipe buffer
-    if (swIsWorker())
+    if (is_worker())
     {
-        swWorker_clean();
+        //TODO::::
+        //swWorker_clean();
     }
 
-    if (SwooleGS->start > 0 && SwooleG.running > 0)
+    if (ServerGS->started > 0 && ServerG.running > 0)
     {
         if (PG(last_error_message))
         {
@@ -663,8 +664,8 @@ PHP_RSHUTDOWN_FUNCTION(zan)
             case E_CORE_ERROR:
             case E_USER_ERROR:
             case E_COMPILE_ERROR:
-                    swWarn("PHP_RSHUTDOWN_FUNCTION(swoole).");
-                    swError("Fatal error: %s in %s on line %d.",
+                    zanWarn("PHP_RSHUTDOWN_FUNCTION(swoole).");
+                    zanError("Fatal error: %s in %s on line %d.",
                         PG(last_error_message), PG(last_error_file)?PG(last_error_file):"-", PG(last_error_lineno));
                 break;
             default:
@@ -673,14 +674,14 @@ PHP_RSHUTDOWN_FUNCTION(zan)
         }
         else
         {
-            swWarn("worker process is terminated by exit/die.");
+            zanWarn("worker process is terminated by exit/die.");
         }
     }
 
 
     /// clean client information
     swoole_thread_clean();
-    SwooleWG.reactor_wait_onexit = 0;
+    //SwooleWG.reactor_wait_onexit = 0;
     return SUCCESS;
 }
 
@@ -737,7 +738,7 @@ PHP_FUNCTION(swoole_set_process_name)
         return;
     }
 
-    size = (size > SwooleG.pagesize)? SwooleG.pagesize:size;
+    size = (size > ServerG.pagesize)? ServerG.pagesize:size;
 
 #if PHP_MAJOR_VERSION >= 7 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 4)
     zval *function = NULL;

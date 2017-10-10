@@ -17,10 +17,11 @@
 */
 
 
-#include "swLog.h"
 #include "swAtomic.h"
 #include "swSignal.h"
-#include "swGlobalVars.h"
+
+#include "zanGlobalVar.h"
+#include "zanLog.h"
 
 #ifdef HAVE_SIGNALFD
 #include <sys/signalfd.h>
@@ -55,7 +56,7 @@ void swSignal_none(void)
     int ret = pthread_sigmask(SIG_BLOCK, &mask, NULL);
     if (ret < 0)
     {
-        swWarn("pthread_sigmask() failed. Error: %s[%d]", strerror(ret), ret);
+        zanWarn("pthread_sigmask() failed. Error: %s[%d]", strerror(ret), ret);
     }
 }
 
@@ -70,7 +71,7 @@ swSignalFunc swSignal_set(int sig, swSignalFunc func, int restart, int mask)
     }
     else if ((long)func == -1)
     {
-    	func = SIG_DFL;
+        func = SIG_DFL;
     }
 
     struct sigaction act, oact;
@@ -83,8 +84,8 @@ swSignalFunc swSignal_set(int sig, swSignalFunc func, int restart, int mask)
     //{
     //    sigemptyset(&act.sa_mask);
     //}
-	sigfillset(&act.sa_mask);
-	sigdelset(&act.sa_mask, sig);
+    sigfillset(&act.sa_mask);
+    sigdelset(&act.sa_mask, sig);
     act.sa_flags = 0;
     if (sigaction(sig, &act, &oact) < 0)
     {
@@ -96,7 +97,7 @@ swSignalFunc swSignal_set(int sig, swSignalFunc func, int restart, int mask)
 void swSignal_add(int signo, swSignalFunc func)
 {
 #ifdef HAVE_SIGNALFD
-    if (SwooleG.use_signalfd)
+    if (ServerG.use_signalfd)
     {
         swSignalfd_set(signo, func);
     }
@@ -112,9 +113,9 @@ void swSignal_add(int signo, swSignalFunc func)
 
 static void swSignal_async_handler(int signo)
 {
-    if (SwooleG.main_reactor)
+    if (ServerG.main_reactor)
     {
-        SwooleG.main_reactor->singal_no = signo;
+        ServerG.main_reactor->singal_no = signo;
     }
     else
     {
@@ -126,14 +127,14 @@ void swSignal_callback(int signo)
 {
     if (signo >= SW_SIGNO_MAX)
     {
-        swWarn("signal[%d] numberis invalid.", signo);
+        zanWarn("signal[%d] numberis invalid.", signo);
         return;
     }
 
     swSignalFunc callback = signals[signo].callback;
     if (!callback)
     {
-        swWarn("signal[%d] callback is null.", signo);
+        zanWarn("signal[%d] callback is null.", signo);
         return;
     }
     callback(signo);
@@ -142,21 +143,21 @@ void swSignal_callback(int signo)
 void swSignal_clear(void)
 {
 #ifdef HAVE_SIGNALFD
-    if (SwooleG.use_signalfd)
+    if (ServerG.use_signalfd)
     {
         swSignalfd_clear();
     }
     else
 #endif
     {
-    	int index = 0;
-    	for (index = 0;index < SW_SIGNO_MAX;index++)
-    	{
-    		if (signals[index].active)
+        int index = 0;
+        for (index = 0;index < SW_SIGNO_MAX;index++)
+        {
+            if (signals[index].active)
             {
                 swSignal_set(signals[index].signo, (swSignalFunc) -1, 1, 0);
             }
-    	}
+        }
     }
 
     bzero(&signals,sizeof(signals));
@@ -200,14 +201,14 @@ int swSignalfd_setup(swReactor *reactor)
         signal_fd = signalfd(-1, &signalfd_mask, SFD_NONBLOCK | SFD_CLOEXEC);
         if (signal_fd < 0)
         {
-            swSysError("signalfd() failed.");
+            zanError("signalfd() failed.");
             return SW_ERR;
         }
-        SwooleG.signal_fd = signal_fd;
+        ServerG.signal_fd = signal_fd;
         if (sigprocmask(SIG_BLOCK, &signalfd_mask, NULL) == -1)
         {
-			swSysError("sigprocmask() failed.");
-			return SW_ERR;
+            zanError("sigprocmask() failed.");
+            return SW_ERR;
         }
         reactor->setHandle(reactor, SW_FD_SIGNAL, swSignalfd_onSignal);
         reactor->add(reactor, signal_fd, SW_FD_SIGNAL);
@@ -215,7 +216,7 @@ int swSignalfd_setup(swReactor *reactor)
     }
     else
     {
-        swWarn("signalfd has been created");
+        zanWarn("signalfd has been created");
         return SW_ERR;
     }
 }
@@ -224,7 +225,7 @@ static void swSignalfd_clear()
 {
     if (sigprocmask(SIG_UNBLOCK, &signalfd_mask, NULL) < 0)
     {
-        swSysError("sigprocmask(SIG_UNBLOCK) failed.");
+        zanError("sigprocmask(SIG_UNBLOCK) failed.");
     }
     bzero(&signals, sizeof(signals));
     bzero(&signalfd_mask, sizeof(signalfd_mask));
@@ -243,7 +244,7 @@ static int swSignalfd_onSignal(swReactor *reactor, swEvent *event)
     n = read(event->fd, &siginfo, sizeof(siginfo));
     if (n < 0)
     {
-        swSysError("read from signalfd failed.");
+        zanError("read from signalfd failed.");
         return SW_ERR;
     }
 
@@ -255,7 +256,7 @@ static int swSignalfd_onSignal(swReactor *reactor, swEvent *event)
         }
         else
         {
-            swWarn("signal[%d] callback is null.", siginfo.ssi_signo);
+            zanWarn("signal[%d] callback is null.", siginfo.ssi_signo);
         }
     }
 
