@@ -61,8 +61,8 @@ typedef struct _zanPortSet
 
     uint32_t open_eof_check :1;  //
 
-    char *package_length_type
-    char *package_eof
+    char *package_length_type;
+    char *package_eof;
 }zanPortSet;
 
 typedef struct _zanListenPort
