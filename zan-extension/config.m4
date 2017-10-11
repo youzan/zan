@@ -279,7 +279,7 @@ dnl    AC_CHECK_LIB(c, signalfd, AC_DEFINE(HAVE_SIGNALFD, 1, [have signalfd]))
         swoole_buffer.c \
         swoole_http_server.c \
 dnl        swoole_http_v2_server.c \
-dnl        swoole_websocket_server.c \
+        swoole_websocket_server.c \
         swoole_http_client.c \
         swoole_redis.c \
         swoole_mysql.c \
