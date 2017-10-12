@@ -16,8 +16,8 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swMemory/memoryPool.h"
-#include "swMemory/buffer.h"
+#include "zanMemory/zanMemory.h"
+#include "zanMemory/buffer.h"
 
 #include "zanLog.h"
 

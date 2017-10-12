@@ -48,7 +48,7 @@ typedef struct _zanServer
     uint32_t udp_socket_ipv4;
     uint32_t udp_socket_ipv6;
 
-    //Udisable notice when use SW_DISPATCH_ROUND and SW_DISPATCH_QUEUE
+    //Udisable notice when use ZAN_DISPATCH_ROUND and ZAN_DISPATCH_QUEUE
     uint32_t disable_notify :1;
 
     //packet mode
@@ -62,7 +62,7 @@ typedef struct _zanServer
 
     swListenPort *listen_list;
 
-    uint32_t      user_worker_num;       ///TODO:::GS
+    uint32_t      user_worker_num;
     zanWorker   **user_workers;
     swHashMap    *user_worker_map;
     zanUserWorker_node *user_worker_list;
@@ -105,7 +105,7 @@ typedef struct _zanServerGS
     uint8_t      log_level;
     zan_atomic_t spinlock;
 
-    uint32_t     session_round;          //????
+    uint32_t     session_round;
 
     zanProcessPool event_workers;
     zanProcessPool task_workers;
@@ -224,8 +224,7 @@ typedef struct _zanThreadG
 //==============================================================================
 typedef struct _zanWorkerStats
 {
-    time_t first_start_time;
-    time_t latest_start_time;
+    time_t start_time;
     zan_atomic_t total_request_count;
     zan_atomic_t request_count;
     zan_atomic_t start_count;
@@ -235,21 +234,23 @@ typedef struct _zanServerStats
 {
     time_t              start_time;
     time_t              last_reload;
-    zan_atomic_t        connection_count;
+    zan_atomic_t        connection_num;
     zan_atomic_t        accept_count;
     zan_atomic_t        close_count;
     zan_atomic_t        tasking_num;
     zan_atomic_t        request_count;
     zan_atomic_t        active_worker;
     zan_atomic_t        active_task_worker;
+    zan_atomic_t        active_networker;
     zan_atomic_t        max_active_worker;
     zan_atomic_t        max_active_task_worker;
+    zan_atomic_t        max_active_net_worker;
     zan_atomic_t        worker_normal_exit;
     zan_atomic_t        worker_abnormal_exit;
     zan_atomic_t        task_worker_normal_exit;
     zan_atomic_t        task_worker_abnormal_exit;
-    zan_atomic_t        networker_normal_exit;
-    zan_atomic_t        networker_abnormal_exit;
+    zan_atomic_t        net_worker_normal_exit;
+    zan_atomic_t        net_worker_abnormal_exit;
     zanWorkerStats      *workers_state;
     zanLock             lock;
 } zanServerStats;

@@ -18,12 +18,9 @@
   +----------------------------------------------------------------------+
 */
 
-
-
 #include "swHash.h"
 #include "swBaseOperator.h"
 #include "swMemory/table.h"
-
 
 #ifdef SW_TABLE_DEBUG
 static int conflict_count = 0;

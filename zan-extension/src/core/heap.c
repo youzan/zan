@@ -18,7 +18,7 @@
 
 
 #include "swBaseData.h"
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 
 #define left(i)   ((i) << 1)
 #define right(i)  (((i) << 1) + 1)
@@ -163,10 +163,10 @@ void swHeap_change_priority(swHeap *heap, uint64_t new_priority, void* ptr)
 
 int swHeap_remove(swHeap *heap, swHeap_node *node)
 {
-	if (!node)
-	{
-		return SW_ERR;
-	}
+    if (!node)
+    {
+        return SW_ERR;
+    }
 
     uint32_t pos = node->position;
     heap->nodes[pos] = heap->nodes[--heap->num];
@@ -179,8 +179,8 @@ int swHeap_remove(swHeap *heap, swHeap_node *node)
     {
         swHeap_percolate_down(heap, pos);
     }
-	
-	sw_free(node);
+
+    sw_free(node);
     return SW_OK;
 }
 

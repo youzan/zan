@@ -16,8 +16,6 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swWork.h"
-#include "swStats.h"
 #include "swSignal.h"
 #include "swBaseOperator.h"
 
@@ -52,7 +50,7 @@ int zanWorker_init(zanWorker *worker)
         return ZAN_ERR;
     }
 
-    worker->send_shm = sw_shm_malloc(ServerG.servSet.buffer_output_size);
+    worker->send_shm = zan_shm_malloc(ServerG.servSet.buffer_output_size);
     if (worker->send_shm == NULL)
     {
         zanError("malloc for worker->send_shm failed.");
@@ -69,7 +67,7 @@ void zanWorker_signal_init(void)
     swSignal_add(SIGUSR1, zanWorker_signal_handler);
     swSignal_add(SIGUSR2, NULL);
     swSignal_add(SIGINT, zanWorker_signal_handler);
-	swSignal_add(SIGQUIT, zanWorker_signal_handler);
+    swSignal_add(SIGQUIT, zanWorker_signal_handler);
     swSignal_add(SIGTERM, zanWorker_signal_handler);
     swSignal_add(SIGALRM, swSystemTimer_signal_handler);
     //for test
@@ -83,78 +81,78 @@ void zanWorker_signal_handler(int signo)
 {
     switch (signo)
     {
-		case SIGTERM:
-		case SIGINT:
-	    case SIGQUIT:
-			//zanWarn("signal SIGTERM coming");
-			if (ServerG.main_reactor)
-			{
-				ServerG.main_reactor->running = 0;
-			}
-			else
-			{
-				ServerG.running = 0;
-			}
-			break;
-		case SIGALRM:
-			zanWarn("signal SIGALRM coming");
-			swSystemTimer_signal_handler(SIGALRM);
-			break;
-		/**
-		 * for test
+        case SIGTERM:
+        case SIGINT:
+        case SIGQUIT:
+            //zanWarn("signal SIGTERM coming");
+            if (ServerG.main_reactor)
+            {
+                ServerG.main_reactor->running = 0;
+            }
+            else
+            {
+                ServerG.running = 0;
+            }
+            break;
+        case SIGALRM:
+            zanDebug("signal SIGALRM coming");
+            swSystemTimer_signal_handler(SIGALRM);
+            break;
+        /**
+         * for test
      */
-		case SIGVTALRM:
-			zanWarn("signal SIGVTALRM coming");
-			break;
-		case SIGUSR1:
-			zanWarn("signal SIGUSR1 coming");
-			if (ServerG.main_reactor)
-			{
-				//获取当前进程运行进程的信息
-				uint32_t worker_id = ServerWG.worker_id;	
-				zanWorker worker = ServerGS->event_workers.workers[worker_id];
-				zanWarn("the worker %d get the signo", worker.worker_pid);
-				ServerWG.reload = 1;
-				ServerWG.reload_count = 0;
+        case SIGVTALRM:
+            zanDebug("signal SIGVTALRM coming");
+            break;
+        case SIGUSR1:
+            zanDebug("signal SIGUSR1 coming");
+            if (ServerG.main_reactor)
+            {
+                //获取当前进程运行进程的信息
+                uint32_t worker_id = ServerWG.worker_id;
+                zanWorker worker = ServerGS->event_workers.workers[worker_id];
+                zanDebug("the worker %d get the signo", worker.worker_pid);
+                ServerWG.reload = 1;
+                ServerWG.reload_count = 0;
 
-				//删掉read管道
-				swConnection *socket = swReactor_get(ServerG.main_reactor, worker.pipe_worker);
-				if (socket->events & SW_EVENT_WRITE)
-				{
-					socket->events &= (~SW_EVENT_READ);
-					if (ServerG.main_reactor->set(ServerG.main_reactor, worker.pipe_worker, socket->fdtype | socket->events) < 0)
-					{
-						zanSysError("reactor->set(%d, SW_EVENT_READ) failed.", worker.pipe_worker);
-					}
-				}
-				else
-				{
-					if (ServerG.main_reactor->del(ServerG.main_reactor, worker.pipe_worker) < 0)
-					{
-						zanSysError("reactor->del(%d) failed.", worker.pipe_worker);
-					}
-				}
-			}
-			else
-			{
-				ServerG.running = 0;
-			}
-			break;
-		case SIGUSR2:
-			zanWarn("signal SIGUSR2 coming.");
-			break;
-		default:
+                //删掉read管道
+                swConnection *socket = swReactor_get(ServerG.main_reactor, worker.pipe_worker);
+                if (socket->events & SW_EVENT_WRITE)
+                {
+                    socket->events &= (~SW_EVENT_READ);
+                    if (ServerG.main_reactor->set(ServerG.main_reactor, worker.pipe_worker, socket->fdtype | socket->events) < 0)
+                    {
+                        zanSysError("reactor->set(%d, SW_EVENT_READ) failed.", worker.pipe_worker);
+                    }
+                }
+                else
+                {
+                    if (ServerG.main_reactor->del(ServerG.main_reactor, worker.pipe_worker) < 0)
+                    {
+                        zanSysError("reactor->del(%d) failed.", worker.pipe_worker);
+                    }
+                }
+            }
+            else
+            {
+                ServerG.running = 0;
+            }
+            break;
+        case SIGUSR2:
+            zanDebug("signal SIGUSR2 coming.");
+            break;
+        default:
 #ifdef SIGRTMIN
-			if (signo == SIGRTMIN)
-			{
-				swServer_reopen_log_file(ServerG.serv);
-			}
-			else
+            if (signo == SIGRTMIN)
+            {
+                swServer_reopen_log_file(ServerG.serv);
+            }
+            else
 #endif
-			{
-				zanWarn("recv other signal: %d.", signo);
-			}
-			break;
+            {
+                zanDebug("recv other signal: %d.", signo);
+            }
+            break;
     }
 }
 
@@ -181,7 +179,7 @@ int zanPool_worker_alloc(zanProcessPool *pool)
         return ZAN_ERR;
     }
 
-    pool->pipes = (zanPipe *)zan_calloc(servSet->worker_num, sizeof(zanPipe));
+    pool->pipes = (zanPipe *)sw_calloc(servSet->worker_num, sizeof(zanPipe));
     if (pool->pipes == NULL)
     {
         zanWarn("calloc pool->pipe for worker failed.");
@@ -196,7 +194,7 @@ int zanPool_worker_alloc(zanProcessPool *pool)
         if (zanWorker_init(worker) < 0)
         {
             zan_shm_free(pool->workers);
-            zan_free(pool->pipes);
+            sw_free(pool->pipes);
             zanWarn("zanWorker_init failed.");
             return ZAN_ERR;
         }
@@ -205,7 +203,7 @@ int zanPool_worker_alloc(zanProcessPool *pool)
         if (zanPipe_create(pipe, ZAN_UNSOCK, 1, SOCK_DGRAM) < 0)
         {
             zan_shm_free(pool->workers);
-            zan_free(pool->pipes);
+            sw_free(pool->pipes);
             zanWarn("create pipe for worker failed.");
             return ZAN_ERR;
         }
@@ -280,12 +278,12 @@ static int zanWorker_onPipeRead(swReactor *reactor, swEvent *event)
         }
         else if (ret < 0 && errno == EAGAIN)
         {
-            zanWarn("read from pipe_worker=%d EAGAIN, cur_worker_id=%d, errno=%d:%s", event->fd, ServerWG.worker_id, errno, strerror(errno));
+            zanDebug("read from pipe_worker=%d EAGAIN, cur_worker_id=%d, errno=%d:%s", event->fd, ServerWG.worker_id, errno, strerror(errno));
             return ZAN_OK;
         }
         else if (ret < 0 && errno == EINTR)
         {
-            zanWarn("read from pipe_worker=%d EINTR, cur_worker_id=%d, errno=%d:%s", event->fd, ServerWG.worker_id, errno, strerror(errno));
+            zanDebug("read from pipe_worker=%d EINTR, cur_worker_id=%d, errno=%d:%s", event->fd, ServerWG.worker_id, errno, strerror(errno));
             continue;
         }
         else
@@ -316,12 +314,6 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
     }
     ServerWG.request_count = 0;
 
-    ServerStatsG->workers_state[ServerWG.worker_id].request_count = 0;
-    sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].start_count);
-
-    ///TODO:::
-    ServerStatsG->workers_state[worker->worker_id].first_start_time = time(NULL);
-
     //signal init
     zanWorker_signal_init();
 
@@ -331,8 +323,8 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
     int buffer_input_size = (serv->listen_list->open_eof_check ||
                              serv->listen_list->open_length_check ||
                              serv->listen_list->open_http_protocol)?
-                            serv->listen_list->protocol.package_max_length:
-                            SW_BUFFER_SIZE_BIG;
+                             serv->listen_list->protocol.package_max_length:
+                             SW_BUFFER_SIZE_BIG;
 
     int buffer_num = ServerG.servSet.net_worker_num + serv->dgram_port_num;
 
@@ -354,10 +346,16 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
         }
     }
 
+    int worker_id = worker->worker_id;
+    ServerStatsG->workers_state[worker_id].request_count = 0;
+    ServerStatsG->workers_state[worker_id].start_time = time(NULL);
+    zan_stats_incr(&ServerStatsG->workers_state[worker_id].start_count);
+    zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
+
     if (serv->onWorkerStart)
     {
         //zanDebug("worker: call worker onStart, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
-        serv->onWorkerStart(serv, worker->worker_id);
+        serv->onWorkerStart(serv, worker_id);
     }
 }
 
@@ -372,7 +370,7 @@ static void zanWorker_onStop(zanProcessPool *pool, zanWorker *worker)
     }
 
     ServerG.main_reactor->free(ServerG.main_reactor);
-    zan_free(ServerG.main_reactor);
+    sw_free(ServerG.main_reactor);
     zanWorker_free(worker);
 }
 
@@ -382,7 +380,7 @@ int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
     ServerG.process_type   = ZAN_PROCESS_WORKER;
     ServerWG.worker_id     = worker->worker_id;
 
-    swReactor *reactor = (swReactor *)zan_malloc(sizeof(swReactor));
+    swReactor *reactor = (swReactor *)sw_malloc(sizeof(swReactor));
     ServerG.main_reactor = reactor;
     if (swReactor_init(ServerG.main_reactor, SW_REACTOR_MAXEVENTS) < 0)
     {
@@ -398,8 +396,6 @@ int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
     reactor->add(reactor, pipe_worker, SW_FD_PIPE | SW_EVENT_READ);
     reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_READ, zanWorker_onPipeRead);
     reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_WRITE, swReactor_onWrite);
-
-    zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
 
     pool->onWorkerStart(pool, worker);
     zanDebug("worker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, event=%d, pipe_master=%d",
@@ -426,12 +422,13 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
     swConnection *conn = NULL;
 #endif
 
-    zanWorker *worker = zanServer_get_worker(serv, ServerWG.worker_id);
+    int worker_id = ServerWG.worker_id;
+    zanWorker *worker = zanServer_get_worker(serv, worker_id);
     zan_stats_set_worker_status(worker, ZAN_WORKER_BUSY);
 
     int networker_index = zanServer_get_networker_index(task->info.networker_id);
 
-    zanDebug("worker_onTask: fd=%d, from_id=%d, info.type=%d", task->info.fd, task->info.from_id, task->info.type);
+    zanDebug("worker_onTask: fd=%d, networker_id=%d, info.type=%d", task->info.fd, task->info.networker_id, task->info.type);
     switch (task->info.type)
     {
         //no buffer
@@ -443,12 +440,12 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             {
                 break;
             }
-			serv->onReceive(serv, task);
-			ServerWG.request_count++;
-			sw_stats_incr(&ServerStatsG->request_count);
-			sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
-			sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
-			
+            serv->onReceive(serv, task);
+            ServerWG.request_count++;
+            zan_stats_incr(&ServerStatsG->request_count);
+            zan_stats_incr(&ServerStatsG->workers_state[worker_id].total_request_count);
+            zan_stats_incr(&ServerStatsG->workers_state[worker_id].request_count);
+
             if (task->info.type == SW_EVENT_PACKAGE_END)
             {
                 package->length = 0;
@@ -473,10 +470,10 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             {
 				serv->onReceive(serv, task);
                 ServerWG.request_count++;
-                sw_stats_incr(&ServerStatsG->request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
-				package->length = 0;
+                zan_stats_incr(&ServerStatsG->request_count);
+                zan_stats_incr(&ServerStatsG->workers_state[worker_id].total_request_count);
+                zan_stats_incr(&ServerStatsG->workers_state[worker_id].request_count);
+                package->length = 0;
             }
             break;
 
@@ -497,9 +494,9 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             if (package->offset == package->length - sizeof(swDgramPacket))
             {
                 ServerWG.request_count++;
-                sw_stats_incr(&ServerStatsG->request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
-                sw_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
+                zan_stats_incr(&ServerStatsG->request_count);
+                zan_stats_incr(&ServerStatsG->workers_state[worker_id].total_request_count);
+                zan_stats_incr(&ServerStatsG->workers_state[worker_id].request_count);
                 serv->onPacket(serv, task);
                 swString_clear(package);
             }
@@ -545,7 +542,8 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
         ///TODO:::
             //.....
         default:
-            zanWarn("[Worker] error event[type=%d], worker_id=%d", (int )task->info.type, ServerWG.worker_id);
+            zanWarn("[Worker] fd=%d, networker_id=%d, error event[type=%d], worker_id=%d",
+                     task->info.fd, task->info.networker_id, (int)task->info.type, ServerWG.worker_id);
             break;
     }
 
@@ -564,7 +562,7 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
 
 int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int lenght, int flag)
 {
-    int pipefd = (flag & SW_PIPE_MASTER) ? dst_worker->pipe_master : dst_worker->pipe_worker;
+    int pipefd = (flag & ZAN_PIPE_MASTER) ? dst_worker->pipe_master : dst_worker->pipe_worker;
     if (ZAN_PROCESS_TASKWORKER == dst_worker->process_type && ZAN_IPC_MSGQUEUE == ServerG.servSet.task_ipc_mode)
     {
         struct
@@ -654,7 +652,7 @@ void zan_stats_set_worker_status(zanWorker *worker, int status)
     {
         if (is_worker())
         {
-            sw_stats_incr(&ServerStatsG->active_worker);
+            zan_stats_incr(&ServerStatsG->active_worker);
             if (ServerStatsG->active_worker > ServerStatsG->max_active_worker)
             {
                 ServerStatsG->max_active_worker = ServerStatsG->active_worker;
@@ -662,7 +660,7 @@ void zan_stats_set_worker_status(zanWorker *worker, int status)
         }
         else if (is_taskworker())
         {
-            sw_stats_incr(&ServerStatsG->active_task_worker);
+            zan_stats_incr(&ServerStatsG->active_task_worker);
             if (ServerStatsG->active_task_worker > ServerStatsG->max_active_task_worker)
             {
                 ServerStatsG->max_active_task_worker = ServerStatsG->active_task_worker;
@@ -673,11 +671,11 @@ void zan_stats_set_worker_status(zanWorker *worker, int status)
     {
         if (is_worker() && ServerStatsG->active_worker > 0)
         {
-            sw_stats_decr(&ServerStatsG->active_worker);
+            zan_stats_decr(&ServerStatsG->active_worker);
         }
         else if (is_taskworker() && ServerStatsG->active_task_worker > 0)
         {
-            sw_stats_decr(&ServerStatsG->active_task_worker);
+            zan_stats_decr(&ServerStatsG->active_task_worker);
         }
     }
     else
@@ -752,12 +750,12 @@ static void zanPool_worker_free(zanProcessPool *pool)
             _pipe = &pool->pipes[index];
             _pipe->close(_pipe);
         }
-        zan_free(pool->pipes);
+        sw_free(pool->pipes);
     }
     else
     {
         pool->queue->close(pool->queue);
-        zan_free(pool->queue);
+        sw_free(pool->queue);
     }
 
     if (pool->map)
@@ -783,12 +781,12 @@ void zan_worker_shutdown(zanProcessPool *pool)
     for (index = 0; index < ServerG.servSet.worker_num; ++index)
     {
         worker = &pool->workers[index];
-		if(worker->worker_pid == -1)
-		{
-			zanWarn("this net worker is delete,worker_id=%d", worker->worker_id);
-			continue;
-		}
-		
+        if(worker->worker_pid == -1)
+        {
+            zanWarn("this net worker is delete,worker_id=%d", worker->worker_id);
+            continue;
+        }
+
         if (swKill(worker->worker_pid, SIGTERM) < 0)
         {
             zanError("kill(%d) failed.", worker->worker_pid);

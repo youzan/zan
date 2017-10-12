@@ -36,7 +36,7 @@ int zanUnSock_create(zanPipe *pPipe, int isNonBlock, int protocol)
         return ZAN_ERR;
     }
 
-    zanPipeFd *object = (zanPipeFd *)zan_malloc(sizeof(zanPipeFd));
+    zanPipeFd *object = (zanPipeFd *)sw_malloc(sizeof(zanPipeFd));
     if (!object)
     {
         zanFatalError("malloc failed, errno=%d:%s", errno, strerror(errno));
@@ -46,7 +46,7 @@ int zanUnSock_create(zanPipe *pPipe, int isNonBlock, int protocol)
     if (socketpair(AF_UNIX, protocol, 0, object->fds) < 0)
     {
         zanSysError("socketpair failed, errno=%d:%s", errno, strerror(errno));
-        zan_free(object);
+        sw_free(object);
         return ZAN_ERR;
     }
 
@@ -116,7 +116,7 @@ int zanUnSock_close(zanPipe *pPipe)
     zanPipeFd *object = (zanPipeFd *)pPipe->object;
     int ret1 = close(object->fds[0]);
     int ret2 = close(object->fds[1]);
-    zan_free(object);
+    sw_free(object);
 
     return 0 - ret1 - ret2;
 }

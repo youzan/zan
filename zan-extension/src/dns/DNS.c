@@ -20,10 +20,6 @@
 #include "swClient.h"
 #include "swReactor.h"
 
-//#include "swAsyncIO.h"
-//#include "swGlobalVars.h"
-//#include "swLog.h"
-
 #include "zanAsyncIo.h"
 #include "zanLog.h"
 
@@ -33,8 +29,6 @@
 
 static swHashMap *swoole_dns_cache_v4 = NULL;
 static swHashMap *swoole_dns_cache_v6 = NULL;
-//static swLock    *dns_cache_v4_lock = NULL;
-//static swLock    *dns_cache_v6_lock = NULL;
 static zanLock    *dns_cache_v4_lock = NULL;
 static zanLock    *dns_cache_v6_lock = NULL;
 static int       dns_inited = 0;
@@ -412,97 +406,6 @@ static void swDNSResolver_domain_decode(char *str)
     str[index - 1] = '\0';
 }
 
-#if 0
-/// get host by system call
-int swoole_gethostbyname(int flags, char *name, int name_length, char *addr,uint32_t addrLen)
-{
-    if (name_length <= 0){
-        return ZAN_ERR;
-    }
-
-    int __af = flags & (~SW_DNS_LOOKUP_CACHE_ONLY) & (~SW_DNS_LOOKUP_RANDOM) & (~SW_DNS_LOOKUP_NOCACHE);
-
-    swHashMap *cache_table = NULL;
-    swLock    *cache_lock = NULL;
-    swDNS_cache *cache = NULL;
-    int disable_cache = (flags & SW_DNS_LOOKUP_NOCACHE);
-    if (!disable_cache)
-    {
-        if (__af == AF_INET)
-        {
-            cache_lock = dns_cache_v4_lock;
-            cache_lock->lock(cache_lock);
-            cache_table = (!swoole_dns_cache_v4)? (swoole_dns_cache_v4 =
-                                            swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, free)):swoole_dns_cache_v4;
-        }
-        else if (__af == AF_INET6)
-        {
-            cache_lock = dns_cache_v6_lock;
-            cache_lock->lock(cache_lock);
-            cache_table = (!swoole_dns_cache_v6)? (swoole_dns_cache_v6 =
-                                    swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, free)):swoole_dns_cache_v6;
-        }
-        else
-        {
-            return ZAN_ERR;
-        }
-
-        cache = swHashMap_find(cache_table, name, name_length);
-        if (!cache && (flags & SW_DNS_LOOKUP_CACHE_ONLY))
-        {
-            cache_lock->unlock(cache_lock);
-            return ZAN_ERR;
-        }
-
-        cache_lock->unlock(cache_lock);
-    }
-
-    swDNS_cache tmp_info;
-    swDNS_cache* tmp_cache = cache;
-    memset(&tmp_info,0x00,sizeof(swDNS_cache));
-    int cacheisNull = (cache == NULL)? 1:0;
-    if (cacheisNull)
-    {
-        if (get_host_by_syscall(__af,name,&tmp_info) < 0)
-        {
-            return ZAN_ERR;
-        }
-
-        tmp_cache = &tmp_info;
-        if (!disable_cache)
-        {
-            cache = sw_malloc(sizeof(swDNS_cache));
-            memcpy(cache,&tmp_info,sizeof(swDNS_cache));
-        }
-    }
-
-    int index = (flags & SW_DNS_LOOKUP_RANDOM)? (rand() % tmp_cache->number):0;
-    bzero(addr,addrLen);
-    memcpy(addr, tmp_cache->addr[index].host, addrLen);
-
-    /// 允许缓冲，并且缓冲没有当前节点数据.
-    if (!disable_cache && cacheisNull && cache)
-    {
-        cache_table = NULL;
-        /// 设置缓冲，先判断是否当前查询的key是否存在，避免并发时造成hash 冲突,引起hash表膨胀(多线程模式下)
-        cache_lock->lock(cache_lock);
-        /// 防止cache_table被清空
-        cache_table = (__af == AF_INET)? swoole_dns_cache_v4:((__af == AF_INET6)? swoole_dns_cache_v6:NULL);
-        int ret = ZAN_ERR;
-        if (cache_table)
-        {
-            ret = (!swHashMap_find(cache_table, name, name_length))?
-                        swHashMap_add(cache_table, name, name_length, cache): ZAN_ERR;
-        }
-
-        cache_lock->unlock(cache_lock);
-        if (ret < 0) sw_free(cache);
-    }
-
-    return ZAN_OK;
-}
-#endif
-
 int swoole_gethostbyname(int flags, char *name, char *addr)
 {
     int __af = flags & (~SW_DNS_LOOKUP_RANDOM);
@@ -579,13 +482,13 @@ void dns_lookup_init()
 
     if (!dns_cache_v4_lock)
     {
-        dns_cache_v4_lock = sw_malloc(sizeof(swLock));
+        dns_cache_v4_lock = sw_malloc(sizeof(zanLock));
         zanLock_create(dns_cache_v4_lock, ZAN_MUTEX, 0);
     }
 
     if (!dns_cache_v6_lock)
     {
-        dns_cache_v6_lock = sw_malloc(sizeof(swLock));
+        dns_cache_v6_lock = sw_malloc(sizeof(zanLock));
         zanLock_create(dns_cache_v6_lock, ZAN_MUTEX, 0);
     }
 }

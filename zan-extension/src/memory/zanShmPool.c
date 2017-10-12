@@ -18,8 +18,7 @@
 
 #include "zanIpc.h"
 #include "zanLog.h"
-#include "zanMemory/zanShmPool.h"
-
+#include "zanMemory/zanMemory.h"
 
 #define ZAN_SHM_PAGE_SIZE  256
 
@@ -69,7 +68,7 @@ zanShmPool* zanShmGlobal_new(int pagesize, char shared)
  */
 static void* zanShmGlobal_new_page(zanShmGlobal *gShm)
 {
-    void *page = (gShm->shared == 1) ? zan_shm_malloc(gShm->pagesize) : zan_malloc(gShm->pagesize);
+    void *page = (gShm->shared == 1) ? zan_shm_malloc(gShm->pagesize) : sw_malloc(gShm->pagesize);
     if (page == NULL)
     {
         zanError("malloc failed, gShm->shared=%d", gShm->shared);

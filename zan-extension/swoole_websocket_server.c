@@ -97,7 +97,7 @@ void swoole_websocket_onOpen(http_context *ctx)
     swConnection *conn = zanServer_verify_connection(ServerG.serv, fd);
     if (!conn)
     {
-        swNotice("session[%d] is closed.", fd);
+        zanTrace("session[%d] is closed.", fd);
         return;
     }
 

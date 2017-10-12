@@ -38,8 +38,6 @@
 #include "swProtocol/base64.h"
 
 #include "swError.h"
-//#include "swConnection.h"
-//#include "zanGlobalVar.h"
 #include "zanServer.h"
 #include "zanLog.h"
 
@@ -1427,6 +1425,7 @@ static PHP_METHOD(swoole_http_server, start)
     serv->onReceive = http_onReceive;
     serv->onClose = http_onClose;
 
+    int is_update = 0;
     zval *zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), 1 TSRMLS_CC);
     if (zsetting == NULL || ZVAL_IS_NULL(zsetting))
     {
@@ -1436,6 +1435,10 @@ static PHP_METHOD(swoole_http_server, start)
         zend_update_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), tmp TSRMLS_CC);
         zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), 1 TSRMLS_CC);
         sw_zval_ptr_dtor(&tmp);
+    } else
+    {
+        is_update = 1;
+        php_swoole_array_separate(zsetting);
     }
 
     serv->listen_list->open_http_protocol = 1;
@@ -1451,6 +1454,10 @@ static PHP_METHOD(swoole_http_server, start)
     if (serv->listen_list->open_websocket_protocol)
     {
         add_assoc_bool(zsetting, "open_websocket_protocol", 1);
+    }
+
+    if (is_update) {
+        zend_update_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), zsetting TSRMLS_CC);
     }
 
     serv->ptr2 = getThis();

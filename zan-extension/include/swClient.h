@@ -24,7 +24,7 @@
 
 #include "swoole.h"
 #include "swProtocol/protocol.h"
-#include "swMemory/buffer.h"
+#include "zanMemory/buffer.h"
 #include "swConnection.h"
 
 #ifdef __cplusplus

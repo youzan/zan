@@ -16,18 +16,18 @@
  +----------------------------------------------------------------------+
  */
 
+#include <sys/poll.h>
+#include <sys/ioctl.h>
+
 #include "swoole.h"
 #include "swSocket.h"
 #include "swReactor.h"
 #include "swSendfile.h"
 #include "swConnection.h"
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 #include "swBaseOperator.h"
 
 #include "zanLog.h"
-
-#include <sys/poll.h>
-#include <sys/ioctl.h>
 
 /**
  * clear socket buffer.

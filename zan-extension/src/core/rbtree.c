@@ -18,7 +18,7 @@
 
 
 #include "swBaseData.h"
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 
 static inline void swRbtree_left_rotate(swRbtree_node **root, swRbtree_node *sentinel, swRbtree_node *node);
 static inline void swRbtree_right_rotate(swRbtree_node **root, swRbtree_node *sentinel, swRbtree_node *node);

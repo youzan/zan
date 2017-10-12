@@ -26,7 +26,7 @@
 #include "swSocket.h"
 #include "swAtomic.h"
 #include "swBaseData.h"
-#include "swMemory/buffer.h"
+#include "zanMemory/buffer.h"
 
 
 #ifdef __cplusplus

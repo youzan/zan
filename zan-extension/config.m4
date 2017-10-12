@@ -278,13 +278,12 @@ dnl    AC_CHECK_LIB(c, signalfd, AC_DEFINE(HAVE_SIGNALFD, 1, [have signalfd]))
         swoole_process.c \
         swoole_buffer.c \
         swoole_http_server.c \
-dnl        swoole_http_v2_server.c \
+        swoole_http_v2_server.c \
         swoole_websocket_server.c \
         swoole_http_client.c \
         swoole_redis.c \
         swoole_mysql.c \
         swoole_nova.c \
-        swoole_stats.c \
         src/Base.c \
         src/core/hashmap.c \
         src/core/RingQueue.c \
@@ -293,7 +292,6 @@ dnl        swoole_http_v2_server.c \
         src/core/list.c \
         src/core/heap.c \
         src/core/rbtree.c \
-        src/memory/ShareMemory.c \
         src/memory/RingBuffer.c \
         src/memory/FixedPool.c \
         src/memory/Malloc.c \
@@ -316,7 +314,6 @@ dnl        src/memory/Table.c \
         src/lock/zanLockBase.c \
         src/network/Client.c \
         src/network/Connection.c \
-dnl        src/network/Server.c \
         src/network/Socket.c \
         src/network/zanConnection.c \
         src/network/zanSocket.c \

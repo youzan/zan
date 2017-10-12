@@ -16,7 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 #include "zanLog.h"
 
 static void* swMalloc_alloc(swMemoryPool *pool, uint32_t size);
