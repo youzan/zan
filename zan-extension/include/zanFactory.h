@@ -20,7 +20,6 @@
 #define _ZAN_ZANFACTORY_H_
 
 #include "swoole.h"
-#include "swFactory.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,20 +37,22 @@ enum zanDispatchMode
     ZAN_DISPATCH_UIDMOD = 5,      //UID 分配
 };
 
-#if 0
 typedef struct
 {
     long target_worker_id;
     swEventData data;
-} zanDispatchData;
+} swDispatchData;
 
-typedef struct _zanSendData
+typedef struct _swSendData
 {
     swDataHead info;
+    /**
+     * for big package
+     */
     uint32_t length;
     char *data;
-} zanSendData;
-#endif
+} swSendData;
+
 
 typedef struct _zanFactory
 {
@@ -64,6 +65,63 @@ typedef struct _zanFactory
 } zanFactory;
 
 int zanFactory_create(zanFactory *factory);
+
+/*----------------------------Thread Pool-------------------------------*/
+enum swThread_type
+{
+    SW_THREAD_MASTER = 1,
+    SW_THREAD_REACTOR = 2,
+    SW_THREAD_WORKER = 3,
+    SW_THREAD_UDP = 4,
+    SW_THREAD_UNIX_DGRAM = 5,
+    SW_THREAD_HEARTBEAT = 6,
+};
+
+typedef struct _swThread swThread;
+typedef struct _swThreadPool swThreadPool;
+
+typedef struct _swThreadParam
+{
+    void *object;
+    int pti;
+} swThreadParam;
+
+struct _swThreadPool
+{
+    zanCond cond;
+    swThread *threads;
+    swThreadParam *params;
+
+    void *ptr1;
+    void *ptr2;
+
+#ifdef SW_THREADPOOL_USE_CHANNEL
+    swChannel *chan;
+#else
+    swRingQueue queue;
+#endif
+
+    int thread_num;
+    int shutdown;
+    sw_atomic_t task_num;
+
+    void (*onStart)(struct _swThreadPool *pool, int id);
+    void (*onStop)(struct _swThreadPool *pool, int id);
+    int (*onTask)(struct _swThreadPool *pool, void *task, int task_len);
+
+};
+
+struct _swThread
+{
+    pthread_t tid;
+    int id;
+    swThreadPool *pool;
+};
+
+int swThreadPool_create(swThreadPool *pool, int max_num);
+int swThreadPool_dispatch(swThreadPool *pool, void *task, int task_len);
+int swThreadPool_run(swThreadPool *pool);
+int swThreadPool_free(swThreadPool *pool);
 
 
 #ifdef __cplusplus

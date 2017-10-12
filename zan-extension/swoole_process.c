@@ -18,14 +18,13 @@
   +----------------------------------------------------------------------+
 */
 
-
 #include "php_swoole.h"
-#include "swSignal.h"
-#include "swBaseOperator.h"
 #include "php_streams.h"
 #include "php_network.h"
+#include "swSignal.h"
+#include "swBaseOperator.h"
+#include "zanWorkers.h"
 
-//#include "swLog.h"
 #include "zanLog.h"
 
 static PHP_METHOD(swoole_process, __construct);
@@ -199,10 +198,10 @@ void swoole_process_init(int module_number TSRMLS_DC)
    }
 }
 
-int php_swoole_process_start(swWorker *process, zval *object TSRMLS_DC)
+int php_swoole_process_start(zanWorker *process, zval *object TSRMLS_DC)
 {
     process->pipe = process->pipe_worker;
-    process->pid = getpid();
+    process->worker_pid = getpid();
 
     if (process->redirect_stdin && dup2(process->pipe, STDIN_FILENO) < 0)
     {
@@ -228,9 +227,9 @@ int php_swoole_process_start(swWorker *process, zval *object TSRMLS_DC)
     }
 
     bzero(&ServerWG, sizeof(ServerWG));
-    ServerG.process_pid = process->pid;
+    ServerG.process_pid = process->worker_pid;
     ServerG.process_type = 0;
-    ServerWG.worker_id = process->id;
+    ServerWG.worker_id = process->worker_id;
 
     if (ServerG.timer.fd)
     {
@@ -240,7 +239,7 @@ int php_swoole_process_start(swWorker *process, zval *object TSRMLS_DC)
 
     swSignal_clear();
 
-    zend_update_property_long(swoole_process_class_entry_ptr, object, ZEND_STRL("pid"), process->pid TSRMLS_CC);
+    zend_update_property_long(swoole_process_class_entry_ptr, object, ZEND_STRL("pid"), process->worker_pid TSRMLS_CC);
     zend_update_property_long(swoole_process_class_entry_ptr, object, ZEND_STRL("pipe"), process->pipe_worker TSRMLS_CC);
 
     zval *zcallback = sw_zend_read_property(swoole_process_class_entry_ptr, object, ZEND_STRL("callback"), 0 TSRMLS_CC);
@@ -320,7 +319,7 @@ static PHP_METHOD(swoole_process, __construct)
         RETURN_FALSE;
     }
 
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (process)
     {
         swoole_php_fatal_error(E_ERROR, "swoole_process has been constructed.");
@@ -340,10 +339,10 @@ static PHP_METHOD(swoole_process, __construct)
         RETURN_FALSE;
     }
 
-    process = emalloc(sizeof(swWorker));
-    bzero(process, sizeof(swWorker));
+    process = emalloc(sizeof(zanWorker));
+    bzero(process, sizeof(zanWorker));
 
-    process->id = php_swoole_worker_round_id++;
+    process->worker_id = php_swoole_worker_round_id++;
     php_swoole_worker_round_id = (php_swoole_worker_round_id == 0)? 1:php_swoole_worker_round_id;
 
     if (redirect_stdin_and_stdout)
@@ -356,9 +355,10 @@ static PHP_METHOD(swoole_process, __construct)
 
     if (pipe_type > 0)
     {
-        swPipe *_pipe = emalloc(sizeof(swWorker));
+        zanPipe *_pipe = emalloc(sizeof(zanWorker));
         int socket_type = pipe_type == 1 ? SOCK_STREAM : SOCK_DGRAM;
-        if (swPipeUnsock_create(_pipe, 1, socket_type) < 0)
+        //if (swPipeUnsock_create(_pipe, 1, socket_type) < 0)
+        if (zanPipe_create(_pipe, ZAN_UNSOCK, 1, socket_type) < 0)
         {
             swoole_efree(_pipe);
             swoole_efree(process);
@@ -366,8 +366,8 @@ static PHP_METHOD(swoole_process, __construct)
         }
 
         process->pipe_object = _pipe;
-        process->pipe_master = _pipe->getFd(_pipe, SW_PIPE_MASTER);
-        process->pipe_worker = _pipe->getFd(_pipe, SW_PIPE_WORKER);
+        process->pipe_master = _pipe->getFd(_pipe, ZAN_PIPE_MASTER);
+        process->pipe_worker = _pipe->getFd(_pipe, ZAN_PIPE_WORKER);
         process->pipe = process->pipe_master;
 
         zend_update_property_long(swoole_process_class_entry_ptr, getThis(), ZEND_STRL("pipe"), process->pipe_master TSRMLS_CC);
@@ -379,7 +379,7 @@ static PHP_METHOD(swoole_process, __construct)
 
 static PHP_METHOD(swoole_process, __destruct)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (!process)
     {
         return ;
@@ -387,7 +387,7 @@ static PHP_METHOD(swoole_process, __destruct)
 
     swoole_set_object(getThis(),NULL);
 
-    swPipe *_pipe = process->pipe_object;
+    zanPipe *_pipe = process->pipe_object;
     if (_pipe)
     {
         _pipe->close(_pipe);
@@ -395,7 +395,7 @@ static PHP_METHOD(swoole_process, __destruct)
     }
     if (process->queue)
     {
-        swMsgQueue_free(process->queue);
+        process->queue->close(process->queue);
         swoole_efree(process->queue);
     }
 
@@ -426,7 +426,7 @@ static PHP_METHOD(swoole_process, wait)
 
 static PHP_METHOD(swoole_process, useQueue)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (!process)
     {
         RETURN_FALSE;
@@ -448,13 +448,13 @@ static PHP_METHOD(swoole_process, useQueue)
 #endif
     }
 
-    swMsgQueue *queue = emalloc(sizeof(swMsgQueue));
-    if (swMsgQueue_create(queue, 1, msgkey, 0) < 0)
+    zanMsgQueue *queue = emalloc(sizeof(zanMsgQueue));
+    if (zanMsgQueue_create(queue, 1, msgkey, 0) < 0)
     {
         RETURN_FALSE;
     }
 
-    queue->deleted = 0;
+    //queue->deleted = 0;
     process->queue = queue;
     process->ipc_mode = mode;
     RETURN_TRUE;
@@ -462,11 +462,11 @@ static PHP_METHOD(swoole_process, useQueue)
 
 static PHP_METHOD(swoole_process, freeQueue)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (process && process->queue)
     {
-        process->queue->deleted = 1;
-        swMsgQueue_free(process->queue);
+        //process->queue->deleted = 1;
+        process->queue->close(process->queue);
         swoole_efree(process->queue);
         process->queue = NULL;
         RETURN_TRUE;
@@ -566,8 +566,8 @@ static PHP_METHOD(swoole_process, signal)
 
 static PHP_METHOD(swoole_process, start)
 {
-    swWorker *process = swoole_get_object(getThis());
-    if (!process || (process->pid > 0 && swKill(process->pid, 0) == 0))
+    zanWorker *process = swoole_get_object(getThis());
+    if (!process || (process->worker_pid > 0 && swKill(process->worker_pid, 0) == 0))
     {
         zanWarn("process is already started.");
         RETURN_FALSE;
@@ -581,9 +581,9 @@ static PHP_METHOD(swoole_process, start)
     }
     else if (pid > 0)
     {
-        process->pid = pid;
+        process->worker_pid = pid;
         process->child_process = 0;
-        zend_update_property_long(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("pid"), process->pid TSRMLS_CC);
+        zend_update_property_long(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("pid"), process->worker_pid TSRMLS_CC);
         RETURN_LONG(pid);
     }
     else
@@ -597,7 +597,7 @@ static PHP_METHOD(swoole_process, start)
 
 static PHP_METHOD(swoole_process, read)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (!process || process->pipe == 0)
     {
         zanWarn("process not exist or not pipe, can not use read");
@@ -635,7 +635,7 @@ static PHP_METHOD(swoole_process, read)
 
 static PHP_METHOD(swoole_process, write)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (!process || process->pipe == 0)
     {
         zanWarn("process not exist or not pipe, can not use write");
@@ -670,7 +670,7 @@ static PHP_METHOD(swoole_process, write)
 
 static PHP_METHOD(swoole_process, push)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (!process || !process->queue)
     {
         zanWarn("process not exist or have not msgqueue, can not use push.");
@@ -702,10 +702,11 @@ static PHP_METHOD(swoole_process, push)
         RETURN_FALSE;
     }
 
-    message.type = process->id;
+    message.type = process->worker_pid;
     memcpy(message.data, data, length);
 
-    if (swMsgQueue_push(process->queue, (swQueue_data *)&message, length) < 0)
+    //if (swMsgQueue_push(process->queue, (swQueue_data *)&message, length) < 0)
+    if (process->queue->push(process->queue, (zanQueue_Data *)&message, length) < 0)
     {
         zanWarn("msgsnd() failed. Error: %s[%d]", strerror(errno), errno);
         RETURN_FALSE;
@@ -716,7 +717,7 @@ static PHP_METHOD(swoole_process, push)
 
 static PHP_METHOD(swoole_process, pop)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (!process || !process->queue)
     {
         zanWarn("process not exist or have not msgqueue, can not use push");
@@ -737,8 +738,9 @@ static PHP_METHOD(swoole_process, pop)
         char data[SW_MSGMAX];
     } message;
 
-    message.type = (process->ipc_mode == 2)? 0:process->id;
-    int n = swMsgQueue_pop(process->queue, (swQueue_data *) &message, maxsize);
+    message.type = (process->ipc_mode == 2)? 0:process->worker_id;
+    //int n = swMsgQueue_pop(process->queue, (swQueue_data *) &message, maxsize);
+    int n = process->queue->pop(process->queue, (zanQueue_Data *) &message, maxsize);
     if (n < 0)
     {
         zanWarn("msgrcv() failed. Error: %s[%d]", strerror(errno), errno);
@@ -847,8 +849,8 @@ static PHP_METHOD(swoole_process, setaffinity)
 
 static PHP_METHOD(swoole_process, exit)
 {
-    swWorker *process = swoole_get_object(getThis());
-    if (!process || getpid() != process->pid)
+    zanWorker *process = swoole_get_object(getThis());
+    if (!process || getpid() != process->worker_pid)
     {
         zanWarn("process not exits or not current process.");
         RETURN_FALSE;
@@ -885,7 +887,7 @@ static PHP_METHOD(swoole_process, exit)
 
 static PHP_METHOD(swoole_process, close)
 {
-    swWorker *process = swoole_get_object(getThis());
+    zanWorker *process = swoole_get_object(getThis());
     if (!process || process->pipe == 0)
     {
         zanWarn("process not exist or have not pipe, can not use close");

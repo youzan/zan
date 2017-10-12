@@ -19,15 +19,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include "list.h"
-#include "swWork.h"
 #include "swError.h"
 #include "swSignal.h"
-//#include "swExecutor.h"
 #include "swProtocol/http.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"
+#include "zanMemory/zanMemory.h"
 
-#include "swMemory/memoryPool.h"
 #include "zanSystem.h"
 #include "zanServer.h"
 #include "zanWorkers.h"
@@ -71,7 +69,7 @@ void zan_server_set_init(void)
     //servSet->reactor_num        = ZAN_REACTOR_NUM;    //todo:::delete or replaced with networker_num
     servSet->worker_num         = ZAN_CPU_NUM;
     servSet->net_worker_num     = ZAN_CPU_NUM;
-    servSet->dispatch_mode      = SW_DISPATCH_FDMOD;
+    servSet->dispatch_mode      = ZAN_DISPATCH_FDMOD;
     servSet->max_connection     = ServerG.max_sockets;
 
     //just for test
@@ -96,20 +94,20 @@ int zanServer_create(zanServer *serv)
 {
     ServerG.factory = &serv->factory;
 
-    serv->session_list = sw_shm_calloc(SW_SESSION_LIST_SIZE, sizeof(zanSession));
+    serv->session_list = zan_shm_calloc(SW_SESSION_LIST_SIZE, sizeof(zanSession));
     if (!serv->session_list)
     {
-        zanError("sw_shm_calloc(%ld) for session_list failed", SW_SESSION_LIST_SIZE * sizeof(zanSession));
+        zanError("zan_shm_calloc(%ld) for session_list failed", SW_SESSION_LIST_SIZE * sizeof(zanSession));
         return ZAN_ERR;
     }
 
     zanServerSet *servSet = &ServerG.servSet;
 
-    serv->connection_list  = (swConnection**)sw_shm_calloc(servSet->net_worker_num, sizeof(swConnection*));
+    serv->connection_list  = (swConnection**)zan_shm_calloc(servSet->net_worker_num, sizeof(swConnection*));
     for (uint32_t index = 0; index < servSet->net_worker_num; index++)
     {
         zanDebug("calloc connection_list: index=%d, networker_num=%d", index, servSet->net_worker_num);
-        serv->connection_list[index] = (swConnection*)sw_shm_calloc(ServerG.servSet.max_connection, sizeof(swConnection));
+        serv->connection_list[index] = (swConnection*)zan_shm_calloc(ServerG.servSet.max_connection, sizeof(swConnection));
     }
 
     //create factry object
@@ -160,7 +158,7 @@ int zanServer_start(zanServer *serv)
     exit(ret);
     ///zanServer_free(serv);
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 //run as daemon
@@ -214,9 +212,9 @@ static int zanServer_start_check(zanServer *serv)
         serv->onPacket = serv->onReceive;
     }
 
-    ///TODO:::
-    //disable notice when use SW_DISPATCH_ROUND and SW_DISPATCH_QUEUE
-    if (servSet->dispatch_mode == SW_DISPATCH_ROUND || servSet->dispatch_mode == SW_DISPATCH_QUEUE)
+    ///TODO
+    //disable notice when use ZAN_DISPATCH_ROUND and ZAN_DISPATCH_QUEUE
+    if (servSet->dispatch_mode == ZAN_DISPATCH_ROUND || servSet->dispatch_mode == ZAN_DISPATCH_QUEUE)
     {
         if (!servSet->enable_unsafe_event)
         {
@@ -296,7 +294,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint3
 #endif
         }
     }
-    else if (servSet->dispatch_mode == SW_DISPATCH_UIDMOD)
+    else if (servSet->dispatch_mode == ZAN_DISPATCH_UIDMOD)
     {
         swConnection *conn = zanServer_get_connection(serv, networker_id, conn_fd);
         uint32_t uid = 0;
@@ -315,7 +313,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint3
         for (index = 0; index < servSet->worker_num + 1; index++)
         {
             target_worker_id = sw_atomic_fetch_add(&serv->worker_round_id, 1) % servSet->worker_num;
-            if (event_pool->workers[target_worker_id].status == SW_WORKER_IDLE)
+            if (event_pool->workers[target_worker_id].status == ZAN_WORKER_IDLE)
             {
                 break;
             }
@@ -472,7 +470,7 @@ int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId)
     memcpy(ev_data.data, "0", 1);
 
     ev_data.info.len = 1;
-    ev_data.info.from_fd = SW_RESPONSE_SMALL;
+    ev_data.info.from_fd = ZAN_RESPONSE_SMALL;
     ev_data.info.from_id = 0;
     int sendn = ev_data.info.len + sizeof(swDataHead);
 
@@ -589,15 +587,8 @@ void zanServer_store_listen_socket(zanServer *serv, int networker_id)
             }
         }
 
-        if (sockfd > zanServer_get_maxfd(serv, networker_index))
-        {
-            zanServer_set_maxfd(serv, networker_index, sockfd);
-        }
-
-        if (sockfd < zanServer_get_minfd(serv, networker_index) || 0 == zanServer_get_minfd(serv, networker_index))
-        {
-            zanServer_set_minfd(serv, networker_index, sockfd);
-        }
+        zanServer_set_minfd(serv, networker_index, 0);
+        zanServer_set_maxfd(serv, networker_index, 0);
     }
 }
 
@@ -731,8 +722,11 @@ uint32_t zanServer_get_connection_num(zanServer *serv)
     {
         int minfd = zanServer_get_minfd(serv, index);
         int maxfd = zanServer_get_maxfd(serv, index);
-        sum += maxfd - minfd + 1;
-        zanDebug("index=%d, minfd=%d, max_fd=%d, sum=%d", index, minfd, maxfd, sum);
+        if (0 != maxfd)
+        {
+            sum += maxfd - minfd + 1;
+        }
+        zanDebug("networker_index=%d, minfd=%d, max_fd=%d, sum=%d", index, minfd, maxfd, sum);
     }
 
     return sum;
@@ -798,7 +792,7 @@ swString *zanServer_get_buffer(zanServer *serv, int networker_id, int fd)
 
 int zanServer_adduserworker(zanServer *serv, zanWorker *worker)
 {
-    zanUserWorker_node *user_worker = zan_malloc(sizeof(zanUserWorker_node));
+    zanUserWorker_node *user_worker = sw_malloc(sizeof(zanUserWorker_node));
     if (!user_worker)
     {
         return ZAN_ERR;
@@ -840,7 +834,7 @@ int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId)
     memcpy(ev_data.data, "0", 1);
 
     ev_data.info.len = 1;
-    ev_data.info.from_fd = SW_RESPONSE_SMALL;
+    ev_data.info.from_fd = ZAN_RESPONSE_SMALL;
     ev_data.info.from_id = 0;
     int sendn = ev_data.info.len + sizeof(swDataHead);
 
@@ -856,3 +850,24 @@ int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId)
     }
     return ret;
 }
+
+int zanServer_get_first_sessionId(zanServer *serv)
+{
+    zanServerSet *servSet = &ServerG.servSet;
+    for (int index = 0; index < servSet->net_worker_num; index++)
+    {
+        int minfd = zanServer_get_minfd(serv, index);
+        int maxfd = zanServer_get_maxfd(serv, index);
+        for (int fd = minfd; fd <= maxfd && fd >= 2 ; fd++)
+        {
+            swConnection *conn = &serv->connection_list[index][fd];
+            if (conn && conn->active && !conn->closed)
+            {
+                return conn->session_id;
+            }
+        }
+    }
+    return 0;
+}
+
+

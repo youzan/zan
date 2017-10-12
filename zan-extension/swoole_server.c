@@ -19,9 +19,9 @@
  */
 
 #include "php_swoole.h"
-#include "swWork.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"
+#include "swSendfile.h"
 
 #include "zanServer.h"
 #include "zanSocket.h"
@@ -330,8 +330,7 @@ void php_swoole_get_recv_data(zval *zdata, swEventData *req, char *header, uint3
 
     if (req->info.type == SW_EVENT_PACKAGE_END)
     {
-        ///////TODO:::::::::
-        int networker_index = zanServer_get_networker_index(req->info.from_id);
+        int networker_index = zanServer_get_networker_index(req->info.networker_id);
         swString *worker_buffer = zanWorker_get_buffer(networker_index);
         data_ptr = worker_buffer->str;
         data_len = worker_buffer->length;
@@ -751,8 +750,6 @@ static int php_swoole_onTask(zanServer *serv, swEventData *req)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    zan_stats_decr(&ServerStatsG->tasking_num);
-
     zval* callback = php_sw_server_callbacks[SW_SERVER_CB_onTask];
     if (!callback || ZVAL_IS_NULL(callback))
     {
@@ -857,7 +854,7 @@ static zval* php_swoole_get_task_result(swEventData *task_result TSRMLS_DC)
     char *data_str = NULL;
 
     /// Large result package
-    if (swTask_type(task_result) & SW_TASK_TMPFILE)
+    if (swTask_type(task_result) & ZAN_TASK_TMPFILE)
     {
         swTaskWorker_large_unpack(task_result, emalloc, data_str, data_len);
 
@@ -876,7 +873,7 @@ static zval* php_swoole_get_task_result(swEventData *task_result TSRMLS_DC)
         result_data_len = task_result->info.len;
     }
 
-    if (swTask_type(task_result) & SW_TASK_SERIALIZE)
+    if (swTask_type(task_result) & ZAN_TASK_SERIALIZE)
     {
         php_unserialize_data_t var_hash;
         PHP_VAR_UNSERIALIZE_INIT(var_hash);
@@ -922,7 +919,7 @@ static int php_swoole_task_finish(zanServer *serv, zval *data TSRMLS_DC)
     smart_str serialized_data = {0};
     if (SW_Z_TYPE_P(data) != IS_STRING)
     {
-        flags |= SW_TASK_SERIALIZE;
+        flags |= ZAN_TASK_SERIALIZE;
 
         //serialize
         php_serialize_data_t var_hash;
@@ -958,7 +955,7 @@ static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_DC)
 
     //source worker_id
     buf->info.from_id  = ServerWG.worker_id;
-    swTask_type(buf) |= SW_TASK_NONBLOCK;
+    swTask_type(buf) |= ZAN_TASK_NONBLOCK;
 
     char *task_data_str = NULL;
     int task_data_len = 0;
@@ -968,7 +965,7 @@ static int php_swoole_task_setBuf(zval *data,swEventData *buf TSRMLS_DC)
     if (SW_Z_TYPE_P(data) != IS_STRING)
     {
         //serialize
-        swTask_type(buf) |= SW_TASK_SERIALIZE;
+        swTask_type(buf) |= ZAN_TASK_SERIALIZE;
         //TODO php serialize
         php_serialize_data_t var_hash;
         PHP_VAR_SERIALIZE_INIT(var_hash);
@@ -1446,7 +1443,7 @@ PHP_METHOD(swoole_server, __construct)
     }
 
     ServerG.factory_mode = serv_mode;
-    zanServer *serv = zan_malloc(sizeof(zanServer));
+    zanServer *serv = sw_malloc(sizeof(zanServer));
     if (!serv)
     {
         swoole_php_fatal_error(E_ERROR, "malloc zanServer failed.");
@@ -1486,10 +1483,10 @@ PHP_METHOD(swoole_server, __construct)
     zval *ports = NULL;
     SW_ALLOC_INIT_ZVAL(ports);
     array_init(ports);
-    zend_update_property(swoole_server_class_entry_ptr, server_object, ZEND_STRL("ports"), ports TSRMLS_CC);
     server_port_list.zports = ports;
 
     php_swoole_server_add_port(port TSRMLS_CC);
+    zend_update_property(swoole_server_class_entry_ptr, server_object, ZEND_STRL("ports"), ports TSRMLS_CC);
 }
 
 PHP_METHOD(swoole_server, set)
@@ -1806,11 +1803,13 @@ PHP_METHOD(swoole_server, set)
     zval *port_object = server_port_list.zobjects[0];
 
     sw_zval_add_ref(&port_object);
-    sw_zval_add_ref(&zset);
+    //sw_zval_add_ref(&zset);
     sw_zval_add_ref(&zobject);
 
     sw_zend_call_method_with_1_params(&port_object, swoole_server_port_class_entry_ptr, NULL, "set", &retval, zset);
     zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), zset TSRMLS_CC);
+
+    sw_zval_ptr_dtor(&zset);
 
     RETURN_TRUE;
 }
@@ -2266,13 +2265,14 @@ PHP_METHOD(swoole_server, stats)
     array_init(return_value);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("start_time"), ServerStatsG->start_time);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("last_reload"), ServerStatsG->last_reload);
-    sw_add_assoc_long_ex(return_value, ZEND_STRS("connection_num"), ServerStatsG->connection_count);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("connection_num"), ServerStatsG->connection_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("accept_count"), ServerStatsG->accept_count);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("close_count"), ServerStatsG->close_count);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("tasking_num"), ServerStatsG->tasking_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("request_count"), ServerStatsG->request_count);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("total_worker"), ServerG.servSet.worker_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("total_task_worker"), ServerG.servSet.task_worker_num);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("total_net_worker"), ServerG.servSet.net_worker_num);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("active_worker"), ServerStatsG->active_worker);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("idle_worker"), ServerG.servSet.worker_num - ServerStatsG->active_worker);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("active_task_worker"), ServerStatsG->active_task_worker);
@@ -2283,6 +2283,8 @@ PHP_METHOD(swoole_server, stats)
     sw_add_assoc_long_ex(return_value, ZEND_STRS("worker_abnormal_exit"), ServerStatsG->worker_abnormal_exit);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_normal_exit"), ServerStatsG->task_worker_normal_exit);
     sw_add_assoc_long_ex(return_value, ZEND_STRS("task_worker_abnormal_exit"), ServerStatsG->task_worker_abnormal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("net_worker_normal_exit"), ServerStatsG->net_worker_normal_exit);
+    sw_add_assoc_long_ex(return_value, ZEND_STRS("net_worker_abnormal_exit"), ServerStatsG->net_worker_abnormal_exit);
 
     // workers_detail
     int i = 0;
@@ -2296,11 +2298,11 @@ PHP_METHOD(swoole_server, stats)
         array_init(worker_stats);
         worker = zanServer_get_worker(serv, i);
 
-        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("start_time"), ServerStatsG->workers_state[i].first_start_time);
+        sw_add_assoc_long_ex(worker_stats, ZEND_STRS("start_time"), ServerStatsG->workers_state[i].start_time);
         sw_add_assoc_long_ex(worker_stats, ZEND_STRS("total_request_count"), ServerStatsG->workers_state[i].total_request_count);
         sw_add_assoc_long_ex(worker_stats, ZEND_STRS("request_count"), ServerStatsG->workers_state[i].request_count);
         sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("status"),
-                worker->status == SW_WORKER_BUSY ? "BUSY" : "IDLE", 4, 0);
+                worker->status == ZAN_WORKER_BUSY ? "BUSY" : "IDLE", 4, 0);
         if (i < ServerG.servSet.worker_num) {
             sw_add_assoc_stringl_ex(worker_stats, ZEND_STRS("type"),ZEND_STRL("worker"), 0);
         } else {
@@ -2320,7 +2322,7 @@ PHP_METHOD(swoole_server, stats)
     zend_hash_str_add(Z_ARRVAL_P(return_value), "workers_detail", sizeof("workers_detail") - 1, (void *)workers_detail);
 #endif
 
-    if (ServerG.servSet.task_ipc_mode > SW_IPC_UNSOCK)
+    if (ServerG.servSet.task_ipc_mode > ZAN_IPC_UNSOCK)
     {
         int queue_num = -1;
         int queue_bytes = -1;
@@ -2390,21 +2392,7 @@ PHP_METHOD(swoole_server, heartbeat)
         RETURN_FALSE;
     }
 
-    int checktime = 0;
-
-#if 0
-    ///TODO:::
-    if(ServerGS->server_time < (time_t)ServerG.servSet.heartbeat_idle_time)
-    {
-        RETURN_FALSE;
-    }
-    else
-    {
-        checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
-    }
-#endif
-
-    checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
+    int checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
 
     int tempfd = 0;
     for(int networker_index = 0; networker_index < ServerG.servSet.net_worker_num; ++networker_index)
@@ -2413,7 +2401,7 @@ PHP_METHOD(swoole_server, heartbeat)
         int serv_minfd = zanServer_get_minfd(serv, networker_index);
         array_init(return_value);
 
-        for (tempfd = serv_minfd; tempfd <= serv_maxfd; ++tempfd)
+        for (tempfd = serv_minfd; tempfd <= serv_maxfd && tempfd >= 2; ++tempfd)
         {
             zanDebug("heartbeat check fd=%d", tempfd);
             swConnection *conn = &serv->connection_list[networker_index][tempfd];
@@ -2479,7 +2467,6 @@ PHP_METHOD(swoole_server, task)
         RETURN_FALSE;
     }
 
-    zan_stats_incr(&ServerStatsG->tasking_num);
     RETURN_LONG(buf.info.fd);
 }
 
@@ -2720,28 +2707,26 @@ PHP_METHOD(swoole_server, getClientInfo)
         php_swoole_udp_t udp_info;
         memcpy(&udp_info, &from_id, sizeof(udp_info));
         add_assoc_long(return_value, "remote_port", udp_info.port);
-#if 0
-        swConnection *from_sock = zanServer_get_connection(serv, udp_info.from_fd);
+        swConnection *from_sock = zanServer_get_connection(serv, from_id, udp_info.from_fd); ///TODO
         if (from_sock != NULL)
         {
             add_assoc_long(return_value, "server_fd", from_sock->fd);
             add_assoc_long(return_value, "socket_type", from_sock->socket_type);
             add_assoc_long(return_value, "server_port", swConnection_get_port(from_sock));
         }
-#endif
         return;
     }
 
     swConnection *conn = zanServer_get_connection_by_sessionId(serv, fd);
     //connection is invaild
-    if (!conn || (!conn->active && !noCheckConnection))  ///TODO:::
+    if (!conn || (!conn->active && !noCheckConnection))
     {
         zanWarn("conn is null or conn is closed.");
         RETURN_FALSE;
     }
 
     array_init(return_value);
-    if (ServerG.servSet.dispatch_mode == SW_DISPATCH_UIDMOD)
+    if (ServerG.servSet.dispatch_mode == ZAN_DISPATCH_UIDMOD)
     {
         add_assoc_long(return_value, "uid", conn->uid);
     }
@@ -2828,7 +2813,7 @@ PHP_METHOD(swoole_server, getClientList)
 
         for(; min_fd <= max_fd && find_count > 0; ++min_fd)
         {
-            zanWarn("maxfd=%d, minfd=%d, find_count=%ld, start_fd=%ld", max_fd, min_fd, find_count, start_fd);
+            zanDebug("maxfd=%d, minfd=%d, find_count=%ld, start_fd=%ld", max_fd, min_fd, find_count, start_fd);
             swConnection *conn = &serv->connection_list[networker_index][min_fd];
             if (conn->active && !conn->closed)
             {
@@ -3009,7 +2994,6 @@ PHP_METHOD(swoole_server, denyRequest)
 }
 
 #if 0
-///TODO:::
 PHP_METHOD(swoole_server, exit)
 {
     ServerG.running = 0;
@@ -3029,7 +3013,6 @@ PHP_METHOD(swoole_server, getWorkerPid)
 }
 
 #ifdef HAVE_PCRE
-////TODO::::::
 static struct
 {
     int current_fd;
@@ -3041,35 +3024,41 @@ static struct
 
 PHP_METHOD(swoole_connection_iterator, rewind)
 {
-#if 0
     bzero(&server_itearator, sizeof(server_itearator));
-    server_itearator.current_fd = swServer_get_minfd(ServerG.serv);
-#endif
+    server_itearator.session_id = zanServer_get_first_sessionId(ServerG.serv);
 }
 
 PHP_METHOD(swoole_connection_iterator, valid)
 {
-#if 0
-    int fd = server_itearator.current_fd;
-    int max_fd = swServer_get_maxfd(ServerG.serv);
-    for (; fd <= max_fd; fd++)
+    zanServer *serv = ServerG.serv;
+    int session_id = server_itearator.session_id;
+    zanSession *session = zanServer_get_session(serv, session_id);
+    int networker_index = zanServer_get_networker_index(session->networker_id);
+    int accept_fd = session->accept_fd;
+
+    for (int index = networker_index; index < ServerG.servSet.net_worker_num; index++)
     {
-        swConnection *conn = &ServerG.serv->connection_list[fd];
-        if (conn->active && !conn->closed)
+        int minfd = (accept_fd >= 2) ? accept_fd : zanServer_get_minfd(serv, index);
+        int maxfd = zanServer_get_maxfd(serv, index);
+        for (int fd = minfd; fd <= maxfd && fd >= 2 ; fd++)
         {
-#ifdef SW_USE_OPENSSL
-            if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
+            swConnection *conn = &serv->connection_list[index][fd];
+            if (conn && conn->active && !conn->closed)
             {
-                continue;
+#ifdef SW_USE_OPENSSL
+                if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
+                {
+                    continue;
+                }
+#endif
+                server_itearator.session_id = conn->session_id;
+                server_itearator.current_fd = fd;
+                server_itearator.index++;
+                RETURN_TRUE;
             }
-#endif
-            server_itearator.session_id = conn->session_id;
-            server_itearator.current_fd = fd;
-            server_itearator.index++;
-            RETURN_TRUE;
         }
+        accept_fd = 0;
     }
-#endif
     RETURN_FALSE;
 }
 
@@ -3080,7 +3069,28 @@ PHP_METHOD(swoole_connection_iterator, current)
 
 PHP_METHOD(swoole_connection_iterator, next)
 {
-    server_itearator.current_fd ++;
+    zanServer *serv = ServerG.serv;
+    int session_id = server_itearator.session_id;
+    zanSession *session = zanServer_get_session(serv, session_id);
+    int networker_index = zanServer_get_networker_index(session->networker_id);
+    int accept_fd = session->accept_fd;
+
+    for (int index = networker_index; index < ServerG.servSet.net_worker_num; index++)
+    {
+        int minfd = (accept_fd >= 2) ? accept_fd : zanServer_get_minfd(serv, index);
+        int maxfd = zanServer_get_maxfd(serv, index);
+        for (int fd = minfd + 1; fd <= maxfd && fd >= 2 ; fd++)
+        {
+            swConnection *conn = &serv->connection_list[index][fd];
+            if (conn && conn->active && !conn->closed)
+            {
+                server_itearator.session_id = conn->session_id;
+                return;
+            }
+        }
+        accept_fd = 0;
+    }
+    server_itearator.session_id++;
 }
 
 PHP_METHOD(swoole_connection_iterator, key)
@@ -3090,7 +3100,6 @@ PHP_METHOD(swoole_connection_iterator, key)
 
 PHP_METHOD(swoole_connection_iterator, count)
 {
-    ////TODO:::
-    ////RETURN_LONG(ServerStatsG->connection_num);
+    RETURN_LONG(ServerStatsG->connection_num);
 }
 #endif

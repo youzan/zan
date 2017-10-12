@@ -20,7 +20,6 @@
 #include "list.h"
 #include "swBaseOperator.h"
 #include "swSocket.h"
-//#include "swStats.h"
 
 #include "zanServer.h"
 #include "zanAtomic.h"
@@ -28,7 +27,6 @@
 #include "zanSocket.h"
 #include "zanConnection.h"
 #include "zanLog.h"
-
 
 static void zanReactor_disableAccept(swReactor *reactor);
 static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id);
@@ -132,7 +130,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         conn->socket_type = listen_host->type;
 
         zan_stats_incr(&ServerStatsG->accept_count);
-        zan_stats_incr(&ServerStatsG->connection_count);
+        zan_stats_incr(&ServerStatsG->connection_num);
 
 #ifdef SW_USE_OPENSSL
         if (listen_host->ssl)
@@ -179,16 +177,20 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
 
 static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id)
 {
-    swConnection* connection = NULL;
-
     int networker_id    = ServerWG.worker_id;
     int networker_index = zanServer_get_networker_index(networker_id);
+
     if (fd > zanServer_get_maxfd(serv, networker_index))
     {
         zanServer_set_maxfd(serv, networker_index, fd);
     }
+    if (fd < zanServer_get_minfd(serv, networker_index) || 0 == zanServer_get_minfd(serv, networker_index))
+    {
+        zanServer_set_minfd(serv, networker_index, fd);
+    }
 
-    connection = &(serv->connection_list[networker_index][fd]);
+    zanDebug("-------------minfd=%d, maxfd=%d", zanServer_get_minfd(serv, networker_index), zanServer_get_maxfd(serv, networker_index));
+    swConnection* connection = zanServer_get_connection(serv, networker_id, fd);
     bzero(connection, sizeof(swConnection));
 
     connection->fd = fd;

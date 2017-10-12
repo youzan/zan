@@ -20,7 +20,7 @@
 #include "swError.h"
 #include "swBaseData.h"
 #include "swBaseOperator.h"
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 
 swString *swString_new(size_t size)
 {

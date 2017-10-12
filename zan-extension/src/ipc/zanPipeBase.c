@@ -34,7 +34,7 @@ int zanPipeBase_create(zanPipe *pPipe, int isNonBlock)
         return ZAN_ERR;
     }
 
-    zanPipeFd *object = (zanPipeFd *)zan_malloc(sizeof(zanPipeFd));
+    zanPipeFd *object = (zanPipeFd *)sw_malloc(sizeof(zanPipeFd));
     if (!object)
     {
         zanSysError("malloc fail, errno=%d:%s", errno, strerror(errno));
@@ -43,7 +43,7 @@ int zanPipeBase_create(zanPipe *pPipe, int isNonBlock)
 
     if (pipe(object->fds) < 0)
     {
-        zan_free(object);
+        sw_free(object);
         zanSysError("pipe create fail, errno=%d:%s", errno, strerror(errno));
         return ZAN_ERR;
     }
@@ -108,6 +108,6 @@ int zanPipeBase_close(zanPipe *pPipe)
     zanPipeFd *object = (zanPipeFd *)pPipe->object;
     int ret1 = close(object->fds[0]);
     int ret2 = close(object->fds[1]);
-    zan_free(object);
+    sw_free(object);
     return 0 - ret1 - ret2;
 }

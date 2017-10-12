@@ -17,7 +17,6 @@
  */
 
 #include "swoole.h"
-#include "swWork.h"
 #include "swSignal.h"
 #include "swAtomic.h"
 #include "swTimer.h"
@@ -274,7 +273,8 @@ static int swSystemTimer_init(long interval, int use_pipe)
     else if (!ServerG.use_timerfd)
     {
         timer->use_pipe = use_pipe;
-        if (use_pipe && swPipeNotify_auto(&timer->pipe, 0, 0) >= 0)
+        //if (use_pipe && swPipeNotify_auto(&timer->pipe, 0, 0) >= 0)
+        if (use_pipe && zanPipe_create(&timer->pipe, ZAN_PIPE, 0, 0) >= 0)
         {
             timer->fd = timer->pipe.getFd(&timer->pipe, 0);
         }

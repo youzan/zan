@@ -16,7 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 #include "swProtocol/nova.h"
 #include "php7_wrapper.h"
 #include "zanLog.h"

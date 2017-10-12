@@ -143,3 +143,27 @@ int swoole_sync_readfile(int fd, void *buf, int len)
     }
     return readn;
 }
+
+int swoole_sync_writefile(int fd, void *data, int len)
+{
+    int n = 0;
+    int count = len, towrite = 0, written = 0;
+
+    while (count > 0)
+    {
+        towrite = (count > SW_FILE_CHUNK_SIZE)? SW_FILE_CHUNK_SIZE: count;
+        n = write(fd, data, towrite);
+        if (n > 0)
+        {
+            data += n;
+            count -= n;
+            written += n;
+        }
+        else
+        {
+            zanError("write() failed.");
+            break;
+        }
+    }
+    return written;
+}
