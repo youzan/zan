@@ -24,7 +24,6 @@
 #include <ifaddrs.h>
 
 #include "php_swoole.h"
-#include "swWork.h"
 #include "swError.h"
 #include "swBaseOperator.h"
 #include "zanLog.h"

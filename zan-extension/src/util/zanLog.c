@@ -62,7 +62,7 @@ void zanLog_free(void)
         ServerG.log_fd = 0;
     }
 
-    zan_free(ServerG.servSet.log_file);
+    sw_free(ServerG.servSet.log_file);
 }
 
 void zanLog_put(int level, char *cnt)

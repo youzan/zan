@@ -396,7 +396,7 @@ void swoole_websocket_init(int module_number TSRMLS_DC);
 void swoole_buffer_init(int module_number TSRMLS_DC);
 
 
-int php_swoole_process_start(swWorker *process, zval *object TSRMLS_DC);
+int php_swoole_process_start(zanWorker *process, zval *object TSRMLS_DC);
 void php_swoole_check_reactor();
 void swoole_thread_clean();
 void php_swoole_at_shutdown(char *function);

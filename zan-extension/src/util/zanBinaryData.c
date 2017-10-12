@@ -18,7 +18,7 @@
 
 #include "swoole.h"
 #include "swProtocol/zanbinarydata.h"
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 
 int zanReadI64(const uchar_t* pData, int64_t *pValue)
 {

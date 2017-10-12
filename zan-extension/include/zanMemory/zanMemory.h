@@ -20,6 +20,7 @@
 #define _ZAN_MEMORY_H_
 
 #include <stdlib.h>
+#include "swAtomic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,15 +30,103 @@ void* malloc_debug(const char* file,int line,const char* func,int __size);
 void free_debug(const char* file,int line,const char* func,void* ptr);
 
 #ifdef ZAN_MALLOC_DEBUG
-#define zan_malloc(__size)      malloc_debug(__FILE__, __LINE__,__func__,__size)
-#define zan_free(ptr)           if(ptr){free_debug(__FILE__, __LINE__,__func__,ptr);ptr=NULL;}
+#define sw_malloc(__size)      malloc_debug(__FILE__, __LINE__,__func__,__size)
+#define sw_free(ptr)           if(ptr){free_debug(__FILE__, __LINE__,__func__,ptr);ptr=NULL;}
 #else
-#define zan_malloc              malloc
-#define zan_free(ptr)           if(ptr){free(ptr);ptr=NULL;}
+#define sw_malloc              malloc
+#define sw_free(ptr)           if(ptr){free(ptr);ptr=NULL;}
 #endif
 
-#define zan_calloc              calloc
-#define zan_realloc             realloc
+#define sw_calloc              calloc
+#define sw_realloc             realloc
+
+#if defined(SW_USE_JEMALLOC) || defined(SW_USE_TCMALLOC)
+#define sw_strdup_free(str)
+#else
+#define sw_strdup_free(str)     free(str)
+#endif
+
+
+//-------------------memory manager-------------------------
+typedef struct _swMemoryPool
+{
+    void *object;
+    void* (*alloc)(struct _swMemoryPool *pool, uint32_t size);
+    void (*free)(struct _swMemoryPool *pool, void *ptr);
+    void (*destroy)(struct _swMemoryPool *pool);
+
+}swMemoryPool;
+
+typedef struct _swFixedPool_slice
+{
+    uint8_t lock;
+    struct _swFixedPool_slice *next;
+    struct _swFixedPool_slice *pre;
+    char data[0];
+
+} swFixedPool_slice;
+
+typedef struct _swFixedPool
+{
+    void *memory;
+    size_t size;
+
+    swFixedPool_slice *head;
+    swFixedPool_slice *tail;
+
+    /**
+     * total memory size
+     */
+    uint32_t slice_num;
+
+    /**
+     * memory usage
+     */
+    uint32_t slice_use;
+
+    /**
+     * Fixed slice size, not include the memory used by swFixedPool_slice
+     */
+    uint32_t slice_size;
+
+    /**
+     * use shared memory
+     */
+    uint8_t shared;
+
+} swFixedPool;
+/**
+ * FixedPool, random alloc/free fixed size memory
+ */
+swMemoryPool* swFixedPool_new(uint32_t slice_num, uint32_t slice_size, uint8_t shared);
+swMemoryPool* swFixedPool_new2(uint32_t slice_size, void *memory, size_t size);
+swMemoryPool* swMalloc_new();
+
+/**
+ * RingBuffer, In order for malloc / free
+ */
+typedef struct
+{
+    uint8_t shared;
+    uint8_t status;
+    uint32_t size;
+    uint32_t alloc_offset;
+    uint32_t collect_offset;
+    uint32_t alloc_count;
+    sw_atomic_t free_count;
+    void *memory;
+} swRingBuffer;
+
+typedef struct
+{
+    uint16_t lock;
+    uint16_t index;
+    uint32_t length;
+    char data[0];
+} swRingBuffer_item;
+
+swMemoryPool *swRingBuffer_new(uint32_t size, uint8_t shared);
+
 
 #ifdef __cplusplus
 }

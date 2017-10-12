@@ -18,7 +18,6 @@
  +----------------------------------------------------------------------+
  */
 
-//#include "swServer.h"
 #include "swSendfile.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"

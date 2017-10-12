@@ -16,8 +16,6 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swWork.h"
-
 #include "zanGlobalDef.h"
 #include "zanServer.h"
 #include "zanWorkers.h"
@@ -218,7 +216,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
 
         zanDebug("BigPackage, length=%d|worker_id=%d", response.length, response.worker_id);
 
-        ev_data.info.from_fd = SW_RESPONSE_BIG;
+        ev_data.info.from_fd = ZAN_RESPONSE_BIG;
         ev_data.info.len = sizeof(response);
 
         memcpy(ev_data.data, &response, sizeof(response));
@@ -229,7 +227,7 @@ static int zanFactory_finish(zanFactory *factory, swSendData *resp)
         //copy data
         memcpy(ev_data.data, resp->data, resp->info.len);
         ev_data.info.len = resp->info.len;
-        ev_data.info.from_fd = SW_RESPONSE_SMALL;
+        ev_data.info.from_fd = ZAN_RESPONSE_SMALL;
     }
 
     int sendn = ev_data.info.len + sizeof(resp->info);
@@ -268,7 +266,7 @@ static int zanFactory_end(zanFactory *factory, int session_id)
     if (conn == NULL || conn->active == 0)
     {
         zanWarn("can not close. Connection[%d] not found.", _send.info.fd);
-        return SW_ERR;
+        return ZAN_ERR;
     }
     else if (conn->close_force)
     {

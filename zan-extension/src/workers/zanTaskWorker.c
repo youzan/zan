@@ -17,8 +17,8 @@
 */
 
 #include "swBaseOperator.h"
-#include "swWork.h"
 #include "swSignal.h"
+#include "swSendfile.h"
 
 #include "zanGlobalDef.h"
 #include "zanServer.h"
@@ -78,7 +78,7 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
 
     if (msgqueue_key > 0)
     {
-        pool->queue = (zanMsgQueue *)zan_malloc(sizeof(zanMsgQueue));
+        pool->queue = (zanMsgQueue *)sw_malloc(sizeof(zanMsgQueue));
         if (pool->queue == NULL)
         {
             swHashMap_free(pool->map);
@@ -88,7 +88,7 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
         }
         else if (zanMsgQueue_create(pool->queue, 1, msgqueue_key, 1) < 0)
         {
-            zan_free(pool->queue);
+            sw_free(pool->queue);
             swHashMap_free(pool->map);
             zan_shm_free(pool->workers);
             return ZAN_ERR;
@@ -96,10 +96,10 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
     }
     else
     {
-        pool->pipes = zan_calloc(worker_num, sizeof(zanPipe));
+        pool->pipes = sw_calloc(worker_num, sizeof(zanPipe));
         if (pool->pipes == NULL)
         {
-            zan_free(pool->pipes);
+            sw_free(pool->pipes);
             swHashMap_free(pool->map);
             zan_shm_free(pool->workers);
             zanError("zan_calloc failed.");
@@ -112,7 +112,7 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
             pipe = &pool->pipes[index];
             if (zanPipe_create(pipe, ZAN_UNSOCK, 0, SOCK_DGRAM) < 0)
             {
-                zan_free(pool->pipes);
+                sw_free(pool->pipes);
                 swHashMap_free(pool->map);
                 zan_shm_free(pool->workers);
                 return ZAN_ERR;
@@ -150,12 +150,12 @@ static void zanPool_taskworker_free(zanProcessPool *pool)
             _pipe = &pool->pipes[index];
             _pipe->close(_pipe);
         }
-        zan_free(pool->pipes);
+        sw_free(pool->pipes);
     }
     else
     {
         pool->queue->close(pool->queue);
-        zan_free(pool->queue);
+        sw_free(pool->queue);
     }
 
     if (pool->map)
@@ -181,12 +181,12 @@ void zan_processpool_shutdown(zanProcessPool *pool)
     for (index = 0; index < ServerG.servSet.task_worker_num; ++index)
     {
         worker = &pool->workers[index];
-		if(worker->worker_pid == -1)
-		{
-			zanWarn("this worker is delete,worker_id=%d", worker->worker_id);
-			continue;
-		}
-		
+        if(worker->worker_pid == -1)
+        {
+            zanWarn("this worker is delete,worker_id=%d", worker->worker_id);
+            continue;
+        }
+
         if (swKill(worker->worker_pid, SIGTERM) < 0)
         {
             zanError("kill(%d) failed.", worker->worker_pid);
@@ -263,10 +263,12 @@ static int zanTaskworker_loop(zanProcessPool *pool, zanWorker *worker)
             continue;
         }
 
-        ///TODO:::
-        //sw_stats_set_worker_status(worker, ZAN_WORKER_BUSY);
+        zan_stats_set_worker_status(worker, ZAN_WORKER_BUSY);
+        zan_stats_incr(&ServerStatsG->tasking_num);
+        zan_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].request_count);
+        zan_stats_incr(&ServerStatsG->workers_state[ServerWG.worker_id].total_request_count);
         int ret = pool->onTask(pool, &out.buf);
-        //sw_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
+        zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
 
         if (ret >= 0 && !worker_task_always)
         {
@@ -338,12 +340,21 @@ int zan_spawn_task_process(zanProcessPool *pool)
 static void zanTaskworker_onStart(zanProcessPool *pool, zanWorker *worker)
 {
     zanServer *serv = ServerG.serv;
+    ServerG.main_reactor = NULL;
+    ServerG.use_timerfd = 0;
+    ServerG.use_timer_pipe = 0;
+
+    int worker_id = worker->worker_id;
+    ServerStatsG->workers_state[worker_id].start_time = time(NULL);
+    ServerStatsG->workers_state[worker_id].request_count = 0;
+    zan_stats_incr(&ServerStatsG->workers_state[worker_id].start_count);
+    zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
+
     zanTaskWorker_signal_init();
-    //
     if (serv->onWorkerStart)
     {
-        //zanWarn("taskworker: call worker onStart, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
-        serv->onWorkerStart(serv, worker->worker_id);
+        //zanDebug("taskworker: call worker onStart, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
+        serv->onWorkerStart(serv, worker_id);
     }
 }
 
@@ -363,12 +374,10 @@ int zanTaskworker_onTask(zanProcessPool *pool, swEventData *task)
 {
     int ret = ZAN_OK;
     zanServer *serv = ServerG.serv;
-
-    zanWarn("taskworker onTask in: type=%d, task_id=%d, src_worker_id=%d, dst_worker_id=%d, cur_worker_id=%d",
+    zanDebug("taskworker onTask in: type=%d, task_id=%d, src_worker_id=%d, dst_worker_id=%d, cur_worker_id=%d",
              task->info.type, task->info.fd, task->info.from_id, task->info.worker_id, ServerWG.worker_id);
 
     current_task = task;
-
     if (task->info.type == SW_EVENT_PIPE_MESSAGE)
     {
         zanWarn("call serv onPipeMessage");
@@ -379,9 +388,6 @@ int zanTaskworker_onTask(zanProcessPool *pool, swEventData *task)
         zanWarn("call serv onTask");
         ret = serv->onTask(serv, task);
     }
-
-    ///sw_stats_incr(&ServerStatsG->workers[ServerWG.worker_id].request_count);
-    ///sw_stats_incr(&ServerStatsG->workers[ServerWG.worker_id].total_request_count);
     return ret;
 }
 
@@ -403,7 +409,7 @@ int zanTaskworker_finish(char *data, int data_len, int flags)
     int ret = 0;
     swEventData buf;
     //for swoole_server_task
-    if (swTask_type(current_task) & SW_TASK_NONBLOCK)
+    if (swTask_type(current_task) & ZAN_TASK_NONBLOCK)
     {
         buf.info.type = SW_EVENT_FINISH;
         buf.info.fd = current_task->info.fd;
@@ -424,7 +430,7 @@ int zanTaskworker_finish(char *data, int data_len, int flags)
             buf.info.len = data_len;
         }
 
-        ret = zanWorker_send2worker(worker, &buf, sizeof(buf.info) + buf.info.len, SW_PIPE_MASTER);
+        ret = zanWorker_send2worker(worker, &buf, sizeof(buf.info) + buf.info.len, ZAN_PIPE_MASTER);
     }
     else
     {
@@ -486,10 +492,6 @@ int zanPool_dispatch_to_taskworker(zanProcessPool *pool, swEventData *data, int 
     {
         zanWarn("worker send %d bytes to taskworker#%d failed.", sendn, *dst_worker_id);
     }
-    else
-    {
-        zan_stats_incr(&worker->tasking_num);
-    }
 
     return ret;
 }
@@ -550,7 +552,7 @@ int zanTaskWorker_largepack(swEventData *task, void *data, int data_len)
 
     task->info.len = sizeof(swPackage_task);
     //use tmp file
-    zanTask_type(task) |= SW_TASK_TMPFILE;
+    swTask_type(task) |= ZAN_TASK_TMPFILE;
 
     pkg.length = data_len;
     memcpy(task->data, &pkg, sizeof(swPackage_task));

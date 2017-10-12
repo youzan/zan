@@ -16,9 +16,10 @@
   +----------------------------------------------------------------------+
 */
 
-#include "zanLog.h"
 #include "swError.h"
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
+#include "zanIpc.h"
+#include "zanLog.h"
 
 static void swRingBuffer_destroy(swMemoryPool *pool);
 static void* swRingBuffer_alloc(swMemoryPool *pool, uint32_t size);
@@ -36,7 +37,7 @@ static void swRingBuffer_print(swRingBuffer *object, char *prefix)
 
 swMemoryPool *swRingBuffer_new(uint32_t size, uint8_t shared)
 {
-    void *mem = (shared == 1) ? sw_shm_malloc(size) : sw_malloc(size);
+    void *mem = (shared == 1) ? zan_shm_malloc(size) : sw_malloc(size);
     if (mem == NULL)
     {
         zanFatalError("malloc(%d) failed.", size);
@@ -188,7 +189,7 @@ static void swRingBuffer_destroy(swMemoryPool *pool)
     swRingBuffer *object = pool->object;
     if (object->shared)
     {
-        sw_shm_free(object);
+        zan_shm_free(object);
     }
     else
     {

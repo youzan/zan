@@ -63,38 +63,6 @@ enum zanProcessType
 #define is_taskworker() (ServerG.process_type == ZAN_PROCESS_TASKWORKER)
 #define is_userworker() (ServerG.process_type == ZAN_PROCESS_USERWORKER)
 
-
-#define zanTask_type(task)                  ((task)->info.from_fd)
-
-#if 0
-typedef struct
-{
-    int length;
-    char tmpfile[SW_TASK_TMPDIR_SIZE + sizeof(SW_TASK_TMP_FILE)];
-} zanPackage_task;
-
-#define zanTaskWorker_large_unpack(task, __malloc, _buf, _length)   zanPackage_task _pkg;\
-memcpy(&_pkg, task->data, sizeof(_pkg));\
-_length = _pkg.length;\
-    if (_length > ServerG.serv->listen_list->protocol.package_max_length) {\
-    zanWarn("task package[length=%d] is too big.", _length);\
-}\
-_buf = __malloc(_length + 1);\
-_buf[_length] = 0;\
-int tmp_file_fd = open(_pkg.tmpfile, O_RDONLY);\
-    if (tmp_file_fd < 0){\
-    zanSysError("open(%s) failed.", task->data);\
-    _length = -1;\
-    } else if (swoole_sync_readfile(tmp_file_fd, _buf, _length) > 0) {\
-    close(tmp_file_fd);\
-    unlink(_pkg.tmpfile);\
-    } else {\
-    _length = -1;\
-    close(tmp_file_fd); \
-    unlink(_pkg.tmpfile); \
-}
-#endif
-
 typedef struct _zanProcessPool zanProcessPool;
 
 typedef struct _zanWorker
@@ -111,13 +79,15 @@ typedef struct _zanWorker
     uint8_t   status;
     uint8_t   deleted;
     uint8_t   deny_request;
+    uint8_t   child_process;
 
     //worker
     uint32_t  request_num;
 
-    sw_atomic_t  tasking_num;
-
     zanLock lock;
+
+    uint8_t ipc_mode;
+    zanMsgQueue *queue;
 
     int pipe;
     int pipe_master;
@@ -198,6 +168,69 @@ static inline zanWorker* zan_pool_get_worker(zanProcessPool *pool, int worker_id
 }
 
 swString *zanWorker_get_buffer(int from_id);
+
+/************************************************************************/
+
+typedef struct _swPackage
+{
+    void *data;
+    uint32_t length;
+    uint32_t id;
+} swPackage;
+
+typedef struct _swDgramPacket
+{
+    union
+    {
+        struct in6_addr v6;
+        struct in_addr v4;
+        struct
+        {
+            uint16_t path_length;
+        } un;
+    } addr;
+    uint16_t port;
+    uint32_t length;
+    char data[0];
+} swDgramPacket;
+
+typedef struct
+{
+    int length;
+    char tmpfile[SW_TASK_TMPDIR_SIZE + sizeof(SW_TASK_TMP_FILE)];
+} swPackage_task;
+
+typedef struct
+{
+    int length;
+    int worker_id;
+} swPackage_response;
+
+
+int swTaskWorker_large_pack(swEventData *task, void *data, int data_len);
+
+#define swTask_type(task)                  ((task)->info.from_fd)
+
+#define swTaskWorker_large_unpack(task, __malloc, _buf, _length)   swPackage_task _pkg;\
+memcpy(&_pkg, task->data, sizeof(_pkg));\
+_length = _pkg.length;\
+    if (_length > ServerG.serv->listen_list->protocol.package_max_length) {\
+    zanWarn("task package[length=%d] is too big.", _length);\
+}\
+_buf = __malloc(_length + 1);\
+_buf[_length] = 0;\
+int tmp_file_fd = open(_pkg.tmpfile, O_RDONLY);\
+    if (tmp_file_fd < 0){\
+    zanError("open(%s) failed.", task->data);\
+    _length = -1;\
+    } else if (swoole_sync_readfile(tmp_file_fd, _buf, _length) > 0) {\
+    close(tmp_file_fd);\
+    unlink(_pkg.tmpfile);\
+    } else {\
+    _length = -1;\
+    close(tmp_file_fd); \
+    unlink(_pkg.tmpfile); \
+}
 
 
 #ifdef __cplusplus
