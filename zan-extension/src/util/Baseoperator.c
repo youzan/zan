@@ -721,7 +721,6 @@ void sw_spinlock(sw_atomic_t *lock)
             return;
         }
 
-        //if (SW_CPU_NUM > 1)
         if (ZAN_CPU_NUM > 1)
         {
             for (n = 1; n < SW_SPINLOCK_LOOP_N; n <<= 1)
@@ -873,32 +872,3 @@ void swoole_strtolower(char *str, int length)
     }
 }
 
-void zan_spinlock(zan_atomic_t *lock)
-{
-    uint32_t i, n;
-    while (1)
-    {
-        if (*lock == 0 && zan_atomic_cmp_set(lock, 0, 1))
-        {
-            return;
-        }
-
-        if (ZAN_CPU_NUM > 1)
-        {
-            for (n = 1; n < SW_SPINLOCK_LOOP_N; n <<= 1)
-            {
-                for (i = 0; i < n; i++)
-                {
-                    zan_atomic_cpu_pause();
-                }
-
-                if (*lock == 0 && zan_atomic_cmp_set(lock, 0, 1))
-                {
-                    return;
-                }
-            }
-        }
-
-        swYield();
-    }
-}

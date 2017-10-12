@@ -270,7 +270,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint3
     //轮循: 多个 networker 进程情况下，这种轮循不正确。。。。
     if (servSet->dispatch_mode == ZAN_DISPATCH_ROUND)
     {
-        target_worker_id = zan_atomic_fetch_add(&serv->worker_round_id, 1) % servSet->worker_num;
+        target_worker_id = sw_atomic_fetch_add(&serv->worker_round_id, 1) % servSet->worker_num;
     }
     else if (servSet->dispatch_mode == ZAN_DISPATCH_FDMOD)
     {
@@ -671,7 +671,7 @@ swListenPort* zanServer_get_port(zanServer *serv, int networker_id, int fd)
 {
     int network_index = zanServer_get_networker_index(networker_id);
 
-    zan_atomic_t server_fd = 0;
+    sw_atomic_t server_fd = 0;
     int index = 0;
     for (index = 0;index < 128;index++)
     {

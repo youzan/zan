@@ -16,8 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
-//#include "zanBaseOperator.h"
-#include "swBaseOperator.h"    ///todo:replace
+#include "swBaseOperator.h"
 #include "zanLock.h"
 #include "zanLog.h"
 
@@ -51,7 +50,7 @@ static int zanAtomicLock_lock(zanLock *lock)
         return ZAN_ERR;
     }
 
-    zan_spinlock(&lock->object.atomlock.lock_t);
+    sw_spinlock(&lock->object.atomlock.lock_t);
     return ZAN_OK;
 }
 
@@ -73,6 +72,6 @@ static int zanAtomicLock_trylock(zanLock *lock)
         return ZAN_ERR;
     }
 
-    zan_atomic_t *atomic = &lock->object.atomlock.lock_t;
-    return (*(atomic) == 0 && zan_atomic_cmp_set(atomic, 0, 1));
+    sw_atomic_t *atomic = &lock->object.atomlock.lock_t;
+    return (*(atomic) == 0 && sw_atomic_cmp_set(atomic, 0, 1));
 }

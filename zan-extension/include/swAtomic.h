@@ -22,25 +22,14 @@
 
 #include <stdint.h>
 
-#define SW_ATOMIC_32_LEN                      (sizeof("-2147483648") - 1)
-typedef volatile int32_t atomic_int32_t;
-typedef volatile uint32_t atomic_uint32_t;
-
-#if defined(__x86_64__)
-#define SW_ATOMIC_64_LEN                     (sizeof("-9223372036854775808") - 1)
-typedef volatile int64_t atomic_int64_t;
-typedef volatile uint64_t atomic_uint64_t;
-typedef atomic_uint64_t sw_atomic_long_t;
-#else
-typedef atomic_uint32_t sw_atomic_long_t;
-#endif
-
-typedef atomic_uint32_t  sw_atomic_t;
+typedef long                    atomic_int_t;
+typedef unsigned long           atomic_uint_t;
+typedef volatile atomic_uint_t  sw_atomic_t;
 
 #define sw_atomic_fetch_add(value, add)   __sync_fetch_and_add(value, add)
 #define sw_atomic_fetch_sub(value, sub)   __sync_fetch_and_sub(value, sub)
-#define sw_atomic_add_fetch(value, add)	  __sync_add_and_fetch(value, add)
-#define sw_atomic_sub_fetch(value, sub)	  __sync_sub_and_fetch(value, sub)
+#define sw_atomic_add_fetch(value, add)   __sync_add_and_fetch(value, add)
+#define sw_atomic_sub_fetch(value, sub)   __sync_sub_and_fetch(value, sub)
 
 #define sw_atomic_memory_barrier()        __sync_synchronize()
 #define sw_atomic_set(ptr, value)         __sync_lock_test_and_set(ptr, value)
@@ -57,7 +46,5 @@ typedef atomic_uint32_t  sw_atomic_t;
 #endif
 
 #define sw_spinlock_release(lock)         __sync_lock_release(lock)
-
-
 
 #endif

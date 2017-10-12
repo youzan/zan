@@ -24,9 +24,6 @@
 #include "swBaseData.h"
 #include "swAtomic.h"
 
-#include "zanAtomic.h"
-#include "zanGlobalVar.h"
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -40,7 +37,6 @@ void sw_spinlock(sw_atomic_t *lock);
 int swWaitpid(pid_t __pid, int *__stat_loc, int __options);
 int swKill(pid_t __pid, int __sig);
 uint64_t swoole_ntoh64(uint64_t net);
-
 
 int32_t swoole_unpack(char type, void *data);
 int swoole_strnpos(char *haystack, uint32_t haystack_length, char *needle, uint32_t needle_length);
@@ -92,9 +88,7 @@ int swoole_version_compare(char *version1, char *version2);
 void swoole_print_trace(void);
 #endif
 
-
 int swoole_daemon(int nochdir, int noclose);
-
 
 #ifdef __MACH__
 #include <mach/clock.h>
@@ -111,9 +105,6 @@ static uint64_t orwl_timestart = 0;
 int clock_gettime(clock_id_t which_clock, struct timespec *t);
 #endif
 #endif
-
-void zan_spinlock(zan_atomic_t *lock);
-
 
 #ifdef __cplusplus
 }

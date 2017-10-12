@@ -22,7 +22,6 @@
 #include "swSocket.h"
 
 #include "zanServer.h"
-#include "zanAtomic.h"
 #include "zanGlobalDef.h"
 #include "zanSocket.h"
 #include "zanConnection.h"
@@ -233,7 +232,7 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     uint32_t session_id = 1;
     zanSession *session = NULL;
 
-    zan_spinlock(&ServerGS->spinlock);
+    sw_spinlock(&ServerGS->spinlock);
     int index = 0;
     while (index++ < ServerG.servSet.max_connection)
     {
@@ -256,7 +255,7 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
         }
     }
 
-    zan_spinlock_release(&ServerGS->spinlock);
+    sw_spinlock_release(&ServerGS->spinlock);
     connection->session_id = session_id;
 #endif
     return connection;
