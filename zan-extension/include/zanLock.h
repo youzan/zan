@@ -22,7 +22,7 @@
 #define _ZAN_ZANLOCK_H_
 
 #include "swoole.h"
-#include "zanAtomic.h"
+#include "swAtomic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,7 +78,7 @@ typedef struct _zanSpinLock
 
 typedef struct _zanAtomicLock
 {
-    zan_atomic_t lock_t;
+    sw_atomic_t lock_t;
     uint32_t spin;
 } zanAtomicLock;
 
