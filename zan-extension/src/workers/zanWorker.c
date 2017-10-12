@@ -471,7 +471,6 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             //package end
             if (task->info.type == SW_EVENT_PACKAGE_END)
             {
-                //goto do_task;
 				serv->onReceive(serv, task);
                 ServerWG.request_count++;
                 sw_stats_incr(&ServerStatsG->request_count);
