@@ -93,7 +93,7 @@ static int swReactorTimer_now(struct timeval *time)
     if (clock_gettime(CLOCK_MONOTONIC, &_now) < 0)
     {
         zanError("clock_gettime(CLOCK_MONOTONIC) failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
     time->tv_sec = _now.tv_sec;
     time->tv_usec = _now.tv_nsec / 1000;
@@ -101,10 +101,10 @@ static int swReactorTimer_now(struct timeval *time)
     if (gettimeofday(time, NULL) < 0)
     {
         zanError("gettimeofday() failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 #endif
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static sw_inline int64_t swTimer_get_relative_msec()
@@ -112,7 +112,7 @@ static sw_inline int64_t swTimer_get_relative_msec()
     struct timeval now;
     if (swReactorTimer_now(&now) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     int64_t msec1 = (now.tv_sec - ServerG.timer.basetime.tv_sec) * 1000;
@@ -125,18 +125,18 @@ int swTimer_init(swTimer* timer,long msec)
     if (ServerGS->started && is_master())
     {
         zanWarn("cannot use timer in master and manager process.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     if (0 != timer->fd)
     {
-        return SW_OK;
+        return ZAN_OK;
     }
 
     if (swReactorTimer_now(&timer->basetime) < 0)
     {
         zanError("gettimeofday() failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     timer->_current_id = -1;
@@ -161,13 +161,13 @@ int swTimer_init(swTimer* timer,long msec)
     timer->heap = swHeap_create(1024, SW_MIN_HEAP);
     if (!timer->heap)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     timer->timer_map = swHashMap_create(SW_HASHMAP_INIT_BUCKET_N, NULL);
     if (!timer->timer_map)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     int iRet = (is_taskworker())? swSystemTimer_init(msec, ServerG.use_timer_pipe):
@@ -218,33 +218,33 @@ int register_after_cb(swTimer* timer,int type,user_cb callback)
 {
     if (type < 0 || type >= TIMER_TYPE_NUMS)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     timer->after_cb[type] = callback;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int register_tick_cb(swTimer* timer,int type,user_cb callback)
 {
     if (type < 0 || type >= TIMER_TYPE_NUMS)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     timer->tick_cb[type] = callback;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int register_dict_cb(swTimer* timer,int type,user_dict_cb callback)
 {
     if (type < 0 || type >= TIMER_TYPE_NUMS)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     timer->dict_cb[type] = callback;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 void swSystemTimer_signal_handler(int sig)
@@ -285,19 +285,19 @@ static int swSystemTimer_init(long interval, int use_pipe)
         }
         else
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
 
         if (swSystemTimer_signal_set(timer, interval) < 0)
         {
-            return SW_ERR;
+            return ZAN_ERR;
         }
 
         swSignal_add(SIGALRM, swSystemTimer_signal_handler);
     }
     else
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     if (timer->fd > 1)
@@ -307,7 +307,7 @@ static int swSystemTimer_init(long interval, int use_pipe)
     }
 
     timer->set = swSystemTimer_set;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 /**
@@ -323,7 +323,7 @@ static int swSystemTimer_timerfd_set(swTimer *timer, long interval)
     if (gettimeofday(&now, NULL) < 0)
     {
         zanError("gettimeofday() failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     struct itimerspec timer_set;
@@ -331,7 +331,10 @@ static int swSystemTimer_timerfd_set(swTimer *timer, long interval)
 
     if (interval < 0)
     {
-        if (timer->fd == 0) return SW_OK;
+        if (timer->fd == 0) 
+		{
+			return ZAN_OK;
+        }
     }
     else
     {
@@ -353,7 +356,7 @@ static int swSystemTimer_timerfd_set(swTimer *timer, long interval)
             if (timer->fd < 0)
             {
                 zanError("timerfd_create() failed.");
-                return SW_ERR;
+                return ZAN_ERR;
             }
         }
     }
@@ -361,13 +364,13 @@ static int swSystemTimer_timerfd_set(swTimer *timer, long interval)
     if (timerfd_settime(timer->fd, TFD_TIMER_ABSTIME, &timer_set, NULL) < 0)
     {
         zanError("timerfd_settime() failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
-    return SW_OK;
+    return ZAN_OK;
 #else
     zanWarn("kernel not support timerfd.");
-    return SW_ERR;
+    return ZAN_ERR;
 #endif
 }
 
@@ -384,7 +387,7 @@ static int swSystemTimer_signal_set(swTimer *timer, long interval)
     if (gettimeofday(&now, NULL) < 0)
     {
         zanError("gettimeofday() failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     bzero(&timer_set, sizeof(timer_set));
@@ -407,9 +410,9 @@ static int swSystemTimer_signal_set(swTimer *timer, long interval)
     if (setitimer(ITIMER_REAL, &timer_set, NULL) < 0)
     {
         zanError("setitimer() failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static void swSystemTimer_free(swTimer *timer)
@@ -434,7 +437,7 @@ static int swSystemTimer_set(swTimer *timer, long new_interval)
     static long current_interval = 0;
     if (new_interval == current_interval)
     {
-        return SW_OK;
+        return ZAN_OK;
     }
 
     current_interval = new_interval;
@@ -454,7 +457,7 @@ static int swSystemTimer_event_handler(swReactor *reactor, swEvent *event)
     uint64_t exp;
     if (read(timer->fd, &exp, sizeof(uint64_t)) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
     ServerG.signal_alarm = 0;
     return swTimer_select(timer);
@@ -466,13 +469,13 @@ static int swReactorTimer_init(long exec_msec)
     ServerG.main_reactor->timeout_msec = exec_msec;
     ServerG.timer.set = swReactorTimer_set;
     ServerG.timer.fd = -1;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactorTimer_set(swTimer *timer, long exec_msec)
 {
     ServerG.main_reactor->timeout_msec = exec_msec;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static void timer_onTimeout(swTimer *timer, swTimer_node *tnode)
@@ -528,8 +531,18 @@ static int swTime_del_node(swTimer* timer,swTimer_node* tnode)
 	}
 
 	--timer->num;
-	swHashMap_del_int(timer->timer_map, tnode->id);
-	swHeap_remove(timer->heap, tnode->heap_node);
+	if(swHashMap_del_int(timer->timer_map, tnode->id) < 0)
+	{
+		zanDebug("delete tnode fail");
+		return ZAN_ERR;
+	}
+	
+	if(swHeap_remove(timer->heap, tnode->heap_node) < 0)
+	{
+		zanDebug("remove tnode fail");
+		return ZAN_ERR;
+	}
+	
 	sw_free(tnode);
 	return ZAN_OK;
 }
@@ -538,7 +551,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 {
     if (_msec <= 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     if (!timer->fd)
@@ -550,7 +563,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
     if (!tnode)
     {
         zanError("malloc(%ld) failed.", sizeof(swTimer_node));
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     memset(tnode,0x00,sizeof(swTimer_node));
@@ -564,7 +577,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
         set_wheeltimeout_type(tnode->used_type);
         if (swTime_wheel_add(timer->_time_wheel,tnode,data,_msec) < 0){
             sw_free(tnode);
-            return SW_ERR;
+            return ZAN_ERR;
         }
     }
     else {
@@ -575,7 +588,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
         if (now_msec < 0)
         {
             sw_free(tnode);
-            return SW_ERR;
+            return ZAN_ERR;
         }
 
         tnode->data = data;
@@ -584,14 +597,14 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
         if (!tnode->heap_node)
         {
             sw_free(tnode);
-            return SW_ERR;
+            return ZAN_ERR;
         }
     }
 
     /// timer id 从1 开始计算，大于 86400000 时，重置
     timer->_next_id = (timer->_next_id <= 0 || timer->_next_id > 86400000)? 1:timer->_next_id;
-    tnode->id = timer->_next_id++;
-    timer->num++;
+    tnode->id = timer->_next_id + 1;
+    ++timer->num;
     if (!addToWheel && (timer->_next_msec <= 0 || timer->_next_msec > _msec))
     {
         timer->_next_msec = _msec;
@@ -602,7 +615,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
     return tnode->id;
 }
 
-void swTimer_del(swTimer *timer, long id)
+int swTimer_del(swTimer *timer, long id)
 {
     swTimer_node *tnode = swHashMap_find_int(timer->timer_map, id);
     if (!tnode || tnode->remove)
@@ -610,7 +623,7 @@ void swTimer_del(swTimer *timer, long id)
         // php -r '$timerId = swoole_timer_after(10, function() use(&$timerId) { var_dump(swoole_timer_exists($timerId));swoole_timer_clear($timerId);});'
         // swoole_php_onTimeout 会导致重复删除 报错
         zanWarn("timer#%ld is not found.", id);
-        return;
+        return ZAN_ERR;
     }
 	
     if (is_wheeltimeout_type(tnode->used_type))
@@ -622,10 +635,14 @@ void swTimer_del(swTimer *timer, long id)
 	if (timer->_current_id > 0 && tnode->id == timer->_current_id)
     {
         tnode->remove = 1;
-        return ;
+        return ZAN_OK;
     }
 
-	swTime_del_node(timer,tnode);
+	if(swTime_del_node(timer,tnode) < 0)
+	{
+		return ZAN_ERR;
+	}
+	return ZAN_OK;
 }
 
 int swTimer_exist(swTimer *timer,long id)
@@ -644,7 +661,7 @@ int swTimer_select(swTimer *timer)
     int64_t now_msec = swTimer_get_relative_msec();
     if (now_msec < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swTimer_node *tnode = NULL;
@@ -686,7 +703,7 @@ int swTimer_select(swTimer *timer)
     timer->_next_msec = subMsec;
     timer->_cur_exec_msec = 0;
     timer->set(timer,subMsec);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static swTime_wheel* swTime_wheel_create(long precision,long max_timeout)
@@ -736,7 +753,7 @@ static int swTime_wheel_free(swTime_wheel* wheel)
 {
     if (!wheel)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     for (int index = 0;index < wheel->slot_num;index++)
@@ -750,20 +767,20 @@ static int swTime_wheel_free(swTime_wheel* wheel)
 
     sw_free(wheel->slots);
     sw_free(wheel);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swTime_wheel_add(swTime_wheel* wheel,swTimer_node* node,void* usr_data,long timeout)
 {
     if (!wheel || !wheel->slots || !node)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swTime_wheel_node* wheel_node =  sw_malloc(sizeof(swTime_wheel_node));
     if (!wheel_node)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     wheel_node->period_num = (int)(timeout/wheel->max_timeout);
@@ -773,46 +790,46 @@ static int swTime_wheel_add(swTime_wheel* wheel,swTimer_node* node,void* usr_dat
 
     if (wheel_node->slot_index < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     wheel_node->slot_index %= wheel->slot_num;
     swTime_slot* slot = wheel->slots + wheel_node->slot_index;
     if (!slot || !slot->list)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swLinkedList_node* list_node = swLinkedList_append(slot->list,node,0);
     if (!list_node)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     wheel_node->list_node = list_node;
     wheel_node->user_data = usr_data;
     node->data = wheel_node;
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swTime_wheel_del(swTime_wheel* wheel,swTimer_node* node)
 {
     if (!wheel || !wheel->slots || !node)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swTime_wheel_node* wheel_node = (swTime_wheel_node*)(node->data);
     if (!wheel_node || wheel_node->slot_index < 0 || wheel_node->slot_index >= wheel->slot_num)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swTime_slot* slot = wheel->slots + wheel_node->slot_index;
     if (!slot || !slot->list)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swLinkedList_node* list_node = wheel_node->list_node;
@@ -824,7 +841,7 @@ static int swTime_wheel_del(swTime_wheel* wheel,swTimer_node* node)
     del_wheeltimeout_type(node->used_type);
 
     sw_free(wheel_node);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static void time_wheel_tick(swTimer* timer,swTimer_node* node)
