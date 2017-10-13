@@ -133,7 +133,7 @@ int zanTaskWorker_largepack(swEventData *task, void *data, int data_len);
 struct _zanProcessPool
 {
     uint16_t     start_id;         //worker->id = start_id + index
-    zan_atomic_t round_id;
+    sw_atomic_t round_id;
 
     //taskworker
     zanMsgQueue *queue;

@@ -37,7 +37,7 @@ extern "C" {
 //todo::: 将全局的相关的变量都放到 zanServerG 中
 typedef struct _zanServer
 {
-    zan_atomic_t worker_round_id;  //轮循分配模式时使用, TODO::::
+    sw_atomic_t worker_round_id;
 
     uint8_t dgram_port_num;
     uint8_t listen_port_num;
@@ -103,7 +103,7 @@ typedef struct _zanServerGS
     zanLock      lock;
     zanLock      log_lock;
     uint8_t      log_level;
-    zan_atomic_t spinlock;
+    sw_atomic_t spinlock;
 
     uint32_t     session_round;
 
@@ -225,38 +225,38 @@ typedef struct _zanThreadG
 typedef struct _zanWorkerStats
 {
     time_t start_time;
-    zan_atomic_t total_request_count;
-    zan_atomic_t request_count;
-    zan_atomic_t start_count;
+    sw_atomic_t total_request_count;
+    sw_atomic_t request_count;
+    sw_atomic_t start_count;
 } zanWorkerStats;
 
 typedef struct _zanServerStats
 {
     time_t              start_time;
     time_t              last_reload;
-    zan_atomic_t        connection_num;
-    zan_atomic_t        accept_count;
-    zan_atomic_t        close_count;
-    zan_atomic_t        tasking_num;
-    zan_atomic_t        request_count;
-    zan_atomic_t        active_worker;
-    zan_atomic_t        active_task_worker;
-    zan_atomic_t        active_networker;
-    zan_atomic_t        max_active_worker;
-    zan_atomic_t        max_active_task_worker;
-    zan_atomic_t        max_active_net_worker;
-    zan_atomic_t        worker_normal_exit;
-    zan_atomic_t        worker_abnormal_exit;
-    zan_atomic_t        task_worker_normal_exit;
-    zan_atomic_t        task_worker_abnormal_exit;
-    zan_atomic_t        net_worker_normal_exit;
-    zan_atomic_t        net_worker_abnormal_exit;
+    sw_atomic_t        connection_num;
+    sw_atomic_t        accept_count;
+    sw_atomic_t        close_count;
+    sw_atomic_t        tasking_num;
+    sw_atomic_t        request_count;
+    sw_atomic_t        active_worker;
+    sw_atomic_t        active_task_worker;
+    sw_atomic_t        active_networker;
+    sw_atomic_t        max_active_worker;
+    sw_atomic_t        max_active_task_worker;
+    sw_atomic_t        max_active_net_worker;
+    sw_atomic_t        worker_normal_exit;
+    sw_atomic_t        worker_abnormal_exit;
+    sw_atomic_t        task_worker_normal_exit;
+    sw_atomic_t        task_worker_abnormal_exit;
+    sw_atomic_t        net_worker_normal_exit;
+    sw_atomic_t        net_worker_abnormal_exit;
     zanWorkerStats      *workers_state;
     zanLock             lock;
 } zanServerStats;
 
-#define zan_stats_incr(val) zan_atomic_fetch_add(val, 1)
-#define zan_stats_decr(val) zan_atomic_fetch_sub(val, 1)
+#define zan_stats_incr(val) sw_atomic_fetch_add(val, 1)
+#define zan_stats_decr(val) sw_atomic_fetch_sub(val, 1)
 
 #ifdef __cplusplus
 }

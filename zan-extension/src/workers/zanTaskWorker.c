@@ -553,7 +553,7 @@ static inline int zan_pool_schedule_worker(zanProcessPool *pool)
 
     for (index = 0; index < run_worker_num + 1; index++)
     {
-        target_worker_id = zan_atomic_fetch_add(&pool->round_id, 1) % run_worker_num;
+        target_worker_id = sw_atomic_fetch_add(&pool->round_id, 1) % run_worker_num;
         if (pool->workers[target_worker_id].status == ZAN_WORKER_IDLE)
         {
             break;
