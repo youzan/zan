@@ -97,7 +97,7 @@ int register_tick_cb(swTimer* timer,int type,user_cb callback);
 int register_dict_cb(swTimer* timer,int type,user_dict_cb callback);
 
 long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_type);
-void swTimer_del(swTimer *timer, long id);
+int swTimer_del(swTimer *timer, long id);
 int swTimer_exist(swTimer *timer,long id);
 
 void swTimer_free(swTimer *timer);
