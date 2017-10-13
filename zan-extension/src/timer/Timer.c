@@ -76,6 +76,7 @@ static int swSystemTimer_event_handler(swReactor *reactor, swEvent *event);
 static void swSystemTimer_free(swTimer *timer);
 static void timer_onTimeout(swTimer *timer, swTimer_node *tnode);
 static void timer_onInterval(swTimer *timer, swTimer_node *tnode);
+static int swTime_del_node(swTimer* timer,swTimer_node* node);
 
 /// 时间轮操作
 static void time_wheel_tick(swTimer* timer,swTimer_node* node);
@@ -513,6 +514,26 @@ static void timer_onInterval(swTimer *timer, swTimer_node *tnode)
     timer->_current_id = -1;
 }
 
+static int swTime_del_node(swTimer* timer,swTimer_node* tnode)
+{
+	void* data = tnode->data;
+	tnode->data = NULL;
+	if (data && tnode->used_type == SW_TIMEWHEEL_TYPE)
+	{
+		swTime_wheel_free(data);
+	}
+	else if (data && timer->dict_cb[tnode->used_type]) {
+		user_dict_cb current_cb = timer->dict_cb[tnode->used_type];
+		current_cb(data);
+	}
+
+	--timer->num;
+	swHashMap_del_int(timer->timer_map, tnode->id);
+	swHeap_remove(timer->heap, tnode->heap_node);
+	sw_free(tnode);
+	return ZAN_OK;
+}
+
 long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_type)
 {
     if (_msec <= 0)
@@ -584,39 +605,27 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 void swTimer_del(swTimer *timer, long id)
 {
     swTimer_node *tnode = swHashMap_find_int(timer->timer_map, id);
-    if (!tnode)
+    if (!tnode || tnode->remove)
     {
+        // php -r '$timerId = swoole_timer_after(10, function() use(&$timerId) { var_dump(swoole_timer_exists($timerId));swoole_timer_clear($timerId);});'
+        // swoole_php_onTimeout 会导致重复删除 报错
         zanWarn("timer#%ld is not found.", id);
-        return ;
+        return;
     }
-
+	
     if (is_wheeltimeout_type(tnode->used_type))
     {
         swTime_wheel_del(timer->_time_wheel,tnode);
     }
 
-    void* data = tnode->data;
-    tnode->data = NULL;
-    if (data && tnode->used_type == SW_TIMEWHEEL_TYPE)
-    {
-        swTime_wheel_free(data);
-    }
-    else if (data && timer->dict_cb[tnode->used_type]) {
-        user_dict_cb current_cb = timer->dict_cb[tnode->used_type];
-        current_cb(data);
-    }
-
     tnode->remove = 0;
-    if (tnode->id == timer->_current_id)
+	if (timer->_current_id > 0 && tnode->id == timer->_current_id)
     {
         tnode->remove = 1;
-        return;
+        return ;
     }
 
-    swHashMap_del_int(timer->timer_map, tnode->id);
-    swHeap_remove(timer->heap, tnode->heap_node);
-    sw_free(tnode);
-    return;
+	swTime_del_node(timer,tnode);
 }
 
 int swTimer_exist(swTimer *timer,long id)
@@ -670,10 +679,7 @@ int swTimer_select(swTimer *timer)
             timer->onAfter(timer, tnode);
         }
 
-        timer->num--;
-        swHashMap_del_int(timer->timer_map, tnode->id);
-        swHeap_pop(timer->heap);
-        sw_free(tnode);
+        swTime_del_node(timer,tnode);
     }
 
     int64_t subMsec = (!tnode)? -1:tnode->exec_msec - now_msec;
