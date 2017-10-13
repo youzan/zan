@@ -262,7 +262,11 @@ static void tcpClient_timeout(swTimer* timer,swTimer_node* node)
         }
     }
 
-    swTimer_del(timer,node->id);
+    if(swTimer_del(timer,node->id) < 0)
+	{
+		zanWarn("can not delete this timer");
+		return;
+	}
 }
 
 static void client_onConnect(swClient *cli)
