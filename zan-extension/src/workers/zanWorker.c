@@ -273,8 +273,8 @@ static int zanWorker_onPipeRead(swReactor *reactor, swEvent *event)
         ret = read(event->fd, &task, sizeof(task));
         if (ret > 0)
         {
-            zanDebug("read from pipe_worker=%d, info.type=%d, from_id=%d, dst_worker_id=%d, cur_worker_id=%d",
-                     event->fd, task.info.type, task.info.from_id, task.info.worker_id, ServerWG.worker_id);
+            zanDebug("read from pipe_worker=%d, info.type=%d, from_id=%d, from_netid=%d, dst_worker_id=%d, cur_worker_id=%d",
+                    event->fd, task.info.type, task.info.from_id, task.info.networker_id, task.info.worker_id, ServerWG.worker_id);
             zanWorker_onTask(factory, &task);
             return ZAN_OK;
         }
@@ -489,7 +489,7 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
         case SW_EVENT_UDP:
         case SW_EVENT_UDP6:
         case SW_EVENT_UNIX_DGRAM:
-            zanDebug("from_id=%d, len=%d, data=%s", task->info.from_id, task->info.len, task->data);
+            zanDebug("from_id=%d, networker_id=%d, len=%d, data=%s", task->info.from_id, task->info.networker_id, task->info.len, task->data);
             package = zanWorker_get_buffer(task->info.from_id);
             swString_append_ptr(package, task->data, task->info.len);
 
