@@ -31,11 +31,10 @@
 #include "zanLog.h"
 
 #include <stdlib.h>
-#include <pthread.h>
-#include <sched.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <sys/ioctl.h>
+#include <sys/syscall.h>
 
 #ifdef HAVE_EXECINFO
 #include <execinfo.h>
@@ -45,19 +44,6 @@
 #undef daemon
 extern int daemon(int,int);
 #endif
-
-uint64_t swoole_hash_key(char *str, int str_len)
-{
-    uint64_t hash = 5381;
-    int charValue = 0, index = 0;
-    for (charValue = *str++; index < str_len; index++)
-    {
-        hash = (*((hash * 33) + str)) & 0x7fffffff;
-        hash = ((hash << 5) + hash) + charValue;
-    }
-
-    return hash;
-}
 
 /**
  * Recursive directory creation
@@ -126,18 +112,6 @@ char* swoole_dirname(char *file)
     return dirname;
 }
 
-int get_env_log_level()
-{
-    int level = ZAN_LOG_LEVEL_UNKNOW;
-    char* tmp = getenv("ZANEXT_DEBUG_LOG_LEVEL");
-    if (tmp)
-    {
-        level = strtol(tmp,NULL,0);
-    }
-
-    return level;
-}
-
 int swoole_type_size(char type)
 {
     switch (type)
@@ -181,65 +155,6 @@ char* swoole_dec2hex(int value, int base)
 #define RAND_MAX   2147483647
 #endif
 
-int swoole_rand(int min, int max)
-{
-    static int _seed = 0;
-    assert(max > min);
-
-    if (_seed == 0)
-    {
-        _seed = time(NULL);
-        srand(_seed);
-    }
-
-    int _rand = rand();
-    _rand = min + (int) ((double) ((double) (max) - (min) + 1.0) * ((_rand) / ((RAND_MAX) + 1.0)));
-    return _rand;
-}
-
-int swoole_system_random(int min, int max)
-{
-    static int dev_random_fd = -1;
-    char *next_random_byte;
-    int bytes_to_read;
-    unsigned random_value;
-
-    assert(max > min);
-
-    if (dev_random_fd == -1)
-    {
-        dev_random_fd = open("/dev/urandom", O_RDONLY);
-        if (dev_random_fd < 0)
-        {
-            return swoole_rand(min, max);
-        }
-    }
-
-    next_random_byte = (char *) &random_value;
-    bytes_to_read = sizeof(random_value);
-
-    if (read(dev_random_fd, next_random_byte, bytes_to_read) < 0)
-    {
-        zanError("read() failed.");
-        return SW_ERR;
-    }
-
-    return min + (random_value % (max - min + 1));
-}
-
-//replace src char to dst char
-void replaceChar(char* str,int length,char srcCh,char dstCh)
-{
-    int index;
-    for (index = 0; index < length; index++)
-    {
-        if (str[index] == srcCh)
-        {
-            str[index] = dstCh;
-        }
-    }
-}
-
 int swoole_version_compare(char *version1, char *version2)
 {
     int result = 0;
@@ -281,27 +196,6 @@ int swoole_version_compare(char *version1, char *version2)
     return result;
 }
 
-void swoole_rtrim(char *str, int len)
-{
-    int i;
-    for (i = len; i > 0; i--)
-    {
-        switch (str[i])
-        {
-        case ' ':
-        case '\0':
-        case '\n':
-        case '\r':
-        case '\t':
-        case '\v':
-            str[i] = 0;
-            break;
-        default:
-            break;
-        }
-    }
-}
-
 int swoole_tmpfile(char *filename)
 {
 #if defined(HAVE_MKOSTEMP) && defined(HAVE_EPOLL)
@@ -328,110 +222,6 @@ long swoole_file_get_size(FILE *fp)
     long size = ftell(fp);
     fseek(fp, pos, SEEK_SET);
     return size;
-}
-
-swString* swoole_file_get_contents(char *filename)
-{
-    struct stat file_stat;
-    if (lstat(filename, &file_stat) < 0)
-    {
-        zanError("lstat(%s) failed.", filename);
-        return NULL;
-    }
-    if (file_stat.st_size > SW_MAX_FILE_CONTENT)
-    {
-        zanWarn("file is too big");
-        return NULL;
-    }
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0)
-    {
-        zanError("open(%s) failed.", filename);
-        return NULL;
-    }
-
-    swString *content = swString_new(file_stat.st_size);
-    if (!content)
-    {
-        zanWarn("malloc failed");
-        close(fd);
-        return NULL;
-    }
-
-    int readn = 0;
-    int n;
-
-    while(readn < file_stat.st_size)
-    {
-        n = pread(fd, content->str + readn, file_stat.st_size - readn, readn);
-        if (n < 0)
-        {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-            else
-            {
-                zanError("pread() failed.");
-                swString_free(content);
-                close(fd);
-                return NULL;
-            }
-        }
-        readn += n;
-    }
-
-    close(fd);
-    return content;
-}
-
-/**
- * 最大公约数
- */
-uint32_t swoole_common_divisor(uint32_t u, uint32_t v)
-{
-    assert(u > 0 && v > 0);
-    uint32_t t = 0;
-    while (u > 0)
-    {
-        if (u < v)
-        {
-            t = u;
-            u = v;
-            v = t;
-        }
-        u = u - v;
-    }
-    return v;
-}
-
-/**
- * 最小公倍数
- */
-uint32_t swoole_common_multiple(uint32_t u, uint32_t v)
-{
-    assert(u > 0 && v > 0);
-
-    uint32_t m_cup = u;
-    uint32_t n_cup = v;
-    int res = m_cup % n_cup;
-
-    while (res != 0)
-    {
-        m_cup = n_cup;
-        n_cup = res;
-        res = m_cup % n_cup;
-    }
-
-    return u * v / n_cup;
-}
-
-/**
- * for GDB
- */
-void swBreakPoint()
-{
-
 }
 
 void swoole_redirect_stdout(int new_fd)
@@ -580,38 +370,6 @@ void swoole_print_trace(void)
     free(stacktrace);
 }
 #endif
-
-void swoole_cpu_setAffinity(int threadid, zanServer *serv)
-{
-#ifdef HAVE_CPU_AFFINITY
-    if (!serv){
-        return ;
-    }
-
-    //cpu affinity setting
-    if (ServerG.servSet.open_cpu_affinity)
-    {
-        cpu_set_t cpu_set;
-        CPU_ZERO(&cpu_set);
-
-        if (serv->cpu_affinity_available_num)
-        {
-            CPU_SET(serv->cpu_affinity_available[threadid % serv->cpu_affinity_available_num], &cpu_set);
-        }
-        else
-        {
-            CPU_SET(threadid % ZAN_CPU_NUM, &cpu_set);
-        }
-
-        if (0 != pthread_setaffinity_np(pthread_self(), sizeof(cpu_set), &cpu_set))
-        {
-            zanError("pthread_setaffinity_np() failed");
-        }
-    }
-#endif
-
-}
-
 
 #ifdef __MACH__
 #ifndef HAVE_CLOCK_GETTIME
@@ -872,3 +630,47 @@ void swoole_strtolower(char *str, int length)
     }
 }
 
+
+#if (__linux__)
+zan_tid_t zan_get_thread_tid(void)
+{
+    return syscall(SYS_gettid);
+}
+
+#elif (__FreeBSD__) && (__FreeBSD_version >= 900031)
+
+#include <pthread_np.h>
+zan_tid_t zan_get_thread_tid(void)
+{
+    return pthread_getthreadid_np();
+}
+
+#elif (__MACH__)
+/*
+ * MacOSX thread has two thread ids:
+ *
+ * 1) MacOSX 10.6 (Snow Leoprad) has pthread_threadid_np() returning
+ *    an uint64_t value, which is obtained using the __thread_selfid()
+ *    syscall.  It is a number above 300,000.
+ */
+zan_tid_t zan_get_thread_tid(void)
+{
+    uint64_t  tid;
+
+    (void) pthread_threadid_np(NULL, &tid);
+    return tid;
+}
+
+/*
+ * 2) Kernel thread mach_port_t returned by pthread_mach_thread_np().
+ *    It is a number in range 100-100,000.
+ * return pthread_mach_thread_np(pthread_self());
+ */
+#else
+
+zan_tid_t zan_get_thread_tid(void)
+{
+    return (uint64_t) (uintptr_t) pthread_self();
+}
+
+#endif

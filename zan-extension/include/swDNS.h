@@ -53,12 +53,11 @@ typedef struct
 } swDNS_request;
 
 int swoole_gethostbyReactor(swDNS_request *request);
-//int swoole_gethostbyname(int flags, char *name, char *addr,uint32_t addrLen);
+int swoole_gethostbyname(int flags, char *name, char *addr);
 void swoole_clear_dns_cache(void);
 int swoole_getHostbyAIO(int flags,void *hostname, void *ip_addr, size_t size);
 void dns_lookup_init();
 
-int swoole_gethostbyname(int flags, char *name, char *addr);
 
 #ifdef __cplusplus
 }

@@ -242,6 +242,7 @@
 #define SW_HTTP2_MAX_CONCURRENT_STREAMS  128
 #define SW_HTTP2_MAX_FRAME_SIZE          ((1u << 24) - 1)
 #define SW_HTTP2_MAX_WINDOW              ((1u << 31) - 1)
+#define SW_HTTP_HEADER_VALUE_SIZE        4096
 
 #define SW_HTTP_CLIENT_USERAGENT         "zan-http-client"
 

@@ -24,7 +24,6 @@
 
 #include "zanGlobalVar.h"
 #include "zanServer.h"
-#include "zanConnection.h"
 #include "zanLog.h"
 
 static int swPort_onRead_raw(swReactor *reactor, swListenPort *lp, swEvent *event);
@@ -482,8 +481,12 @@ void swPort_free(swListenPort *port)
     if (port->ssl)
     {
         swSSL_free_context(port->ssl_context);
-        free(port->ssl_cert_file);
-        free(port->ssl_key_file);
+        sw_free(port->ssl_option.cert_file);
+        sw_free(port->ssl_option.key_file);
+        if (port->ssl_option.client_cert_file)
+        {
+            sw_free(port->ssl_option.client_cert_file);
+        }
     }
 #endif
 
@@ -520,48 +523,6 @@ int zanPort_set_ListenOption(swListenPort *ls)
         setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(bufsize));
         return ZAN_OK;
     }
-
-#ifdef SW_USE_OPENSSL
-    if (ls->open_ssl_encrypt)
-    {
-        if (ls->ssl_cert_file == NULL || ls->ssl_key_file == NULL)
-        {
-            zanError("SSL error, require ssl_cert_file and ssl_key_file.");
-            return ZAN_ERR;
-        }
-        ls->ssl_context = swSSL_get_context(ls->ssl_method, ls->ssl_cert_file, ls->ssl_key_file);
-        if (ls->ssl_context == NULL)
-        {
-            zanError("swSSL_get_context() error.");
-            return ZAN_ERR;
-        }
-        if (ls->ssl_client_cert_file && swSSL_set_client_certificate(ls->ssl_context, ls->ssl_client_cert_file, ls->ssl_verify_depth) == SW_ERR)
-        {
-            zanError("swSSL_set_client_certificate() error.");
-            return ZAN_ERR;
-        }
-        if (ls->open_http_protocol)
-        {
-            ls->ssl_config.http = 1;
-        }
-        if (ls->open_http2_protocol)
-        {
-            ls->ssl_config.http_v2 = 1;
-            swSSL_server_http_advise(ls->ssl_context, &ls->ssl_config);
-        }
-        if (swSSL_server_set_cipher(ls->ssl_context, &ls->ssl_config) < 0)
-        {
-            zanError("swSSL_server_set_cipher() error.");
-            return ZAN_ERR;
-        }
-    }
-
-    if (ls->ssl && (!ls->ssl_cert_file || !ls->ssl_key_file))
-    {
-        zanWarn("need to set [ssl_cert_file] or [ssl_key_file] option.");
-        return ZAN_ERR;
-    }
-#endif
 
     //listen stream socket
     if (listen(sock, ls->backlog) < 0)
@@ -605,3 +566,42 @@ int zanPort_set_ListenOption(swListenPort *ls)
 #endif
     return ZAN_OK;
 }
+
+#ifdef SW_USE_OPENSSL
+int swPort_enable_ssl_encrypt(swListenPort *ls)
+{
+    if (ls->ssl_option.cert_file == NULL || ls->ssl_option.key_file == NULL)
+    {
+        zanWarn("SSL error, require ssl_cert_file and ssl_key_file.");
+        return ZAN_ERR;
+    }
+    ls->ssl_context = swSSL_get_context(&ls->ssl_option);
+    if (ls->ssl_context == NULL)
+    {
+        zanWarn("swSSL_get_context() error.");
+        return ZAN_ERR;
+    }
+    if (ls->ssl_option.client_cert_file
+            && swSSL_set_client_certificate(ls->ssl_context, ls->ssl_option.client_cert_file,
+                                            ls->ssl_option.verify_depth) == SW_ERR)
+    {
+        zanWarn("swSSL_set_client_certificate() error.");
+        return ZAN_ERR;
+    }
+    if (ls->open_http_protocol)
+    {
+        ls->ssl_config.http = 1;
+    }
+    if (ls->open_http2_protocol)
+    {
+        ls->ssl_config.http_v2 = 1;
+        swSSL_server_http_advise(ls->ssl_context, &ls->ssl_config);
+    }
+    if (swSSL_server_set_cipher(ls->ssl_context, &ls->ssl_config) < 0)
+    {
+        zanWarn("swSSL_server_set_cipher() error.");
+        return ZAN_ERR;
+    }
+    return ZAN_OK;
+}
+#endif

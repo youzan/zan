@@ -93,6 +93,7 @@ int zanServer_adduserworker(zanServer *serv, zanWorker *worker);
 int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId);
 
 int zanServer_get_first_sessionId(zanServer *serv);
+void swoole_cpu_setAffinity(int threadid, zanServer *serv);
 
 #ifdef __cplusplus
 }

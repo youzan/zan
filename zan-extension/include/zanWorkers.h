@@ -18,7 +18,7 @@
 #ifndef _ZAN_WORKERS_H_
 #define _ZAN_WORKERS_H_
 
-#include "zanSystem.h"
+#include "swBaseOperator.h"
 #include "zanIpc.h"
 #include "zanFactory.h"
 
@@ -127,6 +127,9 @@ int zanTaskworker_finish(char *data, int data_len, int flags);
 
 zan_pid_t zanTaskWorker_spawn(zanWorker *worker);
 int zanTaskWorker_largepack(swEventData *task, void *data, int data_len);
+
+int zanReactor_onAccept(swReactor *reactor, swEvent *event);
+void zanReactor_enableAccept(swReactor *reactor);
 
 ////////////////////////////////////////////////////////////////////////////////
 //worker pool

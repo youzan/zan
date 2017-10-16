@@ -81,7 +81,7 @@ static int zanFactory_start(zanFactory *factory)
         return ZAN_ERR;
     }
 
-    ////TODO::::
+    ////TODO
     ////factory->finish = swFactory_finish;
 
     return ZAN_OK;

@@ -593,7 +593,7 @@ static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
     zend_update_property_bool(swoole_server_class_entry_ptr, zserv, ZEND_STRL("taskworker"), isTaskWork TSRMLS_CC);
 
     /// Worker Process ID
-    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_pid"), zan_getpid() TSRMLS_CC);
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_pid"), getpid() TSRMLS_CC);
 
     ///Have not set the event callback
     zval* callback = php_sw_server_callbacks[SW_SERVER_CB_onWorkerStart];
@@ -1411,6 +1411,33 @@ void php_swoole_register_callback(zanServer *serv)
     {
         serv->onPipeMessage = php_swoole_onPipeMessage;
     }
+}
+
+void php_swoole_sha1(const char *str, int _len, unsigned char *digest)
+{
+    PHP_SHA1_CTX context;
+    PHP_SHA1Init(&context);
+    PHP_SHA1Update(&context, (unsigned char *) str, _len);
+    PHP_SHA1Final(digest, &context);
+}
+
+int swoole_check_callable(zval *callback TSRMLS_DC)
+{
+    if (!callback || ZVAL_IS_NULL(callback))
+    {
+        return ZAN_ERR;
+    }
+
+    char *func_name = NULL;
+    int iRet = sw_zend_is_callable(callback, 0, &func_name TSRMLS_CC)? ZAN_OK:ZAN_ERR;
+
+    if (func_name)
+    {
+        if (iRet < 0) swoole_php_fatal_error(E_ERROR, "Function '%s' is not callable", func_name);
+        swoole_efree(func_name);
+    }
+
+    return iRet;
 }
 
 /******************************************************************************/
@@ -2817,6 +2844,12 @@ PHP_METHOD(swoole_server, getClientList)
             swConnection *conn = &serv->connection_list[networker_index][min_fd];
             if (conn->active && !conn->closed)
             {
+#ifdef SW_USE_OPENSSL
+                if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
+                {
+                    continue;
+                }
+#endif
 #ifdef SW_REACTOR_USE_SESSION
                 add_next_index_long(return_value, conn->session_id);
 #else

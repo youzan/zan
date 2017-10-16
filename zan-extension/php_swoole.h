@@ -410,33 +410,8 @@ void php_swoole_client_free(zval *object, swClient *cli TSRMLS_DC);
 swClient* php_swoole_client_new(zval *object, char *host, int host_len, int port,swClient** cli);
 zval* php_swoole_websocket_unpack(swString *data TSRMLS_DC);
 
-
-static sw_inline void php_swoole_sha1(const char *str, int _len, unsigned char *digest)
-{
-    PHP_SHA1_CTX context;
-    PHP_SHA1Init(&context);
-    PHP_SHA1Update(&context, (unsigned char *) str, _len);
-    PHP_SHA1Final(digest, &context);
-}
-
-static sw_inline int swoole_check_callable(zval *callback TSRMLS_DC)
-{
-    if (!callback || ZVAL_IS_NULL(callback))
-    {
-        return SW_ERR;
-    }
-
-    char *func_name = NULL;
-    int iRet = sw_zend_is_callable(callback, 0, &func_name TSRMLS_CC)? SW_OK:SW_ERR;
-
-    if (func_name)
-    {
-        if (iRet < 0) swoole_php_fatal_error(E_ERROR, "Function '%s' is not callable", func_name);
-        swoole_efree(func_name);
-    }
-
-    return iRet;
-}
+void php_swoole_sha1(const char *str, int _len, unsigned char *digest);
+int swoole_check_callable(zval *callback TSRMLS_DC);
 
 void swoole_set_object(zval *object, void *ptr);
 void swoole_set_property(zval *object, int property_id, void *ptr);

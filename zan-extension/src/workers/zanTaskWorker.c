@@ -23,7 +23,6 @@
 #include "zanGlobalDef.h"
 #include "zanServer.h"
 #include "zanWorkers.h"
-#include "zanProcess.h"
 #include "zanLog.h"
 
 static swEventData *current_task;
@@ -204,7 +203,7 @@ void zan_processpool_shutdown(zanProcessPool *pool)
 //task_worker look
 static int zanTaskworker_loop(zanProcessPool *pool, zanWorker *worker)
 {
-    ServerG.process_pid  = zan_getpid();
+    ServerG.process_pid  = getpid();
     ServerG.process_type = ZAN_PROCESS_TASKWORKER;
     ServerWG.worker_id   = worker->worker_id;
 
@@ -322,7 +321,7 @@ int zan_spawn_task_process(zanProcessPool *pool)
         }
         else
         {
-            zanTrace("zan_fork worker child process, pid=%d", pid);
+            zanTrace("fork worker child process, pid=%d", pid);
 
             //remove old process
             if (worker->worker_pid)

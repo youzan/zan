@@ -53,35 +53,17 @@ static sw_inline uint32_t swoole_swap_endian32(uint32_t x)
 
 void swoole_strtolower(char *str, int length);
 
-
-void swBreakPoint(void);
-
-//void swoole_cpu_setAffinity(int threadid, swServer *serv);
-
-uint64_t swoole_hash_key(char *str, int str_len);
-uint32_t swoole_common_multiple(uint32_t u, uint32_t v);
-uint32_t swoole_common_divisor(uint32_t u, uint32_t v);
-
 int swoole_itoa(char *buf, long value);
-
-void swoole_rtrim(char *str, int len);
-
 int swoole_type_size(char type);
 int swoole_mkdir_recursive(const char *dir);
 char* swoole_dirname(char *file);
 
-int get_env_log_level();
 void swoole_redirect_stdout(int new_fd);
 
 long swoole_file_get_size(FILE *fp);
 int swoole_tmpfile(char *filename);
-swString* swoole_file_get_contents(char *filename);
-
-int swoole_rand(int min, int max);
-int swoole_system_random(int min, int max);
 
 char *swoole_dec2hex(int value, int base);
-void replaceChar(char* str,int length,char srcCh,char dstCh);
 int swoole_version_compare(char *version1, char *version2);
 
 #ifdef HAVE_EXECINFO
@@ -105,6 +87,24 @@ static uint64_t orwl_timestart = 0;
 int clock_gettime(clock_id_t which_clock, struct timespec *t);
 #endif
 #endif
+
+
+#if (__linux__)
+typedef pid_t          zan_tid_t;
+#define ZAN_TID_T_FMT  "%P"
+#elif (__FreeBSD__)
+typedef uint32_t       zan_tid_t;
+#define ZAN_TID_T_FMT  "%uD"
+#elif (__MACH__)
+typedef uint64_t       zan_tid_t;
+#define ZAN_TID_T_FMT  "%uA"
+#else
+typedef uint64_t       zan_tid_t;
+#define ZAN_TID_T_FMT  "%uA"
+#endif
+
+typedef pid_t zan_pid_t;
+zan_tid_t zan_get_thread_tid(void);
 
 #ifdef __cplusplus
 }

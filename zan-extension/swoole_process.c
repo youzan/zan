@@ -550,7 +550,7 @@ static PHP_METHOD(swoole_process, signal)
     signal_callback[signo] = callback;
 
 #if PHP_MAJOR_VERSION >= 7 || (PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 4)
-    ServerG.use_signalfd = 1;
+    ServerG.use_signalfd = ServerG.enable_signalfd;
 #else
     ServerG.use_signalfd = 0;
 #endif

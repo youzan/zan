@@ -22,7 +22,6 @@
 
 #include "zanWorkers.h"
 #include "zanLog.h"
-#include "zanProcess.h"
 #include "zanGlobalDef.h"
 
 extern int zanPool_worker_alloc(zanProcessPool *pool);
@@ -256,7 +255,7 @@ static int zan_spawn_user_process(void)
         worker->worker_id    = servSet->worker_num + servSet->task_worker_num +
                                servSet->net_worker_num + index++;
 
-        pid = zan_fork();
+        pid = fork();
         if (pid < 0)
         {
             zanError("Fork Worker failed. Error: %s [%d]", strerror(errno), errno);
@@ -264,7 +263,7 @@ static int zan_spawn_user_process(void)
         }
         else if (pid == 0)
         {
-            ServerG.process_pid  = zan_getpid();
+            ServerG.process_pid  = getpid();
             ServerG.process_type = ZAN_PROCESS_USERWORKER;
             ServerWG.worker_id = worker->worker_id;
             serv->onUserWorkerStart(serv, worker);
@@ -433,7 +432,7 @@ int zan_master_process_loop(zanServer *serv)
     {
         pid = -1;
         status = 0;
-        pid = zan_wait(&status);
+        pid = wait(&status);
         zanDebug("ServerG.running=%d, process_type=%d, master_pid=%d,pid=%d", ServerG.running, ServerG.process_type, ServerGS->master_pid, pid);
         if (pid < 0)
         {
