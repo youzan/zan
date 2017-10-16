@@ -528,18 +528,8 @@ static int swTime_del_node(swTimer* timer,swTimer_node* tnode)
 	}
 
 	--timer->num;
-	if(swHashMap_del_int(timer->timer_map, tnode->id) < 0)
-	{
-		zanDebug("delete tnode fail");
-		return ZAN_ERR;
-	}
-	
-	if(swHeap_remove(timer->heap, tnode->heap_node) < 0)
-	{
-		zanDebug("remove tnode fail");
-		return ZAN_ERR;
-	}
-	
+	swHashMap_del_int(timer->timer_map, tnode->id);
+	swHeap_remove(timer->heap, tnode->heap_node);
 	sw_free(tnode);
 	return ZAN_OK;
 }
@@ -619,8 +609,8 @@ int swTimer_del(swTimer *timer, long id)
     {
         // php -r '$timerId = swoole_timer_after(10, function() use(&$timerId) { var_dump(swoole_timer_exists($timerId));swoole_timer_clear($timerId);});'
         // swoole_php_onTimeout 会导致重复删除 报错
-        zanWarn("timer#%ld is not found.", id);
-        return ZAN_ERR;
+        //zanWarn("timer#%ld is not found.remove = %d", id, tnode->remove);
+        return ZAN_OK;
     }
 	
     if (is_wheeltimeout_type(tnode->used_type))
