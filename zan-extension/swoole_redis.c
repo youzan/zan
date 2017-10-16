@@ -58,6 +58,7 @@ typedef struct
     zval _onTimeout;
     zval _object;
 #endif
+
 } swRedisClient;
 
 enum swoole_redis_state
@@ -246,7 +247,7 @@ void swoole_redis_init(int module_number TSRMLS_DC)
 static PHP_METHOD(swoole_redis, __construct)
 {
     zval *zset = NULL;
-    if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|z", &zset))
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|z", &zset) == FAILURE)
     {
         return;
     }
@@ -1081,7 +1082,7 @@ static int swoole_redis_onError(swReactor *reactor, swEvent *event)
     swRedisClient *redis = event->socket->object;
     if (!redis)
     {
-            return SW_OK;
+        return SW_OK;
     }
 
     return swoole_redis_onRead(reactor, event);
@@ -1173,7 +1174,6 @@ static int swoole_redis_onRead(swReactor *reactor, swEvent *event)
     {
         redisAsyncHandleRead(redis->context);
     }
-
     return SW_OK;
 }
 

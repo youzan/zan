@@ -65,27 +65,27 @@ void swSignal_none(void)
  */
 swSignalFunc swSignal_set(int sig, swSignalFunc func, int restart, int mask)
 {
+    //ignore
     if (func == NULL)
     {
-        func =  SIG_IGN;
+        func = SIG_IGN;
     }
-    else if ((long)func == -1)
+    //clear
+    else if ((long) func == -1)
     {
         func = SIG_DFL;
     }
 
     struct sigaction act, oact;
     act.sa_handler = func;
-    //if (mask)
-    //{
-    //    sigfillset(&act.sa_mask);
-    //}
-    //else
-    //{
-    //    sigemptyset(&act.sa_mask);
-    //}
-    sigfillset(&act.sa_mask);
-    sigdelset(&act.sa_mask, sig);
+    if (mask)
+    {
+        sigfillset(&act.sa_mask);
+    }
+    else
+    {
+        sigemptyset(&act.sa_mask);
+    }
     act.sa_flags = 0;
     if (sigaction(sig, &act, &oact) < 0)
     {
@@ -151,7 +151,7 @@ void swSignal_clear(void)
 #endif
     {
         int index = 0;
-        for (index = 0;index < SW_SIGNO_MAX;index++)
+        for (index = 0; index < SW_SIGNO_MAX; ++index)
         {
             if (signals[index].active)
             {
@@ -172,17 +172,14 @@ void swSignalfd_init()
 
 static void swSignalfd_set(int signo, __sighandler_t callback)
 {
-    if (callback == NULL)
+    if (callback == NULL && signals[signo].active)
     {
-        if (signals[signo].active)
-        {
-            sigdelset(&signalfd_mask, signo);
-            bzero(&signals[signo], sizeof(swSignal));
+        sigdelset(&signalfd_mask, signo);
+        bzero(&signals[signo], sizeof(swSignal));
 
-            if (signal_fd > 0)
-            {
-                sigprocmask(SIG_BLOCK, &signalfd_mask, NULL);
-            }
+        if (signal_fd > 0)
+        {
+            sigprocmask(SIG_BLOCK, &signalfd_mask, NULL);
         }
     }
     else
@@ -202,38 +199,38 @@ int swSignalfd_setup(swReactor *reactor)
         if (signal_fd < 0)
         {
             zanError("signalfd() failed.");
-            return SW_ERR;
+            return ZAN_ERR;
         }
         ServerG.signal_fd = signal_fd;
         if (sigprocmask(SIG_BLOCK, &signalfd_mask, NULL) == -1)
         {
             zanError("sigprocmask() failed.");
-            return SW_ERR;
+            return ZAN_ERR;
         }
         reactor->setHandle(reactor, SW_FD_SIGNAL, swSignalfd_onSignal);
         reactor->add(reactor, signal_fd, SW_FD_SIGNAL);
-        return SW_OK;
+        return ZAN_OK;
     }
     else
     {
         zanWarn("signalfd has been created");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 }
 
 static void swSignalfd_clear()
 {
-    if (sigprocmask(SIG_UNBLOCK, &signalfd_mask, NULL) < 0)
-    {
-        zanError("sigprocmask(SIG_UNBLOCK) failed.");
-    }
-    bzero(&signals, sizeof(signals));
-    bzero(&signalfd_mask, sizeof(signalfd_mask));
-
     if (signal_fd)
     {
+		if (sigprocmask(SIG_UNBLOCK, &signalfd_mask, NULL) < 0)
+		{
+			zanError("sigprocmask(SIG_UNBLOCK) failed.");
+		}
         close(signal_fd);
+		bzero(&signals, sizeof(signals));
+		bzero(&signalfd_mask, sizeof(signalfd_mask));
     }
+	
     signal_fd = 0;
 }
 
@@ -245,9 +242,15 @@ static int swSignalfd_onSignal(swReactor *reactor, swEvent *event)
     if (n < 0)
     {
         zanError("read from signalfd failed.");
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
+	if(siginfo.ssi_signo >= SW_SIGNO_MAX)
+	{
+        zanWarn("unknown signal[%d].", siginfo.ssi_signo);
+        return ZAN_ERR;
+	}
+	
     if (signals[siginfo.ssi_signo].active)
     {
         if (signals[siginfo.ssi_signo].callback)
@@ -260,7 +263,7 @@ static int swSignalfd_onSignal(swReactor *reactor, swEvent *event)
         }
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 #endif
