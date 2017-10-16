@@ -194,7 +194,7 @@ int zan_daemonize(void)
     return ZAN_OK;
 }
 
-//TODO:::
+//TODO
 static int zanServer_start_check(zanServer *serv)
 {
     zanServerSet *servSet = &ServerG.servSet;

@@ -98,7 +98,7 @@ typedef struct _zanWorker
     zanPipe        *pipe_object;
     zanProcessPool *pool;
 
-    void *ptr2;
+    void *ptr;
 } zanWorker;
 
 typedef struct _zanUserWorker_node
@@ -111,6 +111,7 @@ int zanWorker_init(zanWorker *worker);
 void zanWorker_free(zanWorker *worker);
 zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker);
 void zan_worker_shutdown(zanProcessPool *pool);
+void zanWorker_clean(void);
 
 //networker<--->worker<--->task_worker
 int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int n, int flag);

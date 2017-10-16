@@ -739,11 +739,11 @@ static void php_swoole_onUserWorkerStart(zanServer *serv, zanWorker *worker)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    //zval *object = worker->ptr;
-    //zend_update_property_long(swoole_process_class_entry_ptr, object, ZEND_STRL("worker_id"), worker->worker_id TSRMLS_CC);
+    zval *object = worker->ptr;
+    zend_update_property_long(swoole_process_class_entry_ptr, object, ZEND_STRL("worker_id"), worker->worker_id TSRMLS_CC);
 
-    ///TODO:::
-    /////php_swoole_process_start(worker, object TSRMLS_CC);
+    ///TODO
+    php_swoole_process_start(worker, object TSRMLS_CC);
 }
 
 static int php_swoole_onTask(zanServer *serv, swEventData *req)
@@ -1075,10 +1075,8 @@ int php_swoole_onReceive(zanServer *serv, swEventData *req)
     //dgram
     if (swEventData_is_dgram(req->info.type))
     {
-        zanWarn("is dgram ....");
-#if 0
-        int networker_index = zanServer_get_networker_index(req->info.from_id);
-
+        //TODO
+        int networker_index = zanServer_get_networker_index(req->info.networker_id);
         swString *buffer = zanWorker_get_buffer(networker_index);
         swDgramPacket *packet = (swDgramPacket*) buffer->str;
 
@@ -1090,8 +1088,8 @@ int php_swoole_onReceive(zanServer *serv, swEventData *req)
             udp_info.from_fd = req->info.from_fd;
             udp_info.port = packet->port;
             memcpy(&udp_server_socket, &udp_info, sizeof(udp_server_socket));
-            factory->last_from_id = udp_server_socket;
-            zanWarn("SendTo: from_id=%d|from_fd=%d", (uint16_t) req->info.from_id, req->info.from_fd);
+
+            zanTrace("SendTo: from_id=%d|from_fd=%d", (uint16_t) req->info.from_id, req->info.from_fd);
             SW_ZVAL_STRINGL(zdata, packet->data, packet->length, 1);
             ZVAL_LONG(zfrom_id, (long ) udp_server_socket);
             ZVAL_LONG(zfd, (long ) packet->addr.v4.s_addr);
@@ -1102,10 +1100,8 @@ int php_swoole_onReceive(zanServer *serv, swEventData *req)
             udp_info.from_fd = req->info.from_fd;
             udp_info.port = packet->port;
             memcpy(&dgram_server_socket, &udp_info, sizeof(udp_server_socket));
-            factory->last_from_id = dgram_server_socket;
 
-            zanWarn("SendTo: from_id=%d|from_fd=%d", (uint16_t) req->info.from_id, req->info.from_fd);
-
+            zanDebug("SendTo: from_id=%d|from_fd=%d", (uint16_t) req->info.from_id, req->info.from_fd);
             ZVAL_LONG(zfrom_id, (long ) dgram_server_socket);
             char tmp[SW_IP_MAX_LENGTH] = {0};
             inet_ntop(AF_INET6, &packet->addr.v6, tmp, sizeof(tmp));
@@ -1120,7 +1116,6 @@ int php_swoole_onReceive(zanServer *serv, swEventData *req)
             ZVAL_LONG(zfrom_id, (long ) req->info.from_fd);
             dgram_server_socket = req->info.from_fd;
         }
-#endif
     }
     //stream
     else
@@ -2178,7 +2173,7 @@ PHP_METHOD(swoole_server, addProcess)
         RETURN_FALSE;
     }
 
-    worker->ptr2 = process;
+    worker->ptr = process;
 
     int id = zanServer_adduserworker(serv, worker);
     if (id < 0)

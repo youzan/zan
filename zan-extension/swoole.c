@@ -501,9 +501,6 @@ PHP_MINIT_FUNCTION(zan)
 
     REGISTER_STRINGL_CONSTANT("SWOOLE_VERSION", PHP_SWOOLE_VERSION, sizeof(PHP_SWOOLE_VERSION) - 1, CONST_CS | CONST_PERSISTENT);
 
-    //
-    //swoole_init();
-
     zan_init();
 
     swoole_server_init(module_number TSRMLS_CC);
@@ -516,7 +513,6 @@ PHP_MINIT_FUNCTION(zan)
     swoole_buffer_init(module_number TSRMLS_CC);
     swoole_connpool_init(module_number TSRMLS_CC);
 
-///TOD:::
 #ifdef SW_USE_REDIS
     swoole_redis_init(module_number TSRMLS_CC);
 #endif
@@ -649,8 +645,7 @@ PHP_RSHUTDOWN_FUNCTION(zan)
     //clear pipe buffer
     if (is_worker())
     {
-        //TODO::::
-        //swWorker_clean();
+        zanWorker_clean();
     }
 
     if (ServerGS->started > 0 && ServerG.running > 0)

@@ -58,7 +58,6 @@ typedef struct
     zval _onTimeout;
     zval _object;
 #endif
-
 } swRedisClient;
 
 enum swoole_redis_state

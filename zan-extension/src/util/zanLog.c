@@ -124,7 +124,7 @@ void zanLog_put(int level, char *cnt)
     }
 
     int n = snprintf(log_str, ZAN_LOG_BUFFER_SIZE,
-            "[%s %c.%d.%d]\t%s\t%s\n", date_str, process_flag, ServerG.process_pid, process_id, level_str, cnt);
+            "[%s %c.%d.%d] %s %s\n", date_str, process_flag, ServerG.process_pid, process_id, level_str, cnt);
     if (write(ServerG.log_fd, log_str, n) < 0)
     {
         return;
