@@ -312,8 +312,8 @@ int swHashMap_del_int(swHashMap *hmap, uint64_t key)
     {
         return SW_ERR;
     }
-	HASH_DEL(root, ret);
-    swHashMap_node_free(hmap, ret);	
+    HASH_DEL(root, ret);
+    swHashMap_node_free(hmap, ret);
     return SW_OK;
 }
 

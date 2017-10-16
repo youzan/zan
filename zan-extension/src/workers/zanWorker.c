@@ -641,12 +641,11 @@ void zanWorker_clean_pipe(void)
         {
             if (worker->pipe_worker)
             {
-                //TODO:::
+                //TODO
                 swReactor_wait_write_buffer(ServerG.main_reactor, worker->pipe_worker);
             }
             if (worker->pipe_master)
             {
-                //TODO:::
                 swReactor_wait_write_buffer(ServerG.main_reactor, worker->pipe_master);
             }
         }
@@ -807,4 +806,28 @@ void zan_worker_shutdown(zanProcessPool *pool)
         }
     }
     zanPool_worker_free(pool);
+}
+
+void zanWorker_clean(void)
+{
+    zanServer *serv = ServerG.serv;
+    zanServerSet *servSet = &ServerG.servSet;
+
+    zanWorker *worker = NULL;
+    int index = 0;
+    for (index = 0; index < servSet->worker_num + servSet->task_worker_num + servSet->net_worker_num; index++)
+    {
+        worker = zanServer_get_worker(serv, index);
+        if (ServerG.main_reactor)
+        {
+            if (worker->pipe_worker)
+            {
+                swReactor_wait_write_buffer(ServerG.main_reactor, worker->pipe_worker);
+            }
+            if (worker->pipe_master)
+            {
+                swReactor_wait_write_buffer(ServerG.main_reactor, worker->pipe_master);
+            }
+        }
+    }
 }

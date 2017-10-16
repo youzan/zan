@@ -74,7 +74,6 @@ void zan_init(void)
         exit(3);
     }
 
-    ///////////////////////////////////////////////////////////////////////////
     ServerG.factory_mode    = ZAN_MODE_PROCESS;
     ServerG.running         = 1;
     ServerG.log_fd          = STDOUT_FILENO;
@@ -113,6 +112,7 @@ void zan_init(void)
 #endif
 
     zan_update_time();
+    zan_set_loglevel(ZAN_LOG_WARNING);
 }
 
 void zan_clean(void)
