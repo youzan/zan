@@ -32,7 +32,7 @@ if ($pid === 0) {
     if ($r === false) {
         echo "ERROR";exit;
     }
-    $client->send("SUCCESS");
+    $client->send("HelloServer");
 
     // TODO
     echo $client->recv();
@@ -41,18 +41,27 @@ if ($pid === 0) {
 } else {
     $serv = new \swoole_server(UNIXSOCK_SERVER_PATH, 0, SWOOLE_PROCESS, SWOOLE_UNIX_DGRAM);
     $serv->set([ "worker_num" => 1, ]);
-    $serv->on("start", function(\swoole_server $serv) use($pid) {
+
+/*
+    $serv->on("WorkerStart", function(\swoole_server $serv) use($pid) {
         swoole_timer_after(1000, function() use($serv, $pid) {
             @unlink(UNIXSOCK_SERVER_PATH);
             pcntl_waitpid($pid, $status);
             $serv->shutdown();
         });
     });
-    $serv->on("packet", function (\swoole_server $serv, $data, $addr) {
-        var_dump($data);
-        var_dump($addr);
+*/
+
+    $serv->on("packet", function (\swoole_server $serv, $data, $addr) use($pid) {
+        echo $data . "\n";
+        //var_dump($addr);
         // TODO
-        $serv->send($addr['address'], json_encode(array("hello" => $data, "addr" => $addr)).PHP_EOL);
+        // $serv->send($addr['address'], json_encode(array("hello" => $data, "addr" => $addr)).PHP_EOL);
+        $serv->send($addr['address'], "HelloClient\n");
+        sleep(1);
+        @unlink(UNIXSOCK_SERVER_PATH);
+        pcntl_waitpid($pid, $status);
+        $serv->shutdown();
     });
     $serv->start();
 }
@@ -60,6 +69,7 @@ if ($pid === 0) {
 ?>
 
 --EXPECT--
-SUCCESS
+HelloServer
+HelloClient
 
 

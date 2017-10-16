@@ -1008,10 +1008,10 @@ void php_swoole_onConnect(zanServer *serv, swDataHead *info)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    zanTrace("onConnect in, fd=%d, from_fd=%d, from_id=%d, type=%d, worker_id=%d",
-             info->fd, info->from_fd, info->from_id, info->type, info->worker_id);
+    zanTrace("onConnect in, fd=%d, from_fd=%d, from_id=%d, from_netid=%d, type=%d, worker_id=%d",
+             info->fd, info->from_fd, info->from_id, info->networker_id, info->type, info->worker_id);
 
-    zval *callback = php_swoole_server_get_callback(serv, info->from_fd, info->from_id, SW_SERVER_CB_onConnect);
+    zval *callback = php_swoole_server_get_callback(serv, info->from_fd, info->networker_id, SW_SERVER_CB_onConnect);
     if (!callback || ZVAL_IS_NULL(callback))
     {
         return;
@@ -1023,7 +1023,7 @@ void php_swoole_onConnect(zanServer *serv, swDataHead *info)
 
     zval *zfrom_id = NULL;
     SW_MAKE_STD_ZVAL(zfrom_id);
-    ZVAL_LONG(zfrom_id, info->from_id);
+    ZVAL_LONG(zfrom_id, info->networker_id);  ///TODO
 
     zval *zserv = (zval *) serv->ptr2;
 
@@ -1050,20 +1050,18 @@ void php_swoole_onConnect(zanServer *serv, swDataHead *info)
     {
         sw_zval_ptr_dtor(&retval);
     }
-    zanTrace("onConnect out, fd=%d, from_fd=%d, from_id=%d", info->fd, info->from_fd, info->from_id);
+    zanTrace("onConnect out, fd=%d, from_fd=%d, networker_id=%d", info->fd, info->from_fd, info->networker_id);
 }
 
 int php_swoole_onReceive(zanServer *serv, swEventData *req)
 {
     SWOOLE_FETCH_TSRMLS;
 
-    zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.from_id, SW_SERVER_CB_onReceive);
+    zval *callback = php_swoole_server_get_callback(serv, req->info.from_fd, req->info.networker_id, SW_SERVER_CB_onReceive);
     if (swoole_check_callable(callback TSRMLS_CC) < 0)
     {
         return ZAN_OK;
     }
-
-    //zanFactory *factory = &serv->factory;
 
     zval *zfd = NULL;
     zval *zfrom_id = NULL;
@@ -1076,8 +1074,7 @@ int php_swoole_onReceive(zanServer *serv, swEventData *req)
     if (swEventData_is_dgram(req->info.type))
     {
         //TODO
-        int networker_index = zanServer_get_networker_index(req->info.networker_id);
-        swString *buffer = zanWorker_get_buffer(networker_index);
+        swString *buffer = zanWorker_get_buffer(req->info.from_id);
         swDgramPacket *packet = (swDgramPacket*) buffer->str;
 
         //UDP使用from_id作为port,fd做为ip
@@ -1120,7 +1117,8 @@ int php_swoole_onReceive(zanServer *serv, swEventData *req)
     //stream
     else
     {
-        ZVAL_LONG(zfrom_id, (long ) req->info.from_id);
+        ///ZVAL_LONG(zfrom_id, (long ) req->info.from_id);
+        ZVAL_LONG(zfrom_id, (long ) req->info.networker_id);  ///TODO
         ZVAL_LONG(zfd, (long ) req->info.fd);
         int headlen = (ServerG.serv->packet_mode == 1)? 4:0;
         php_swoole_get_recv_data(zdata, req, NULL,headlen TSRMLS_CC);
@@ -1218,8 +1216,8 @@ static int php_swoole_onPacket(zanServer *serv, swEventData *req)
     add_assoc_long(zaddr, "server_socket", req->info.from_fd);
 
     //udp ipv4
-    int networker_index = zanServer_get_networker_index(req->info.from_id);
-    swString *buffer = zanWorker_get_buffer(networker_index);
+    zanDebug("networker_id=%d, from_id=%d, networker_num=%d, worker_num=%d", req->info.networker_id, req->info.from_id, ServerG.servSet.net_worker_num, ServerG.servSet.worker_num);
+    swString *buffer = zanWorker_get_buffer(req->info.from_id);
     swDgramPacket *packet = (swDgramPacket*) buffer->str;
     if (req->info.type == SW_EVENT_UDP)
     {
@@ -1288,7 +1286,7 @@ void php_swoole_onClose(zanServer *serv, swDataHead *info)
 
     zval *zfrom_id = NULL;
     SW_MAKE_STD_ZVAL(zfrom_id);
-    ZVAL_LONG(zfrom_id, info->from_id);
+    ZVAL_LONG(zfrom_id, info->networker_id);  ///TODO
 
     zval *zserv = (zval *) serv->ptr2;
 
@@ -2778,6 +2776,7 @@ PHP_METHOD(swoole_server, getClientInfo)
     sw_add_assoc_string(return_value, "remote_ip", addr, 1);
 
     add_assoc_long(return_value, "from_id", conn->from_id);
+    add_assoc_long(return_value, "from_networker_id", conn->networker_id);
     add_assoc_long(return_value, "connect_time", conn->connect_time);
     add_assoc_long(return_value, "last_time", conn->last_time);
 }
