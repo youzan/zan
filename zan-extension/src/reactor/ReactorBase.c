@@ -315,13 +315,6 @@ int swReactor_close(swReactor *reactor, int fd)
         socket->in_buffer = NULL;
     }
 
-#ifdef SW_USE_OPENSSL
-    if (socket && socket->ssl)
-    {
-        swSSL_close(socket);
-    }
-#endif
-
     if (!reactor->thread && socket && !socket->removed)
     {
         reactor->del(reactor,fd);

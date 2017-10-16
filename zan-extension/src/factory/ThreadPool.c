@@ -156,7 +156,6 @@ static void* swThreadPool_loop(void *arg)
 
         while (!pool->shutdown && pool->task_num == 0)
         {
-//            pthread_cond_wait(&(pool->cond), &(pool->mutex));
             pool->cond.wait(&pool->cond);
         }
 
@@ -164,7 +163,6 @@ static void* swThreadPool_loop(void *arg)
 
         void *task = NULL;
         int ret = swRingQueue_pop(&pool->queue, &task);
-//      pthread_mutex_unlock(&(pool->mutex));
         pool->cond.lock.unlock(&pool->cond.lock);
 
         if (ret >= 0)

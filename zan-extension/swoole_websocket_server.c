@@ -90,7 +90,7 @@ const zend_function_entry swoole_websocket_server_methods[] =
 
 void swoole_websocket_onOpen(http_context *ctx)
 {
-	SWOOLE_FETCH_TSRMLS;
+    SWOOLE_FETCH_TSRMLS;
 
     int fd = ctx->fd;
 
@@ -154,7 +154,7 @@ void swoole_websocket_onRequest(http_context *ctx)
 
 static int websocket_handshake(swListenPort *port, http_context *ctx)
 {
-	SWOOLE_FETCH_TSRMLS;
+    SWOOLE_FETCH_TSRMLS;
 
     zval *header = ctx->request.zheader;
     HashTable *ht = Z_ARRVAL_P(header);
@@ -167,10 +167,10 @@ static int websocket_handshake(swListenPort *port, http_context *ctx)
     }
 
     if (sw_convert_to_string(pData) < 0)
-	{
-		zanWarn("convert to string failed.");
-		return SW_ERR;
-	}
+    {
+        zanWarn("convert to string failed.");
+        return SW_ERR;
+    }
 
     swString_clear(swoole_http_buffer);
     swString_append_ptr(swoole_http_buffer, ZEND_STRL("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"));
@@ -210,7 +210,7 @@ static int websocket_handshake(swListenPort *port, http_context *ctx)
 
 int swoole_websocket_onMessage(swEventData *req)
 {
-	SWOOLE_FETCH_TSRMLS;
+    SWOOLE_FETCH_TSRMLS;
 
     int fd = req->info.fd;
 
@@ -279,8 +279,8 @@ int swoole_websocket_onHandshake(swListenPort *port, http_context *ctx)
 
     if (!ctx->end)
     {
-    	//free client data
-    	ctx->response.release = 1;
+        //free client data
+        ctx->response.release = 1;
     }
 
     return ZAN_OK;
@@ -338,10 +338,10 @@ static PHP_METHOD(swoole_websocket_server, on)
     zanServer *serv = swoole_get_object(getThis());
 
     if (swoole_check_callable(callback TSRMLS_CC) < 0)
-	{
-		swoole_php_fatal_error(E_WARNING,"user must set callback.");
-		RETURN_FALSE;
-	}
+    {
+        swoole_php_fatal_error(E_WARNING,"user must set callback.");
+        RETURN_FALSE;
+    }
 
     serv->listen_list->open_websocket_protocol = 1;
 

@@ -104,13 +104,9 @@ typedef struct _swListenPort
     uint32_t open_ssl_encrypt :1;
 
 #ifdef SW_USE_OPENSSL
-    char *ssl_cert_file;
-    char *ssl_key_file;
     SSL_CTX *ssl_context;
     swSSL_config ssl_config;
-    uint8_t ssl_method;
-    char *ssl_client_cert_file;
-    uint8_t ssl_verify_depth;
+    swSSL_option ssl_option;
 #endif
 
     swProtocol protocol;
@@ -122,10 +118,10 @@ typedef struct _swListenPort
 void swPort_init(swListenPort *port);
 void swPort_free(swListenPort *port);
 void swPort_set_protocol(swListenPort *ls);
-int swPort_set_option(swListenPort *ls);
-
-//test
 int zanPort_set_ListenOption(swListenPort *ls);
+#ifdef SW_USE_OPENSSL
+int swPort_enable_ssl_encrypt(swListenPort *ls);
+#endif
 
 #ifdef __cplusplus
 }

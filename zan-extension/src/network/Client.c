@@ -47,11 +47,6 @@ static int swClient_onStreamRead(swReactor *reactor, swEvent *event);
 static int swClient_onWrite(swReactor *reactor, swEvent *event);
 static int swClient_onError(swReactor *reactor, swEvent *event);
 
-#ifdef SW_USE_OPENSSL
-static int swClient_enable_ssl_encrypt(swClient *cli);
-static int swClient_ssl_handshake(swClient *cli);
-#endif
-
 static int isset_event_handle = 0;
 
 int swClient_create(swClient *cli, int type, int async)
@@ -137,21 +132,25 @@ int swClient_free(swClient* cli)
 #ifdef SW_USE_OPENSSL
 int swClient_enable_ssl_encrypt(swClient *cli)
 {
-    if (!cli || !cli->socket) {
-        return ZAN_ERR;
-    }
-
-    cli->ssl_context = swSSL_get_context(cli->ssl_method, cli->ssl_cert_file, cli->ssl_key_file);
+    cli->ssl_context = swSSL_get_context(&cli->ssl_option);
     if (cli->ssl_context == NULL)
     {
         return ZAN_ERR;
     }
-
     cli->socket->ssl_send = 1;
+#if defined(SW_USE_HTTP2) && defined(SW_USE_OPENSSL) && OPENSSL_VERSION_NUMBER >= 0x10002000L
+    if (cli->http2)
+    {
+        if (SSL_CTX_set_alpn_protos(cli->ssl_context, (const unsigned char *) "\x02h2", 3) < 0)
+        {
+            return ZAN_ERR;
+        }
+    }
+#endif
     return ZAN_OK;
 }
 
-static int swClient_ssl_handshake(swClient *cli)
+int swClient_ssl_handshake(swClient *cli)
 {
     if (!cli || !cli->socket) {
         return ZAN_ERR;
@@ -219,19 +218,18 @@ static int swClient_close(swClient *cli)
         {
             swSSL_close(cli->socket);
         }
-
         swSSL_free_context(cli->ssl_context);
-        cli->ssl_context = NULL;
-
-        if (cli->ssl_cert_file)
+        if (cli->ssl_option.cert_file)
         {
-            free(cli->ssl_cert_file);
-            cli->ssl_cert_file = NULL;
+            sw_free(cli->ssl_option.cert_file);
         }
-        if (cli->ssl_key_file)
+        if (cli->ssl_option.key_file)
         {
-            free(cli->ssl_key_file);
-            cli->ssl_key_file = NULL;
+            sw_free(cli->ssl_option.key_file);
+        }
+        if (cli->ssl_option.passphrase)
+        {
+            sw_free(cli->ssl_option.passphrase);
         }
     }
 #endif

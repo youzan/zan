@@ -169,7 +169,7 @@ if test "$PHP_ZAN" != "no"; then
         AC_DEFINE(SW_USE_MYSQLND, 1, [use mysqlnd])
     fi
     AC_CHECK_LIB(c, accept4, AC_DEFINE(HAVE_ACCEPT4, 1, [have accept4]))
-dnl    AC_CHECK_LIB(c, signalfd, AC_DEFINE(HAVE_SIGNALFD, 1, [have signalfd]))
+    AC_CHECK_LIB(c, signalfd, AC_DEFINE(HAVE_SIGNALFD, 1, [have signalfd]))
     AC_CHECK_LIB(c, timerfd_create, AC_DEFINE(HAVE_TIMERFD, 1, [have timerfd]))
     AC_CHECK_LIB(c, eventfd, AC_DEFINE(HAVE_EVENTFD, 1, [have eventfd]))
     AC_CHECK_LIB(c, epoll_create, AC_DEFINE(HAVE_EPOLL, 1, [have epoll]))
@@ -315,7 +315,6 @@ dnl        src/memory/Table.c \
         src/network/Client.c \
         src/network/Connection.c \
         src/network/Socket.c \
-        src/network/zanConnection.c \
         src/network/zanSocket.c \
         src/network/zanServer.c \
         src/network/zanPort.c \
@@ -333,9 +332,6 @@ dnl        src/memory/Table.c \
         src/util/zanBinaryData.c \
         src/util/Sendfile.c \
         src/util/zanLog.c \
-        src/util/zanProcess.c \
-        src/util/zanThread.c \
-        src/util/zanSystem.c \
         src/dns/DNS.c \
         src/signal/Signal.c \
         src/ipc/zanCond.c \

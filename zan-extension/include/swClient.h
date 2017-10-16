@@ -24,6 +24,7 @@
 
 #include "swoole.h"
 #include "swProtocol/protocol.h"
+#include "swProtocol/ssl.h"
 #include "zanMemory/buffer.h"
 #include "swConnection.h"
 
@@ -57,7 +58,7 @@ typedef struct _swClient
 
     swProtocol protocol;
 
-    char *server_str;			/// connect id
+    char *server_str;           /// connect id
     void *ptr;
     void *params;
 
@@ -82,13 +83,10 @@ typedef struct _swClient
     uint32_t buffer_input_size;
 
 #ifdef SW_USE_OPENSSL
-    uint8_t open_ssl;
-    uint8_t ssl_disable_compress;
-    uint8_t ssl_verify;
-    char *ssl_cert_file;
-    char *ssl_key_file;
+    uint8_t open_ssl :1;
+    uint8_t ssl_wait_handshake :1;
     SSL_CTX *ssl_context;
-    uint8_t ssl_method;
+    swSSL_option ssl_option;
 #endif
 
     /// 回调操作，回调给用户
@@ -107,6 +105,11 @@ typedef struct _swClient
 } swClient;
 
 int swClient_create(swClient *cli, int type, int async);
+#ifdef SW_USE_OPENSSL
+int swClient_enable_ssl_encrypt(swClient *cli);
+int swClient_ssl_handshake(swClient *cli);
+#endif
+
 int swClient_free(swClient* cli);
 
 #ifdef __cplusplus

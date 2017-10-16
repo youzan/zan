@@ -26,7 +26,6 @@
 #include "swBaseOperator.h"
 #include "zanMemory/zanMemory.h"
 
-#include "zanSystem.h"
 #include "zanServer.h"
 #include "zanWorkers.h"
 #include "zanSocket.h"
@@ -41,6 +40,7 @@ zanServerStats *ServerStatsG = NULL;
 static void zan_server_set_init(void);
 static int zanServer_start_check(zanServer *);
 static int zan_daemonize(void);
+static int get_env_log_level();
 
 /* initializing server config*/
 void zanServer_init(zanServer *serv)
@@ -247,7 +247,7 @@ static int zanServer_start_check(zanServer *serv)
     }
 
     //ServerGS
-    ServerGS->master_pid     = zan_getpid();
+    ServerGS->master_pid     = getpid();
     ServerGS->started        = 1;
     ServerGS->server_time    = time(NULL);
     ServerGS->session_round = 1;
@@ -412,8 +412,8 @@ swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port
             ls->ssl_config.session_tickets = 0;
             ls->ssl_config.stapling = 1;
             ls->ssl_config.stapling_verify = 1;
-            ls->ssl_config.ciphers = SW_SSL_CIPHER_LIST;
-            ls->ssl_config.ecdh_curve = SW_SSL_ECDH_CURVE;
+            ls->ssl_config.ciphers = strdup(SW_SSL_CIPHER_LIST);
+            ls->ssl_config.ecdh_curve = strdup(SW_SSL_ECDH_CURVE);
 #endif
         }
     }
@@ -870,4 +870,44 @@ int zanServer_get_first_sessionId(zanServer *serv)
     return 0;
 }
 
+int get_env_log_level()
+{
+    int level = ZAN_LOG_LEVEL_UNKNOW;
+    char* tmp = getenv("ZANEXT_DEBUG_LOG_LEVEL");
+    if (tmp)
+    {
+        level = strtol(tmp,NULL,0);
+    }
 
+    return level;
+}
+
+void swoole_cpu_setAffinity(int threadid, zanServer *serv)
+{
+#ifdef HAVE_CPU_AFFINITY
+    if (!serv){
+        return ;
+    }
+
+    //cpu affinity setting
+    if (ServerG.servSet.open_cpu_affinity)
+    {
+        cpu_set_t cpu_set;
+        CPU_ZERO(&cpu_set);
+
+        if (serv->cpu_affinity_available_num)
+        {
+            CPU_SET(serv->cpu_affinity_available[threadid % serv->cpu_affinity_available_num], &cpu_set);
+        }
+        else
+        {
+            CPU_SET(threadid % ZAN_CPU_NUM, &cpu_set);
+        }
+
+        if (0 != pthread_setaffinity_np(pthread_self(), sizeof(cpu_set), &cpu_set))
+        {
+            zanError("pthread_setaffinity_np() failed");
+        }
+    }
+#endif
+}

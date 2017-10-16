@@ -449,7 +449,13 @@ static void http_parse_cookie(zval *array, const char *at, size_t length)
         else if (state == 1 && *_c == ';')
         {
             vlen = i - j;
-            strncpy(valbuf, (char * ) at + j, SW_HTTP_COOKIE_VALLEN);
+            if (vlen >= SW_HTTP_COOKIE_VALLEN)
+            {
+                zanWarn("cookie value is too large.");
+                return;
+            }
+            memcpy(valbuf, (char *) at + j, vlen);
+            valbuf[vlen] = 0;
             vlen = php_url_decode(valbuf, vlen);
             if (klen > 1)
             {
@@ -476,8 +482,19 @@ static void http_parse_cookie(zval *array, const char *at, size_t length)
     if (j < length)
     {
         vlen = i - j;
+        if (klen >= SW_HTTP_COOKIE_KEYLEN)
+        {
+        zanWarn("cookie key is too large.");
+            return;
+        }
         keybuf[klen - 1] = 0;
-        strncpy(valbuf, (char * ) at + j, SW_HTTP_COOKIE_VALLEN);
+        if (vlen >= SW_HTTP_COOKIE_VALLEN)
+        {
+            zanWarn("cookie value is too large.");
+            return;
+        }
+        memcpy(valbuf, (char *) at + j, vlen);
+        valbuf[vlen] = 0;;
         vlen = php_url_decode(valbuf, vlen);
         if (klen > 1)
         {
@@ -509,6 +526,7 @@ static int http_request_on_header_value(php_http_parser *parser, const char *at,
 {
     SWOOLE_FETCH_TSRMLS;
 
+    size_t offset = 0;
     http_context *ctx = parser->data;
     zval *zrequest_object = ctx->request.zobject;
     size_t header_len = ctx->current_header_name_len;
@@ -549,11 +567,20 @@ static int http_request_on_header_value(php_http_parser *parser, const char *at,
             }
             else if (http_strncasecmp("multipart/form-data",at, length))
             {
-                int boundary_len = length - strlen("multipart/form-data; boundary=");
+                offset = sizeof("multipart/form-data;") - 1;
+
+                while (at[offset] == ' ') {
+                    offset += 1;
+                }
+
+                offset += sizeof("boundary=") - 1;
+
+                int boundary_len = length - offset;
+
                 if (boundary_len <= 0)
                 {
-                    zanWarn("[%d] invalid multipart/form-data body.", ctx->fd);
-                    goto free_memory;
+                    zanWarn("invalid multipart/form-data body.", ctx->fd);
+                    return 0;
                 }
                 swoole_http_parse_form_data(ctx, at + length - boundary_len, boundary_len TSRMLS_CC);
             }
@@ -734,6 +761,10 @@ static int multipart_body_on_header_complete(multipart_parser* p)
     char file_path[sizeof(SW_HTTP_UPLOAD_TMP_FILE)];
     memcpy(file_path, SW_HTTP_UPLOAD_TMP_FILE, sizeof(SW_HTTP_UPLOAD_TMP_FILE));
     int tmpfile = swoole_tmpfile(file_path);
+    if (tmpfile < 0)
+    {
+        return 0;
+    }
 
     FILE *fp = fdopen(tmpfile, "wb+");
     if (fp == NULL)
@@ -2282,6 +2313,11 @@ static PHP_METHOD(swoole_http_response, header)
     if (klen > SW_HTTP_HEADER_KEY_SIZE - 1)
     {
         zanWarn("header key is too long.");
+        RETURN_FALSE;
+    }
+    if (vlen > SW_HTTP_HEADER_VALUE_SIZE)
+    {
+        swoole_php_error(E_WARNING, "header value is too long.");
         RETURN_FALSE;
     }
 

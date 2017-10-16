@@ -396,21 +396,21 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_method"), (void **) &valuePtr) == SUCCESS)
         {
             convert_to_long(valuePtr);
-            cli->ssl_method = (int) Z_LVAL_P(valuePtr);
+            cli->ssl_option.method = (int) Z_LVAL_P(valuePtr);
             cli->open_ssl = 1;
         }
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_compress"), (void **) &valuePtr) == SUCCESS)
         {
             convert_to_boolean(valuePtr);
-            cli->ssl_disable_compress = !Z_BVAL_P(valuePtr);
+            cli->ssl_option.disable_compress = !Z_BVAL_P(valuePtr);
         }
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_cert_file"), (void **) &valuePtr) == SUCCESS)
         {
             convert_to_string(valuePtr);
-            cli->ssl_cert_file = strdup(Z_STRVAL_P(valuePtr));
-            if (access(cli->ssl_cert_file, R_OK) < 0)
+            cli->ssl_option.cert_file = strdup(Z_STRVAL_P(valuePtr));
+            if (access(cli->ssl_option.cert_file, R_OK) < 0)
             {
-                swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", cli->ssl_cert_file);
+                swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", cli->ssl_option.cert_file);
                 return SW_ERR;
             }
             cli->open_ssl = 1;
@@ -418,14 +418,19 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_key_file"), (void **) &valuePtr) == SUCCESS)
         {
             convert_to_string(valuePtr);
-            cli->ssl_key_file = strdup(Z_STRVAL_P(valuePtr));
-            if (access(cli->ssl_key_file, R_OK) < 0)
+            cli->ssl_option.key_file = strdup(Z_STRVAL_P(valuePtr));
+            if (access(cli->ssl_option.key_file, R_OK) < 0)
             {
-                swoole_php_fatal_error(E_ERROR, "ssl key file[%s] not found.", cli->ssl_key_file);
+                swoole_php_fatal_error(E_ERROR, "ssl key file[%s] not found.", cli->ssl_option.key_file);
                 return SW_ERR;
             }
         }
-        if (cli->ssl_cert_file && !cli->ssl_key_file)
+        if (sw_zend_hash_find(vht, ZEND_STRS("ssl_passphrase"), (void **) &valuePtr) == SUCCESS)
+        {
+            convert_to_string(valuePtr);
+            cli->ssl_option.passphrase = strdup(Z_STRVAL_P(valuePtr));
+        }
+        if (cli->ssl_option.cert_file && !cli->ssl_option.key_file)
         {
             swoole_php_fatal_error(E_ERROR, "ssl require key file.");
             return SW_ERR;
