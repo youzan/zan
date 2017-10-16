@@ -590,7 +590,7 @@ long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_t
 
     /// timer id 从1 开始计算，大于 86400000 时，重置
     timer->_next_id = (timer->_next_id <= 0 || timer->_next_id > 86400000)? 1:timer->_next_id;
-    tnode->id = timer->_next_id + 1;
+    tnode->id = timer->_next_id++;
     ++timer->num;
     if (!addToWheel && (timer->_next_msec <= 0 || timer->_next_msec > _msec))
     {
