@@ -84,7 +84,9 @@ swSignalFunc swSignal_set(int sig, swSignalFunc func, int restart, int mask)
     }
     else
     {
-        sigemptyset(&act.sa_mask);
+        //sigemptyset(&act.sa_mask);
+		sigfillset(&act.sa_mask);
+		sigdelset(&act.sa_mask, sig);
     }
     act.sa_flags = 0;
     if (sigaction(sig, &act, &oact) < 0)
