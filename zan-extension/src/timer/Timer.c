@@ -21,9 +21,6 @@
 #include "swAtomic.h"
 #include "swTimer.h"
 
-//#include "swGlobalVars.h"
-//#include "swLog.h"
-
 #include "zanGlobalVar.h"
 #include "zanLog.h"
 

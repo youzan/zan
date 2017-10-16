@@ -298,7 +298,12 @@ static PHP_METHOD(swoole_server_port, set)
                 swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", Z_STRVAL_P(value));
                 return;
             }
-            port->ssl_cert_file = strdup(Z_STRVAL_P(value));
+
+            if (port->ssl_option.cert_file)
+            {
+                sw_free(port->ssl_option.cert_file);
+            }
+            port->ssl_option.cert_file = strdup(Z_STRVAL_P(value));
             port->open_ssl_encrypt = 1;
         }
         value = NULL;
@@ -315,13 +320,18 @@ static PHP_METHOD(swoole_server_port, set)
                 swoole_php_fatal_error(E_ERROR, "ssl key file[%s] not found.", Z_STRVAL_P(value));
                 return;
             }
-            port->ssl_key_file = strdup(Z_STRVAL_P(value));
+
+            if (port->ssl_option.key_file)
+            {
+                sw_free(port->ssl_option.key_file);
+            }
+            port->ssl_option.key_file = strdup(Z_STRVAL_P(value));
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_method"), (void **) &value) == SUCCESS)
         {
             convert_to_long(value);
-            port->ssl_method = (int) Z_LVAL_P(value);
+            port->ssl_option.method = (int) Z_LVAL_P(value);
         }
         //verify client cert
         value = NULL;
@@ -335,22 +345,20 @@ static PHP_METHOD(swoole_server_port, set)
 
             if (access(Z_STRVAL_P(value), R_OK) < 0)
             {
-                swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", port->ssl_cert_file);
+                swoole_php_fatal_error(E_ERROR, "ssl cert file[%s] not found.", port->ssl_option.client_cert_file);
                 return;
             }
-            port->ssl_client_cert_file = strdup(Z_STRVAL_P(value));
+            if (port->ssl_option.client_cert_file)
+            {
+                sw_free(port->ssl_option.client_cert_file);
+            }
+            port->ssl_option.client_cert_file = strdup(Z_STRVAL_P(value));
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_verify_depth"), (void **) &value) == SUCCESS)
         {
             convert_to_long(value);
-            port->ssl_verify_depth = (int) Z_LVAL_P(value);
-        }
-
-        if (port->open_ssl_encrypt && !port->ssl_key_file)
-        {
-            swoole_php_fatal_error(E_ERROR, "ssl require key file.");
-            RETURN_FALSE;
+            port->ssl_option.verify_depth = (int) Z_LVAL_P(value);
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_prefer_server_ciphers"), (void **) &value) == SUCCESS)
@@ -366,7 +374,10 @@ static PHP_METHOD(swoole_server_port, set)
                 zanWarn("convert to string failed.");
                 RETURN_FALSE;
             }
-
+            if (port->ssl_config.ciphers)
+            {
+                sw_free(port->ssl_config.ciphers);
+            }
             port->ssl_config.ciphers = strdup(Z_STRVAL_P(value));
         }
         value = NULL;
@@ -377,9 +388,31 @@ static PHP_METHOD(swoole_server_port, set)
                 zanWarn("convert to string failed.");
                 RETURN_FALSE;
             }
+            if (port->ssl_config.ecdh_curve)
+            {
+                sw_free(port->ssl_config.ecdh_curve);
+            }
             port->ssl_config.ecdh_curve = strdup(Z_STRVAL_P(value));
         }
-
+        value = NULL;
+        if (sw_zend_hash_find(vht, ZEND_STRS("ssl_dhparam"), (void **) &value) == SUCCESS)
+        {
+            if (sw_convert_to_string(value) < 0)
+            {
+                zanWarn("convert to string failed.");
+                RETURN_FALSE;
+            }
+            if (port->ssl_config.dhparam)
+            {
+                sw_free(port->ssl_config.dhparam);
+            }
+            port->ssl_config.dhparam = strdup(Z_STRVAL_P(value));
+        }
+        if (swPort_enable_ssl_encrypt(port) < 0)
+        {
+            swoole_php_fatal_error(E_ERROR, "swPort_enable_ssl_encrypt() failed.");
+            RETURN_FALSE;
+        }
     }
 #endif
 

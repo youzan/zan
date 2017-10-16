@@ -25,8 +25,6 @@
 #include "zanGlobalDef.h"
 #include "zanSocket.h"
 #include "zanWorkers.h"
-#include "zanProcess.h"
-#include "zanConnection.h"
 #include "zanLog.h"
 
 int zanPool_networker_alloc(zanProcessPool *pool);
@@ -52,7 +50,9 @@ static int zanNetworker_udp_setup(zanServer *serv);
 static int zanNetworker_dgram_loop(swThreadParam *param);
 static int zanNetworker_onPacket(swReactor *reactor, swEvent *event);
 
+static void zanReactor_disableAccept(swReactor *reactor);
 static int swReactorThread_verify_ssl_state(swListenPort *port, swConnection *conn);
+static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id);
 
 int zanPool_networker_alloc(zanProcessPool *pool)
 {
@@ -117,10 +117,10 @@ int zan_spawn_net_process(zanProcessPool *pool)
         worker->process_type = ZAN_PROCESS_NETWORKER;
         //zanDebug("fork networker process, index=%d, worker_id=%d", index, worker->worker_id);
 
-        pid = zan_fork();
+        pid = fork();
         if (pid < 0)
         {
-            zanError("zan_fork failed, pid=%d, Error:%s:%d", pid, strerror(errno), errno);
+            zanError("fork failed, pid=%d, Error:%s:%d", pid, strerror(errno), errno);
             return ZAN_ERR;
         }
         else if (pid == 0)  //worker child processor
@@ -130,7 +130,7 @@ int zan_spawn_net_process(zanProcessPool *pool)
         }
         else
         {
-            zanTrace("zan_fork child process, pid=%d", pid);
+            zanTrace("fork child process, pid=%d", pid);
             worker->worker_pid = pid;
         }
     }
@@ -260,7 +260,17 @@ static int zanNetworker_loop(zanProcessPool *pool, zanWorker *worker)
     zanServer    *serv    = ServerG.serv;
     zanServerSet *servSet = &ServerG.servSet;
 
-    ServerG.process_pid   = zan_getpid();
+#ifndef SW_WORKER_USE_SIGNALFD
+    ServerG.use_signalfd = 0;
+#elif defined(HAVE_SIGNALFD)
+    ServerG.use_signalfd = 1;
+#endif
+
+#ifdef HAVE_TIMERFD
+    ServerG.use_timerfd = 1;
+#endif
+
+    ServerG.process_pid   = getpid();
     ServerG.process_type  = ZAN_PROCESS_NETWORKER;
     ServerWG.worker_id    = worker->worker_id;
 
@@ -563,6 +573,15 @@ static int zanNetworker_onWrite(swReactor *reactor, swEvent *event)
     else if (conn->connect_notify)
     {
         zanDebug("notify worker connected, fd=%d, networker_id=%d", fd, networker_id);
+        conn->connect_notify = 0;
+
+#ifdef SW_USE_OPENSSL
+        if (conn->ssl)
+        {
+            goto listen_read_event;
+        }
+#endif
+
         swDataHead connect_event;
         connect_event.fd   = fd;
         connect_event.type = SW_EVENT_CONNECT;
@@ -573,11 +592,21 @@ static int zanNetworker_onWrite(swReactor *reactor, swEvent *event)
         {
             zanWarn("send notification SW_EVENT_CONNECT, [fd=%d] failed, networker_id=%d.", fd, networker_id);
         }
-        conn->connect_notify = 0;
+
+#ifdef SW_USE_OPENSSL
+        listen_read_event:
+#endif
         return reactor->set(reactor, fd, SW_EVENT_TCP | SW_EVENT_READ);
     }
     else if (conn->close_notify)
     {
+#ifdef SW_USE_OPENSSL
+        if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
+        {
+            return zanNetworker_close_connection(reactor, fd);
+        }
+#endif
+        conn->close_notify = 0;
         swDataHead close_event;
         close_event.fd   = fd;
         close_event.type = SW_EVENT_CLOSE;
@@ -588,7 +617,6 @@ static int zanNetworker_onWrite(swReactor *reactor, swEvent *event)
         {
             zanWarn("send notification SW_EVENT_CLOSE [fd=%d] failed, networker_id=%d.", fd, networker_id);
         }
-        conn->close_notify = 0;
         return ZAN_OK;
     }
     else if (serv->disable_notify && conn->close_force)
@@ -932,8 +960,15 @@ int zanNetworker_close_connection(swReactor *reactor, int fd)
 
     zan_stats_incr(&ServerStatsG->close_count);
     zan_stats_decr(&ServerStatsG->connection_num);
-
     zanDebug("Close Event.fd=%d|from=%d", fd, reactor->id);
+
+#ifdef SW_USE_OPENSSL
+    if (conn->ssl)
+    {
+        swSSL_close(conn);
+    }
+#endif
+
     swListenPort *port = zanServer_get_port(serv, networker_id, fd);
 
     //clear output buffer
@@ -1001,7 +1036,7 @@ static int swReactorThread_verify_ssl_state(swListenPort *port, swConnection *co
         int ret = swSSL_accept(conn);
         if (ret == SW_READY)
         {
-            if (port->ssl_client_cert_file)
+            if (port->ssl_option.client_cert_file)
             {
                 swDispatchData task;
                 ret = swSSL_get_client_certificate(conn->ssl, task.data.data, sizeof(task.data.data));
@@ -1341,4 +1376,222 @@ void zan_networker_shutdown(zanProcessPool *pool)
         }
     }
     zanPool_networker_free(pool);
+}
+
+
+static void zanReactor_disableAccept(swReactor *reactor)
+{
+    swListenPort *ls = NULL;
+
+    LL_FOREACH(ServerG.serv->listen_list, ls)
+    {
+        //non udp
+        if (!swSocket_is_dgram(ls->type))
+        {
+            reactor->del(reactor, ls->sock);
+        }
+    }
+}
+
+int zanReactor_onAccept(swReactor *reactor, swEvent *event)
+{
+    zanServer    *serv    = ServerG.serv;
+    zanServerSet *servSet = &ServerG.servSet;
+
+    int network_index = 0;
+    int networker_id  = ServerWG.worker_id;
+    socklen_t     client_addrlen = 0;
+    swListenPort *listen_host    = NULL;
+    swSocketAddress client_addr;
+
+    client_addrlen = sizeof(client_addr);
+    network_index  = zanServer_get_networker_index(networker_id);
+    listen_host    = serv->connection_list[network_index][event->fd].object;
+
+    int index = 0;
+    for (index = 0; index < SW_ACCEPT_MAX_COUNT; index++)
+    {
+        int new_fd = 0;
+        bzero(&client_addr, sizeof(swSocketAddress));
+
+#ifdef HAVE_ACCEPT4
+        new_fd = accept4(event->fd, (struct sockaddr*)&client_addr, &client_addrlen, SOCK_NONBLOCK|SOCK_CLOEXEC);
+#else
+        new_fd = accept(event->fd, (struct sockaddr*)&client_addr, &client_addrlen);
+#endif
+
+        if (new_fd < 0)
+        {
+            switch (errno)
+            {
+                case EAGAIN:
+                    return ZAN_OK;
+                case EINTR:
+                    continue;
+                default:
+                    if (errno == EMFILE || errno == ENFILE)
+                    {
+                        zanWarn("accept failed 0, errno=%d:%s", errno, strerror(errno));
+                        zanReactor_disableAccept(reactor);
+                        reactor->disable_accept = 1;
+                    }
+                    zanWarn("accept failed, errno=%d:%s", errno, strerror(errno));
+                    return ZAN_OK;
+            }
+        }
+#ifndef HAVE_ACCEPT4
+        else
+        {
+            zan_set_nonblocking(new_fd, 1);
+        }
+#endif
+
+        uint32_t connection_num = zanServer_get_connection_num(serv);
+        zanDebug("[NetWorker] Accept new connection. connection_num=%d|networker_id/reactor_id=%d|new_fd=%d", connection_num, reactor->id, new_fd);
+
+        //TODO::: too many connection; max_connection/networker_num
+        if (connection_num >= servSet->max_connection)
+        {
+            zanWarn("Too many connections [now: %d], max_connection=%d, close it.", new_fd, servSet->max_connection);
+            close(new_fd);
+            return ZAN_OK;
+        }
+
+        zanDebug("new_fd=%d, sockfd event->fd=%d, reactor->id=%d， networker_id=%d", new_fd, event->fd, reactor->id, networker_id);
+        //add to connection_list
+        swConnection *conn = zanConnection_create(serv, listen_host, new_fd, event->fd, reactor->id);
+        memcpy(&conn->info.addr, &client_addr, sizeof(client_addr));
+        conn->socket_type = listen_host->type;
+
+        zan_stats_incr(&ServerStatsG->accept_count);
+        zan_stats_incr(&ServerStatsG->connection_num);
+
+#ifdef SW_USE_OPENSSL
+        if (listen_host->ssl)
+        {
+            if (swSSL_create(conn, listen_host->ssl_context, 0) < 0)
+            {
+                bzero(conn, sizeof(swConnection));
+                close(new_fd);
+                return SW_OK;
+            }
+        }
+        else
+        {
+            conn->ssl = NULL;
+        }
+#endif
+
+        //new_connection function must before reactor->add
+        int events = SW_EVENT_READ;
+        if (serv->onConnect && !listen_host->ssl)
+        {
+            zanDebug("new clinet connect, set connect_notify=1, new_fd=%d", new_fd);
+            conn->connect_notify = 1;
+            events |= SW_EVENT_WRITE;
+        }
+
+        if (reactor->add(reactor, new_fd, SW_FD_TCP | events) < 0)
+        {
+            zanError("networker, reactor->add new_fd=%d failed, events=%d", new_fd, SW_FD_TCP | events);
+            bzero(conn, sizeof(swConnection));
+            close(new_fd);
+            return ZAN_OK;
+        }
+        //zanDebug("networker accept, reactor->add new_fd=%d, events=%d", new_fd, SW_FD_TCP | events);
+
+#ifdef SW_ACCEPT_AGAIN
+        continue;
+#else
+        break;
+#endif
+    }
+    return ZAN_OK;
+}
+
+static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id)
+{
+    int networker_id    = ServerWG.worker_id;
+    int networker_index = zanServer_get_networker_index(networker_id);
+
+    if (fd > zanServer_get_maxfd(serv, networker_index))
+    {
+        zanServer_set_maxfd(serv, networker_index, fd);
+    }
+    if (fd < zanServer_get_minfd(serv, networker_index) || 0 == zanServer_get_minfd(serv, networker_index))
+    {
+        zanServer_set_minfd(serv, networker_index, fd);
+    }
+
+    zanDebug("-------------minfd=%d, maxfd=%d", zanServer_get_minfd(serv, networker_index), zanServer_get_maxfd(serv, networker_index));
+    swConnection* connection = zanServer_get_connection(serv, networker_id, fd);
+    bzero(connection, sizeof(swConnection));
+
+    connection->fd = fd;
+    connection->active  = 1;
+    connection->from_id = reactor_id;
+    connection->from_fd = from_fd;                    //listen sockfd
+    connection->networker_id = networker_id;
+    connection->last_time    = ServerGS->server_time;
+    connection->connect_time = ServerGS->server_time;
+
+    if (ls->open_tcp_nodelay)
+    {
+        int sockopt = 1;
+        if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &sockopt, sizeof(sockopt)) < 0)
+        {
+            zanError("setsockopt(TCP_NODELAY) failed.");
+        }
+        else
+        {
+            connection->tcp_nodelay = 1;
+        }
+    }
+
+#ifdef HAVE_TCP_NOPUSH
+    //TCP NOPUSH
+    if (ls->open_tcp_nopush)
+    {
+        connection->tcp_nopush = 1;
+    }
+#endif
+
+#ifdef SW_REACTOR_SYNC_SEND
+    if (!ls->ssl)
+    {
+        connection->direct_send = 1;
+    }
+#endif
+
+#ifdef SW_REACTOR_USE_SESSION
+    uint32_t session_id = 1;
+    zanSession *session = NULL;
+
+    sw_spinlock(&ServerGS->spinlock);
+    int index = 0;
+    while (index++ < ServerG.servSet.max_connection)
+    {
+        session_id = ServerGS->session_round++;
+        if (session_id == 0)
+        {
+            session_id = 1;
+            ServerGS->session_round = 1;
+        }
+        zanDebug("session_id=%d, index=%d", session_id, index);
+        session = zanServer_get_session(serv, session_id);
+
+        if (session->accept_fd == 0)
+        {
+            session->accept_fd    = fd;
+            session->session_id   = session_id;
+            session->reactor_id   = reactor_id;
+            session->networker_id = networker_id;
+            break;
+        }
+    }
+
+    sw_spinlock_release(&ServerGS->spinlock);
+    connection->session_id = session_id;
+#endif
+    return connection;
 }

@@ -20,7 +20,6 @@
 #include "swBaseOperator.h"
 
 #include "zanGlobalDef.h"
-#include "zanSystem.h"
 #include "zanWorkers.h"
 #include "zanServer.h"
 #include "zanSocket.h"
@@ -62,6 +61,9 @@ int zanWorker_init(zanWorker *worker)
 
 void zanWorker_signal_init(void)
 {
+    swSignal_clear();
+    ServerG.use_signalfd = ServerG.enable_signalfd;
+
     swSignal_add(SIGHUP, NULL);
     swSignal_add(SIGPIPE, NULL);
     swSignal_add(SIGUSR1, zanWorker_signal_handler);
@@ -227,10 +229,10 @@ int zan_spawn_worker_process(zanProcessPool *pool)
         worker->worker_id    = index + pool->start_id;
         worker->process_type = ZAN_PROCESS_WORKER;
 
-        pid = zan_fork();
+        pid = fork();
         if (pid < 0)
         {
-            zanError("zan_fork failed, pid=%d, Error:%s:%d", pid, strerror(errno), errno);
+            zanError("fork failed, pid=%d, Error:%s:%d", pid, strerror(errno), errno);
             return ZAN_ERR;
         }
         else if (pid == 0)  //worker child processor
@@ -241,7 +243,7 @@ int zan_spawn_worker_process(zanProcessPool *pool)
         else
         {
             worker->worker_pid = pid;
-            zanTrace("zan_fork worker child process, pid=%d", pid);
+            zanTrace("fork worker child process, pid=%d", pid);
         }
     }
     return ZAN_OK;
@@ -376,7 +378,7 @@ static void zanWorker_onStop(zanProcessPool *pool, zanWorker *worker)
 
 int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
 {
-    ServerG.process_pid    = zan_getpid();
+    ServerG.process_pid    = getpid();
     ServerG.process_type   = ZAN_PROCESS_WORKER;
     ServerWG.worker_id     = worker->worker_id;
 
@@ -396,6 +398,13 @@ int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
     reactor->add(reactor, pipe_worker, SW_FD_PIPE | SW_EVENT_READ);
     reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_READ, zanWorker_onPipeRead);
     reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_WRITE, swReactor_onWrite);
+
+#ifdef HAVE_SIGNALFD
+    if (ServerG.use_signalfd)
+    {
+        swSignalfd_setup(ServerG.main_reactor);
+    }
+#endif
 
     pool->onWorkerStart(pool, worker);
     zanDebug("worker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, event=%d, pipe_master=%d",
@@ -468,7 +477,7 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             //package end
             if (task->info.type == SW_EVENT_PACKAGE_END)
             {
-				serv->onReceive(serv, task);
+                serv->onReceive(serv, task);
                 ServerWG.request_count++;
                 zan_stats_incr(&ServerStatsG->request_count);
                 zan_stats_incr(&ServerStatsG->workers_state[worker_id].total_request_count);

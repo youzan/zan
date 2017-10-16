@@ -541,7 +541,7 @@ PHP_FUNCTION(swoole_async_set)
     if (php_swoole_array_get_value(vht, "enable_signalfd", value))
     {
         convert_to_boolean(value);
-        ServerG.use_signalfd = Z_BVAL_P(value);
+        ServerG.enable_signalfd = Z_BVAL_P(value);
     }
 
     value = NULL;
