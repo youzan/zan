@@ -96,7 +96,7 @@ static sw_inline void swHashMap_node_free(swHashMap *hmap, swHashMap_node *node)
 {
     swHashMap_node_dtor(hmap, node);
     sw_free(node->key_str);
-    //sw_free(node);
+    sw_free(node);
 }
 
 static sw_inline int swHashMap_node_add(swHashMap_node *root, swHashMap_node *add)
