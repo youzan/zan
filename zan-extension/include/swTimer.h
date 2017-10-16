@@ -46,7 +46,7 @@ typedef struct _swTimer_node
     int64_t exec_msec;
     uint32_t interval;
     long id;
-    uint8_t remove;
+    int remove;
     uint8_t used_type;       //参考 @USER_TYPE
 } swTimer_node;
 
