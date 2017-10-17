@@ -1581,7 +1581,7 @@ PHP_METHOD(swoole_server, set)
         servSet->daemonize = (uint16_t)Z_BVAL_P(value);
     }
 
-    //task_worker_num
+    //net_worker_num
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("net_worker_num"), (void **) &value) == SUCCESS)
     {

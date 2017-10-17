@@ -318,10 +318,10 @@ static void tcpClient_timeout(swTimer* timer,swTimer_node* node)
     }
 
     if(swTimer_del(timer,node->id) < 0)
-	{
-		//zanWarn("can not delete this timer");
-		return;
-	}
+    {
+        //zanWarn("can not delete this timer");
+        return;
+    }
 }
 
 static void client_onConnect(swClient *cli)
@@ -1715,7 +1715,7 @@ check_return:
 
 static PHP_METHOD(swoole_client, isConnected)
 {
-    swClient *cli = client_get_ptr(getThis() TSRMLS_CC);
+    swClient *cli = swoole_get_object(getThis());
     if (!cli || !cli->socket || cli->released)
     {
         RETURN_FALSE;
