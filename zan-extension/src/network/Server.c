@@ -97,15 +97,16 @@ static int swServer_start_check(swServer *serv)
     }
 
     //check thread num
-    serv->reactor_num  = (serv->reactor_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU)?
-                            (SW_CPU_NUM * SW_MAX_THREAD_NCPU):serv->reactor_num;
+    if (serv->reactor_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU) {
+        swWarn("reactor_num is larger than %d (cpu num * 4)", SW_CPU_NUM * SW_MAX_THREAD_NCPU);
+    }
 
-    serv->worker_num  = (serv->worker_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU)?
-                            (SW_CPU_NUM * SW_MAX_THREAD_NCPU):serv->worker_num;
+    if (serv->worker_num > SW_CPU_NUM * SW_MAX_THREAD_NCPU) {
+        swWarn("worker_num is larger than %d (cpu num * 4)", SW_CPU_NUM * SW_MAX_THREAD_NCPU);
+    }
 
-    serv->reactor_num = (serv->worker_num < serv->reactor_num)? serv->worker_num:
+    serv->reactor_num = (serv->worker_num < serv->reactor_num) ? serv->worker_num:
                                 serv->reactor_num;
-
     if (SwooleG.max_sockets > 0 && serv->max_connection > SwooleG.max_sockets)
     {
         swWarn("serv->max_connection is exceed the maximum value[%d].", SwooleG.max_sockets);
