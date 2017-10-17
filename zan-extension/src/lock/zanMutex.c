@@ -175,7 +175,6 @@ static int zanMutex_free(zanLock *lock)
         return ZAN_ERR;
     }
 
-    //return pthread_mutex_destroy(&lock->object.mutex._lock);
     ret = pthread_mutex_destroy(&lock->object.mutex._lock);
     if (0 != ret) {
         zanError("pthread_mutex_destroy return ret=%d, errno=%d:%s", ret, errno, strerror(errno));

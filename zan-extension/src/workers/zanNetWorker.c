@@ -939,6 +939,7 @@ int zanNetworker_send2worker(void *data, int len, uint16_t worker_id)
 }
 
 //close connection
+//TODO:::
 int zanNetworker_close_connection(swReactor *reactor, int fd)
 {
     zanServer *serv = ServerG.serv;
@@ -954,7 +955,7 @@ int zanNetworker_close_connection(swReactor *reactor, int fd)
 
     if (!conn->removed)
     {
-        zanWarn("conn->removed=%d, fd=%d, del reactor", conn->removed, fd);
+        zanDebug("conn->removed=%d, fd=%d, del reactor", conn->removed, fd);
         reactor->del(reactor, fd);
     }
 

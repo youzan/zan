@@ -460,7 +460,7 @@ static void zanTaskworker_onStop(zanProcessPool *pool, zanWorker *worker)
         zanWarn("taskworker: call taskworker onStop, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
         serv->onWorkerStop(serv, worker->worker_id);
     }
-    ///TODO:::::,,,,,,
+    ///TODO
     zanWorker_free(worker);
 }
 
@@ -474,12 +474,10 @@ int zanTaskworker_onTask(zanProcessPool *pool, swEventData *task)
     current_task = task;
     if (task->info.type == SW_EVENT_PIPE_MESSAGE)
     {
-        zanWarn("call serv onPipeMessage");
         serv->onPipeMessage(serv, task);
     }
     else
     {
-        zanWarn("call serv onTask");
         ret = serv->onTask(serv, task);
     }
     return ret;

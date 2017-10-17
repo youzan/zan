@@ -18,10 +18,9 @@ class TcpServer
             'dispatch_mode' => 3,
             'open_tcp_nodelay' => 1,
             'open_cpu_affinity' => 1,
-            //'daemonize' => 1,
-            'reactor_num' => 2,
-            'worker_num' => 4,
-			'task_worker_num' => 8,
+            'net_worker_num' => 1,
+            'worker_num' => 1,
+			'task_worker_num' => 1,
             'max_request' => 100000,
 			'log_file' => '/tmp/swoole_server.log',
         ]);
@@ -46,14 +45,14 @@ class TcpServer
         $this->swooleServer->start();
     }
 
-    public function onConnect()
+    public function onConnect(swoole_server $swooleServer, int $fd, int $from_id)
     {
 	    debug_log("connecting ......");
     }
 
-    public function onClose()
+    public function onClose(swoole_server $swooleServer, $fd, $reactorId)
     {
-        debug_log("closing .....");
+        debug_log("closing, fd=$fd, reactorId=$reactorId");
     }
 
     public function onStart(swoole_server $swooleServer)
@@ -71,7 +70,7 @@ class TcpServer
         debug_log("worker #$workerId starting .....");
         if ($workerId == 0) {
             swoole_timer_after(5000, function () {
-                $this->swooleServer->shutdown();
+                //$this->swooleServer->shutdown();
             });
         }
     }
@@ -88,7 +87,7 @@ class TcpServer
 
     public function onReceive(swoole_server $swooleServer, $fd, $fromId, $data)
     {
-        //echo "server receive data: $data\n";
+        echo "server receive data: $data\n";
 		$param = array(
 			'fd' => $fd,
 			'data' => $data,
@@ -106,6 +105,6 @@ class TcpServer
 	
     public function onFinish(swoole_server $swooleServer, $worker_task_id, $data)
 	{
-        echo "onFinish: worker_task_id=$worker_task_id, fd=$data\n";
+        debug_log("onFinish: worker_task_id=$worker_task_id, fd=$data\n");
 	}
 }
