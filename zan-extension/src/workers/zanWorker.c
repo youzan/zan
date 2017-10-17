@@ -367,7 +367,7 @@ static void zanWorker_onStop(zanProcessPool *pool, zanWorker *worker)
     zanServer *serv = ServerG.serv;
     if (serv->onWorkerStop)
     {
-        //zanWarn("worker: call user worker onStop, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
+        zanWarn("worker: call user worker onStop, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
         serv->onWorkerStop(serv, worker->worker_id);
     }
 

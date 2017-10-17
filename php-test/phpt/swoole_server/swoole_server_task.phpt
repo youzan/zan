@@ -11,75 +11,62 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 下午4:34
- */
+
 require_once __DIR__ . "/../inc/zan.inc";
 
-/*
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/opcode_server.php";
-$port = get_one_free_port();
-//
-start_server($simple_tcp_server, TCP_SERVER_HOST, $port);
-//
-suicide(2000);
-usleep(500 * 1000);
+$host = TCP_SERVER_HOST;
+$port = TCP_SERVER_PORT;
 
-makeTcpClient(TCP_SERVER_HOST, $port, function(\swoole_client $cli) {
-    $r = $cli->send(opcode_encode("task", ['{"fd":2, "data":"SUCCESS"}']));
-    assert($r !== false);
-}, function(\swoole_client $cli, $recv) {
-    list($op, $data) = opcode_decode($recv);
-    // TODO coredump
-    // 会收到两条消息, 第二条会收到success
-    var_dump($data);
+$pid = pcntl_fork();
+if ($pid < 0) {
+    exit;
+}
 
-//    swoole_timer_after(100, function() {
-        // swoole_event_exit();
-//        echo "SUCCESS";
-//    });
-});
-*/
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/tcp_task_server.php";
-start_server($simple_tcp_server, TCP_SERVER_HOST, TCP_SERVER_PORT);
+if ($pid === 0) {
+    usleep(1000);
 
-suicide(5000);
+    $client = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
+    
+    //设置事件回调函数
+    $client->on("connect", function($cli) {
+        $cli->send("Hello Server!\n");
+        $cli->close();
+    });
+    $client->on("receive", function($cli, $data){
+        //echo "Client Received: ".$data."\n";
+    });
+    $client->on("error", function($cli){
+        echo "Clinet Error.\n";
+    });
+    $client->on("close", function($cli){
+        //echo "Client Close.\n";
+    });
+    //发起网络连接
+    $client->connect($host, $port, 0.5);
 
-$cli = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
+} else {
 
+    $serv = new swoole_server($host, $port);
+    $serv->set([
+        'worker_num' => 1,
+        'net_worker_num' => 1,
+        'log_file' => '/dev/null',
+    ]);
 
-$cli->on("connect", function(swoole_client $cli) {
-    swoole_timer_clear($cli->timeo_id);
-    assert($cli->isConnected() === true);
-    $cli->send("Test swoole_server::task Interface.");
-});
+    $serv->on('Connect', function ($serv, $fd){
+        echo "Server: onConnected, client_fd=$fd\n";
+    });
 
-$cli->on("receive", function(swoole_client $cli, $data){
-    echo "$data\n";
-    $cli->close();
-    assert($cli->isConnected() === false);
-});
+    $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
+        echo "Server: Receive data: $data\n";
+        //pcntl_waitpid($pid, $status);
+        $serv->shutdown();
+    });
+    $serv->start();
+}
 
-$cli->on("error", function(swoole_client $cli) {
-    print("error");
-});
-
-$cli->on("close", function(swoole_client $cli) {
-    swoole_event_exit();
-    echo "SUCCESS";
-});
-
-$cli->connect(TCP_SERVER_HOST, TCP_SERVER_PORT);
-$cli->timeo_id = swoole_timer_after(1000, function() use($cli) {
-    print("connect timeout");
-    $cli->close();
-    assert($cli->isConnected() === false);
-});
 
 ?>
 --EXPECT--
-Test swoole_server::task Interface.
-SUCCESS
+Server: onConnected, client_fd=1
+Server: Receive data: Hello Server!

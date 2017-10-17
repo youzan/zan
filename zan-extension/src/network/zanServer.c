@@ -481,7 +481,9 @@ int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId)
         return ZAN_ERR;
     }
 
-    int ret = ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_worker, &ev_data, sendn);
+    int ret = (ServerG.main_reactor)?
+              ServerG.main_reactor->write(ServerG.main_reactor, worker->pipe_worker, &ev_data, sendn):
+              swSocket_write_blocking(worker->pipe_worker, &ev_data, sendn);
 
     return ret;
 }
