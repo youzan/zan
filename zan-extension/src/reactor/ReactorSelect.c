@@ -81,6 +81,10 @@ void swReactorSelect_free(swReactor *reactor)
 {
     swFdList_node *ev;
     swReactorSelect *object = reactor->object;
+	if(object == NULL)
+	{
+		return;
+	}
     LL_FOREACH(object->fds, ev)
     {
         LL_DELETE(object->fds, ev);

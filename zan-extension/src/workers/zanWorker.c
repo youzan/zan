@@ -160,7 +160,7 @@ void zanWorker_signal_handler(int signo)
 
 void zanWorker_free(zanWorker *worker)
 {
-    if (worker->send_shm)
+    if (worker->send_shm != NULL)
     {
         zan_shm_free(worker->send_shm);
     }
@@ -371,9 +371,16 @@ static void zanWorker_onStop(zanProcessPool *pool, zanWorker *worker)
         serv->onWorkerStop(serv, worker->worker_id);
     }
 
-    ServerG.main_reactor->free(ServerG.main_reactor);
-    sw_free(ServerG.main_reactor);
-    zanWorker_free(worker);
+	if(ServerG.main_reactor != NULL)
+	{
+		ServerG.main_reactor->free(ServerG.main_reactor);
+		sw_free(ServerG.main_reactor);
+	}
+	 
+	if(worker != NULL)
+	{
+		zanWorker_free(worker);
+	} 
 }
 
 int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
@@ -411,7 +418,7 @@ int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
             worker->worker_id, ServerG.process_type, ServerG.process_pid, worker->pipe_worker, SW_FD_PIPE | SW_EVENT_READ, worker->pipe_master);
 
     int ret = ServerG.main_reactor->wait(ServerG.main_reactor, NULL);
-    zanWarn("worker main_reactor wait return, ret=%d", ret);
+    zanDebug("worker main_reactor wait return, ret=%d", ret);
 
     pool->onWorkerStop(pool, worker);
 
