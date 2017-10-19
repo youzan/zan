@@ -153,7 +153,7 @@ static void zanNetWorker_signal_init(void)
     swSignal_set(SIGPIPE, NULL, 1, 0);
     swSignal_set(SIGUSR1, NULL, 1, 0);
     swSignal_set(SIGUSR2, NULL, 1, 0);
-    //swSignal_set(SIGINT, zanNetWorker_signal_handler, 1, 0);
+    swSignal_set(SIGINT, zanNetWorker_signal_handler, 1, 0);
     swSignal_set(SIGQUIT, zanNetWorker_signal_handler, 1, 0);
     swSignal_set(SIGTERM, zanNetWorker_signal_handler, 1, 0);
     swSignal_set(SIGALRM, swSystemTimer_signal_handler, 1, 0);
@@ -1299,17 +1299,13 @@ zan_pid_t zanNetWorker_spawn(zanWorker *worker)
         //child
         case 0:
         {
-            if (pool->onWorkerStart != NULL)
+            if(zanWorker_init(worker) < 0)
             {
-                pool->onWorkerStart(pool, worker);
+                zanError("init worker failed");
+                return ZAN_ERR;
             }
 
             int ret_code = pool->main_loop(pool, worker);
-
-            if (pool->onWorkerStop != NULL)
-            {
-                pool->onWorkerStop(pool, worker);
-            }
             exit(ret_code);
             break;
         }
@@ -1357,11 +1353,13 @@ static void zanPool_networker_free(zanProcessPool *pool)
         swHashMap_free(pool->map);
     }
 
+#if 0
     for (index = 0; index < ServerG.servSet.net_worker_num; index++)
     {
-        //TODO:::???
-        zanWorker_free(&pool->workers[index]);
+        //zanWorker_free(&pool->workers[index]);
     }
+#endif
+
     zan_shm_free(pool->workers);
 }
 

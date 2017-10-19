@@ -68,7 +68,7 @@ void zanWorker_signal_init(void)
     swSignal_add(SIGPIPE, NULL);
     swSignal_add(SIGUSR1, zanWorker_signal_handler);
     swSignal_add(SIGUSR2, NULL);
-    //swSignal_add(SIGINT, zanWorker_signal_handler);
+    swSignal_add(SIGINT, zanWorker_signal_handler);
     swSignal_add(SIGQUIT, zanWorker_signal_handler);
     swSignal_add(SIGTERM, zanWorker_signal_handler);
     swSignal_add(SIGALRM, swSystemTimer_signal_handler);
@@ -163,6 +163,7 @@ void zanWorker_free(zanWorker *worker)
     if (worker->send_shm != NULL)
     {
         zan_shm_free(worker->send_shm);
+        worker->send_shm = NULL;
     }
     worker->lock.free(&worker->lock);
     return;
@@ -371,16 +372,16 @@ static void zanWorker_onStop(zanProcessPool *pool, zanWorker *worker)
         serv->onWorkerStop(serv, worker->worker_id);
     }
 
-	if(ServerG.main_reactor != NULL)
-	{
-		ServerG.main_reactor->free(ServerG.main_reactor);
-		sw_free(ServerG.main_reactor);
-	}
-	 
-	if(worker != NULL)
-	{
-		zanWorker_free(worker);
-	} 
+    if(ServerG.main_reactor != NULL)
+    {
+        ServerG.main_reactor->free(ServerG.main_reactor);
+        sw_free(ServerG.main_reactor);
+    }
+
+    if(worker != NULL)
+    {
+        zanWorker_free(worker);
+    }
 }
 
 int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
@@ -712,12 +713,12 @@ zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker)
     //worker child processor
     else if (pid == 0)
     {
-        //int ret = zanWorker_loop(pool, worker);
-		if(zanWorker_init(worker) < 0)
-		{
-			zanError("init worker failed");
-			return ZAN_ERR;
-		}
+        if(zanWorker_init(worker) < 0)
+        {
+            zanError("init worker failed");
+            return ZAN_ERR;
+        }
+
         int ret = pool->main_loop(pool, worker);
         exit(ret);
     }
@@ -783,11 +784,13 @@ static void zanPool_worker_free(zanProcessPool *pool)
         swHashMap_free(pool->map);
     }
 
+#if 0
     for (index = 0; index < ServerG.servSet.worker_num; ++index)
     {
-        //TODO:::???
-        zanWorker_free(&pool->workers[index]);
+        //zanWorker_free(&pool->workers[index]);
     }
+#endif
+
     zan_shm_free(pool->workers);
 }
 
