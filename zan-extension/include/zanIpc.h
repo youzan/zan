@@ -99,7 +99,7 @@ typedef struct _zanMsgQueue
     int is_nonblock;
     int msg_id;
     int ipc_wait;
-    //uint8_t deleted;
+    uint8_t deleted;
     long type;
 
     int (*pop)(struct _zanMsgQueue *, zanQueue_Data *buffer, int length);

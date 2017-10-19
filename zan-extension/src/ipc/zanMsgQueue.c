@@ -108,11 +108,19 @@ int zanMsgQueue_close(zanMsgQueue *pMq)
         return ZAN_ERR;
     }
 
-    ret = msgctl(pMq->msg_id, IPC_RMID, 0);
-    if (-1 == ret)
-    {
-        zanError("msgctl failed, errno=%d:%s", errno, strerror(errno));
-        return ZAN_ERR;
-    }
+	if(pMq->deleted == 1)
+	{
+		return ZAN_OK;
+	}
+	else
+	{
+		ret = msgctl(pMq->msg_id, IPC_RMID, 0);
+		if (-1 == ret)
+		{
+			zanError("msgctl failed, errno=%d:%s", errno, strerror(errno));
+			return ZAN_ERR;
+		}
+	}
+
     return ZAN_OK;
 }
