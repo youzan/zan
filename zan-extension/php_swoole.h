@@ -298,6 +298,7 @@ PHP_METHOD(swoole_server, denyRequest);
 PHP_METHOD(swoole_server, exit);
 
 //test
+PHP_METHOD(swoole_server, getWorkerId);
 PHP_METHOD(swoole_server, getWorkerType);
 PHP_METHOD(swoole_server, getWorkerPid);
 

@@ -1,5 +1,5 @@
 --TEST--
-swoole_server:
+swoole_server: set
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--

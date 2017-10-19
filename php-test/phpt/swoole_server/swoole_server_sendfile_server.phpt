@@ -1,5 +1,5 @@
 --TEST--
-swoole_server: getClientInfo
+swoole_server: sendfile server
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--
@@ -11,6 +11,7 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
+
 require_once __DIR__ . "/../inc/zan.inc";
 
 $host = TCP_SERVER_HOST1;
@@ -29,14 +30,15 @@ if ($pid === 0) {
     
     //设置事件回调函数
     $client->on("connect", function($cli) {
-        //$cli->send("Hello Server!");
+
     });
 
     $client->on("receive", function($cli, $data){
         echo "Client Received: $data";
-        sleep(1);
+        $cli->send("Hello Server!");
         $cli->close();
     });
+
     $client->on("error", function($cli){
         echo "Clinet Error.";
     });
@@ -55,21 +57,17 @@ if ($pid === 0) {
         'log_file' => '/tmp/test_log.log',
     ]);
 
-    $serv->on('Connect', function ($serv, $fd){
+    $file_path = __DIR__ . "/sendfile.txt";
+
+    $serv->on('Connect', function ($serv, $fd) use ($file_path) {
         //echo "Server: onConnected, client_fd=$fd\n";
-        $data= $serv->getClientInfo($fd);
-
-        var_dump($data['server_port']);
-        var_dump($data['socket_type']);
-        var_dump($data['remote_ip']);
-        var_dump($data['from_networker_id']);
-
-        $serv->shutdown();
-
+        $serv->sendfile($fd, $file_path);        
     });
 
-    $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
+    $serv->on('Receive', function ($serv, $fd, $from_id, $data) {
         echo "Server: Receive data: $data\n";
+        //pcntl_waitpid($pid, $status);
+        $serv->shutdown();
     });
     $serv->start();
 }
@@ -77,7 +75,6 @@ if ($pid === 0) {
 
 ?>
 --EXPECT--
-int(9011)
-int(1)
-string(9) "127.0.0.1"
-int(1)
+Client Received: sendifle
+sendfile
+Server: Receive data: Hello Server!

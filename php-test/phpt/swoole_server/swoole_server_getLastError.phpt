@@ -1,5 +1,5 @@
 --TEST--
-swoole_server: get last error
+swoole_server: getLastError
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--
@@ -14,24 +14,38 @@ assert.quiet_eval=0
 
 require_once __DIR__ . "/../inc/zan.inc";
 
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/opcode_server.php";
-$port = get_one_free_port();
+$host = TCP_SERVER_HOST1;
+$port = TCP_SERVER_PORT1;
 
-start_server($simple_tcp_server, TCP_SERVER_HOST, $port);
 
-suicide(2000);
-usleep(500 * 1000);
+$serv = new swoole_server($host, $port);
+$serv->set([
+    'worker_num' => 1,
+    'net_worker_num' => 1,
+    'log_file' => '/tmp/test_log.log',
+]);
 
-makeTcpClient(TCP_SERVER_HOST, $port, function(\swoole_client $cli) {
-    $r = $cli->send(opcode_encode("getLastError", []));
-    assert($r !== false);
-}, function(\swoole_client $cli, $recv) {
-    list($op, $data) = opcode_decode($recv);
-    assert($data === 0);
-    swoole_event_exit();
-    echo "SUCCESS";
+$serv->on('Connect', function ($serv, $fd){
+    //echo "Server: onConnected, client_fd=$fd\n";
 });
+
+$serv->on('Receive', function ($serv, $fd, $from_id, $data) {
+    echo "Server: Receive data: $data";
+});
+
+$serv->on('WorkerStart', function ($serv, $worker_id) {
+    if (0 == $worker_id) {
+        $err = $serv->getLastError();
+        echo "lastError: $err";
+        swoole_timer_after(1000, function() use($serv) {
+            $serv->shutdown();
+        });
+    }
+});
+
+
+$serv->start();
 
 ?>
 --EXPECT--
-SUCCESS
+lastError: 0
