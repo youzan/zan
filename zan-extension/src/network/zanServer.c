@@ -234,12 +234,6 @@ static int zanServer_start_check(zanServer *serv)
         }
     }
 
-	if(servSet->worker_num > ZAN_CPU_NUM * SW_MAX_THREAD_NCPU)
-	{
-		swWarn("worker_num is larger than %d (cpu num * 4)", ZAN_CPU_NUM * SW_MAX_THREAD_NCPU);
-		servSet->worker_num = ZAN_CPU_NUM * SW_MAX_THREAD_NCPU;
-	}
-	
     if (ServerG.max_sockets > 0 && servSet->max_connection > ServerG.max_sockets)
     {
         zanWarn("serv->max_connection is exceed the maximum value[%d].", ServerG.max_sockets);

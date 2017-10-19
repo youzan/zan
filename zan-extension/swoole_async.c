@@ -459,23 +459,16 @@ PHP_FUNCTION(swoole_async_write)
 
     convert_to_string(filename);
 
-    long fd = (long) swHashMap_find(php_swoole_open_files, Z_STRVAL_P(filename), Z_STRLEN_P(filename));
-    if (fd == 0)
-    {
-        int open_flag = O_WRONLY | O_CREAT;
-        if (offset < 0)
-        {
-            open_flag |= O_APPEND;
-        }
+	long fd = -1;
+	int open_flag = O_WRONLY | O_CREAT;
+	open_flag |= (offset < 0)? O_APPEND:0;
 
-        fd = open(Z_STRVAL_P(filename), open_flag, 0644);
-        if (fd < 0)
-        {
-            swoole_php_fatal_error(E_WARNING, "open(%s, %d) failed. Error: %s[%d]", Z_STRVAL_P(filename), open_flag, strerror(errno), errno);
-            RETURN_FALSE;
-        }
-        swHashMap_add(php_swoole_open_files, Z_STRVAL_P(filename), Z_STRLEN_P(filename), (void*) fd);
-    }
+	fd = open(Z_STRVAL_P(filename), open_flag, 0644);
+	if (fd < 0)
+	{
+		swoole_php_fatal_error(E_WARNING, "open(%s, %d) failed. Error: %s[%d]", Z_STRVAL_P(filename), open_flag, strerror(errno), errno);
+		RETURN_FALSE;
+	}
 
     offset = (offset < 0)? 0:offset;
 

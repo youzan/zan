@@ -14,8 +14,8 @@ assert.quiet_eval=0
 
 require_once __DIR__ . "/../inc/zan.inc";
 
-$host = TCP_SERVER_HOST;
-$port = TCP_SERVER_PORT;
+$host = TCP_SERVER_HOST1;
+$port = TCP_SERVER_PORT1;
 
 $pid = pcntl_fork();
 if ($pid < 0) {
@@ -50,23 +50,33 @@ if ($pid === 0) {
     $serv->set([
         'worker_num' => 1,
         'net_worker_num' => 1,
-        'log_file' => '/dev/null',
+        'task_worker_num' => 1,
+        'log_file' => '/tmp/test_log.log',
     ]);
 
     $serv->on('Connect', function ($serv, $fd){
-        echo "Server: onConnected, client_fd=$fd\n";
+        //echo "Server: onConnected, client_fd=$fd\n";
     });
 
     $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
-        echo "Server: Receive data: $data\n";
-        //pcntl_waitpid($pid, $status);
+        echo "Server: Receive data: $data";
+        $serv->task($data);
+    });
+
+    $serv->on('Task', function (swoole_server $serv, $task_id, $fromId, $data){
+        echo "Server: Task data: $data";
         $serv->shutdown();
     });
+
+    $serv->on('Finish', function (swoole_server $serv, $worker_task_id, $data){
+        //echo "Server: Finish data: $data";
+        //$serv->shutdown();
+    });
+
     $serv->start();
 }
 
-
 ?>
 --EXPECT--
-Server: onConnected, client_fd=1
 Server: Receive data: Hello Server!
+Server: Task data: Hello Server!

@@ -1,5 +1,5 @@
 --TEST--
-swoole_server: getClientInfo
+swoole_server: send
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--
@@ -11,11 +11,11 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
+
 require_once __DIR__ . "/../inc/zan.inc";
 
 $host = TCP_SERVER_HOST1;
 $port = TCP_SERVER_PORT1;
-
 
 $pid = pcntl_fork();
 if ($pid < 0) {
@@ -29,12 +29,11 @@ if ($pid === 0) {
     
     //设置事件回调函数
     $client->on("connect", function($cli) {
-        //$cli->send("Hello Server!");
+        $cli->send("Hello Server!");
+        
     });
-
     $client->on("receive", function($cli, $data){
         echo "Client Received: $data";
-        sleep(1);
         $cli->close();
     });
     $client->on("error", function($cli){
@@ -57,19 +56,13 @@ if ($pid === 0) {
 
     $serv->on('Connect', function ($serv, $fd){
         //echo "Server: onConnected, client_fd=$fd\n";
-        $data= $serv->getClientInfo($fd);
-
-        var_dump($data['server_port']);
-        var_dump($data['socket_type']);
-        var_dump($data['remote_ip']);
-        var_dump($data['from_networker_id']);
-
-        $serv->shutdown();
-
+        $serv->send($fd, "Hello Client!");
     });
 
-    $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
+    $serv->on('Receive', function ($serv, $fd, $from_id, $data) {
         echo "Server: Receive data: $data\n";
+        //pcntl_waitpid($pid, $status);
+        $serv->shutdown();
     });
     $serv->start();
 }
@@ -77,7 +70,5 @@ if ($pid === 0) {
 
 ?>
 --EXPECT--
-int(9011)
-int(1)
-string(9) "127.0.0.1"
-int(1)
+Server: Receive data: Hello Server!
+Client Received: Hello Client!

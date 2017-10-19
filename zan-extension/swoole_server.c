@@ -224,7 +224,7 @@ ZEND_END_ARG_INFO()
 static zend_function_entry swoole_server_methods[] = {
     PHP_ME(swoole_server, __construct, arginfo_swoole_server__construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
     PHP_ME(swoole_server, listen, arginfo_swoole_server_listen, ZEND_ACC_PUBLIC)
-    PHP_MALIAS(swoole_server, addlistener, listen, arginfo_swoole_server_listen, ZEND_ACC_PUBLIC)
+    PHP_MALIAS(swoole_server, addListener, listen, arginfo_swoole_server_listen, ZEND_ACC_PUBLIC)
     PHP_ME(swoole_server, on, arginfo_swoole_server_on, ZEND_ACC_PUBLIC)
     PHP_ME(swoole_server, set, arginfo_swoole_server_set_oo, ZEND_ACC_PUBLIC)
     PHP_ME(swoole_server, start, arginfo_swoole_void, ZEND_ACC_PUBLIC)
@@ -255,6 +255,7 @@ static zend_function_entry swoole_server_methods[] = {
     PHP_ME(swoole_server, bind, arginfo_swoole_server_bind, ZEND_ACC_PUBLIC)
 
     //
+    PHP_ME(swoole_server, getWorkerId, arginfo_swoole_void, ZEND_ACC_PUBLIC)
     PHP_ME(swoole_server, getWorkerType, arginfo_swoole_void, ZEND_ACC_PUBLIC)
     PHP_ME(swoole_server, getWorkerPid, arginfo_swoole_void, ZEND_ACC_PUBLIC)
 
@@ -603,9 +604,10 @@ static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
         return;
     }
 
-    //让请求可以开始接受
-    if (zanServer_tcp_deny_exit(serv, worker_id) < 0) {
-        zanWarn("zanServer_tcp_deny_exit failed, %d.", worker_id);
+    if (is_worker()) {
+        ServerGS->event_workers.workers[worker_id].deny_request = 0;
+    } else if (is_taskworker()) {
+        ServerGS->task_workers.workers[worker_id - ServerG.servSet.worker_num].deny_request = 0;
     }
 
     zval *retval = NULL;
@@ -2580,6 +2582,7 @@ PHP_METHOD(swoole_server, finish)
     SW_CHECK_RETURN(php_swoole_task_finish(serv, data TSRMLS_CC));
 }
 
+///TODO:::似乎没有实际用处
 PHP_METHOD(swoole_server, bind)
 {
     if (!ServerGS->started)
@@ -2616,6 +2619,7 @@ PHP_METHOD(swoole_server, bind)
     SW_CHECK_RETURN(ret);
 }
 
+//TODO:::应当在 networker 进程中运行???
 PHP_METHOD(swoole_server, getSocket)
 {
     long port = 0;
@@ -2746,7 +2750,7 @@ PHP_METHOD(swoole_server, getClientInfo)
     }
 
     array_init(return_value);
-    if (ServerG.servSet.dispatch_mode == ZAN_DISPATCH_UIDMOD)
+    if (conn->uid > 0 || ServerG.servSet.dispatch_mode == ZAN_DISPATCH_UIDMOD)
     {
         add_assoc_long(return_value, "uid", conn->uid);
     }
@@ -2996,6 +3000,7 @@ PHP_METHOD(swoole_server, getLastError)
     RETURN_LONG(ServerG.error);
 }
 
+//TODO::用处不大, 而且无配对的 acceptRequest 接口
 PHP_METHOD(swoole_server, denyRequest)
 {
     if (!ServerGS->started)
@@ -3029,6 +3034,11 @@ PHP_METHOD(swoole_server, exit)
 #endif
 
 ///for test
+PHP_METHOD(swoole_server, getWorkerId)
+{
+    RETURN_LONG(ServerWG.worker_id);
+}
+
 PHP_METHOD(swoole_server, getWorkerType)
 {
     RETURN_LONG(ServerG.process_type);
