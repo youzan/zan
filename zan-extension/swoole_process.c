@@ -454,7 +454,7 @@ static PHP_METHOD(swoole_process, useQueue)
         RETURN_FALSE;
     }
 
-    //queue->deleted = 0;
+    queue->deleted = 0;
     process->queue = queue;
     process->ipc_mode = mode;
     RETURN_TRUE;
@@ -465,7 +465,7 @@ static PHP_METHOD(swoole_process, freeQueue)
     zanWorker *process = swoole_get_object(getThis());
     if (process && process->queue)
     {
-        //process->queue->deleted = 1;
+        process->queue->deleted = 1;
         process->queue->close(process->queue);
         swoole_efree(process->queue);
         process->queue = NULL;

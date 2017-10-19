@@ -713,6 +713,11 @@ zan_pid_t zanMaster_spawnworker(zanProcessPool *pool, zanWorker *worker)
     else if (pid == 0)
     {
         //int ret = zanWorker_loop(pool, worker);
+		if(zanWorker_init(worker) < 0)
+		{
+			zanError("init worker failed");
+			return ZAN_ERR;
+		}
         int ret = pool->main_loop(pool, worker);
         exit(ret);
     }
