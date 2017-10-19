@@ -598,6 +598,7 @@ zan_pid_t zanTaskWorker_spawn(zanWorker *worker)
         //child
         case 0:
         {
+			
             int ret_code = pool->main_loop(pool, worker);
             exit(ret_code);
         }
