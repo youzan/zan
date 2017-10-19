@@ -1892,7 +1892,7 @@ PHP_METHOD(swoole_server, on)
             zend_update_property(swoole_server_class_entry_ptr, getThis(), property_name, l_property_name, cb TSRMLS_CC);
             php_sw_server_callbacks[index] = sw_zend_read_property(swoole_server_class_entry_ptr, getThis(), property_name,
                                                                     l_property_name, 0 TSRMLS_CC);
-            //sw_copy_to_stack(php_sw_server_callbacks[index], _php_sw_server_callbacks[index]);
+            sw_copy_to_stack(php_sw_server_callbacks[index], _php_sw_server_callbacks[index]);
             break;
         }
     }
