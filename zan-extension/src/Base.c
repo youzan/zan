@@ -96,7 +96,7 @@ void zan_init(void)
 
     struct rlimit rlmt;
     ServerG.max_sockets = (getrlimit(RLIMIT_NOFILE, &rlmt) < 0) ?
-                          1024:(uint32_t) rlmt.rlim_cur;
+                          1024:(int) rlmt.rlim_cur;
 
 #ifdef __MACH__
     ServerG.servSet.socket_buffer_size = 256 * 1024;

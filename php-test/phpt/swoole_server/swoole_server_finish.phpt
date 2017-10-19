@@ -1,5 +1,5 @@
 --TEST--
-swoole_server:
+swoole_server: finish
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--
@@ -13,9 +13,9 @@ assert.quiet_eval=0
 <?php
 
 require_once __DIR__ . "/../inc/zan.inc";
+$host = TCP_SERVER_HOST1;
+$port = TCP_SERVER_PORT1;
 
-$host = TCP_SERVER_HOST;
-$port = TCP_SERVER_PORT;
 
 $pid = pcntl_fork();
 if ($pid < 0) {

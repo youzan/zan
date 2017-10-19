@@ -11,33 +11,64 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 下午4:34
- */
+
 require_once __DIR__ . "/../inc/zan.inc";
 
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/opcode_server.php";
-$port = get_one_free_port();
+$host = TCP_SERVER_HOST1;
+$port = TCP_SERVER_PORT1;
 
-start_server($simple_tcp_server, TCP_SERVER_HOST, $port);
 
-suicide(2000);
-usleep(500 * 1000);
+$pid = pcntl_fork();
+if ($pid < 0) {
+    exit;
+}
 
-makeTcpClient(TCP_SERVER_HOST, $port, function(\swoole_client $cli) {
-    $r = $cli->send(opcode_encode("exist", [2]));
-    assert($r !== false);
-}, function(\swoole_client $cli, $recv) {
-    list($op, $data) = opcode_decode($recv);
-    assert($data === true);
+if ($pid === 0) {
+    usleep(1000);
 
-    swoole_event_exit();
-    echo "SUCCESS";
-});
+    $client = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
+    
+    //设置事件回调函数
+    $client->on("connect", function($cli) {        
+    });
+    
+    $client->on("receive", function($cli, $data){
+        echo "Client Received: $data";
+        $cli->close();
+    });
+    $client->on("error", function($cli){
+        echo "Clinet Error.";
+    });
+    $client->on("close", function($cli){
+        //echo "Client Close.";
+    });
+    //发起网络连接
+    $client->connect($host, $port, 0.5);
+
+} else {
+
+    $serv = new swoole_server($host, $port);
+    $serv->set([
+        'worker_num' => 1,
+        'net_worker_num' => 1,
+        'log_file' => '/tmp/test_log.log',
+    ]);
+
+    $serv->on('Connect', function ($serv, $fd){
+        echo "Server: onConnected, client_fd=$fd\n";
+        assert($serv->exist($fd) == true);
+        echo "SUCCESS";
+        $serv->shutdown();
+    });
+
+    $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
+        echo "Server: Receive data: $data\n";
+    });
+    $serv->start();
+}
+
 
 ?>
 --EXPECT--
+Server: onConnected, client_fd=1
 SUCCESS

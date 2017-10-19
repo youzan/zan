@@ -195,7 +195,7 @@ typedef struct _zanServerG
     zan_pid_t process_pid;
 
     uint32_t pagesize;
-    uint32_t max_sockets;
+    int max_sockets;
     uint16_t cpu_num;
 
     int error;
