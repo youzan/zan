@@ -163,11 +163,13 @@ static void zanPool_taskworker_free(zanProcessPool *pool)
         swHashMap_free(pool->map);
     }
 
+#if 0
     for (index = 0; index < ServerG.servSet.task_worker_num; ++index)
     {
-        //TODO:::???
-        zanWorker_free(&pool->workers[index]);
+        //zanWorker_free(&pool->workers[index]);
     }
+#endif
+
     zan_shm_free(pool->workers);
 }
 
@@ -344,7 +346,7 @@ static void zanTaskWorker_signal_init(void)
     swSignal_set(SIGUSR1, NULL, 1, 0);
     swSignal_set(SIGUSR2, NULL, 1, 0);
     swSignal_set(SIGTERM, zanTaskWorker_signal_handler, 1, 0);
-    //swSignal_set(SIGINT, zanTaskWorker_signal_handler, 1, 0);
+    swSignal_set(SIGINT, zanTaskWorker_signal_handler, 1, 0);
     swSignal_set(SIGQUIT, zanTaskWorker_signal_handler, 1, 0);
     swSignal_set(SIGALRM, swSystemTimer_signal_handler, 1, 0);
 #ifdef SIGRTMIN
@@ -598,7 +600,12 @@ zan_pid_t zanTaskWorker_spawn(zanWorker *worker)
         //child
         case 0:
         {
-			
+            if(zanWorker_init(worker) < 0)
+            {
+                zanError("init worker failed");
+                return ZAN_ERR;
+            }
+
             int ret_code = pool->main_loop(pool, worker);
             exit(ret_code);
         }

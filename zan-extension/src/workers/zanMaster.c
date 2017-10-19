@@ -332,14 +332,14 @@ zan_pid_t zanrelaod_worker(int *index, int status, int worker_type, zanServer *s
                 while (1)
                 {
 
-					if((reload_worker->workers[i-reload_worker->start_id].deleted) == 1)
+                    if((reload_worker->workers[i-reload_worker->start_id].deleted) == 1)
                     {
                         reload_worker->workers[i-reload_worker->start_id].deleted = 0;
                         reload_worker->workers[i-reload_worker->start_id].worker_pid = -1;
 
                         break;
                     }
-					
+
                     if(worker_type == ZAN_PROCESS_WORKER)
                     {
                         new_pid = zanMaster_spawnworker(reload_worker, &(reload_worker->workers[i-reload_worker->start_id]));
