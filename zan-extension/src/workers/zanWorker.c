@@ -68,7 +68,7 @@ void zanWorker_signal_init(void)
     swSignal_add(SIGPIPE, NULL);
     swSignal_add(SIGUSR1, zanWorker_signal_handler);
     swSignal_add(SIGUSR2, NULL);
-    swSignal_add(SIGINT, zanWorker_signal_handler);
+    //swSignal_add(SIGINT, zanWorker_signal_handler);
     swSignal_add(SIGQUIT, zanWorker_signal_handler);
     swSignal_add(SIGTERM, zanWorker_signal_handler);
     swSignal_add(SIGALRM, swSystemTimer_signal_handler);
