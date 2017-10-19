@@ -22,7 +22,6 @@
 #include "swReactor.h"
 #include "swSignal.h"
 #include "swConnection.h"
-#include "list.h"
 
 #include "zanGlobalVar.h"
 #include "zanLog.h"
