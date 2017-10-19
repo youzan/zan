@@ -59,7 +59,7 @@ int zanServer_send(zanServer *serv, swSendData *resp);
 int zan_master_process_loop(zanServer *serv);
 
 ////
-zanWorker* zanServer_get_worker(zanServer *serv, uint16_t worker_id);
+zanWorker* zanServer_get_worker(zanServer *serv, uint32_t worker_id);
 swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port);
 int zanServer_tcp_deny_exit(zanServer *serv, long nWorkerId);
 int zanServer_tcp_send(zanServer *serv, int session_id, void *data, uint32_t length);
