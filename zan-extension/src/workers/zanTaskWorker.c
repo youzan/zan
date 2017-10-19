@@ -343,7 +343,7 @@ static void zanTaskWorker_signal_init(void)
     swSignal_set(SIGUSR1, NULL, 1, 0);
     swSignal_set(SIGUSR2, NULL, 1, 0);
     swSignal_set(SIGTERM, zanTaskWorker_signal_handler, 1, 0);
-    swSignal_set(SIGINT, zanTaskWorker_signal_handler, 1, 0);
+    //swSignal_set(SIGINT, zanTaskWorker_signal_handler, 1, 0);
     swSignal_set(SIGQUIT, zanTaskWorker_signal_handler, 1, 0);
     swSignal_set(SIGALRM, swSystemTimer_signal_handler, 1, 0);
 #ifdef SIGRTMIN
@@ -456,7 +456,7 @@ static void zanTaskworker_onStop(zanProcessPool *pool, zanWorker *worker)
     zanServer *serv = ServerG.serv;
     if (serv->onWorkerStop)
     {
-        zanWarn("taskworker: call taskworker onStop, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
+        zanDebug("taskworker: call taskworker onStop, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);
         serv->onWorkerStop(serv, worker->worker_id);
     }
     ///TODO

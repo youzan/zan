@@ -16,7 +16,9 @@
   +----------------------------------------------------------------------+
 */
 
+#include "list.h"
 #include "swoole.h"
+#include "zanServer.h"
 #include "swReactor.h"
 #include "swSignal.h"
 #include "swConnection.h"
@@ -222,33 +224,25 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
     //check timer
     if (reactor->check_timer)
     {
-        //swTimer_select(&SwooleG.timer);
         swTimer_select(&ServerG.timer);
     }
-    //server master
-    //if (SwooleG.serv && SwooleTG.update_time)
-    if (ServerG.serv)
-    {
-        //swoole_update_time();
-        zan_update_time();
-    }
+    zan_update_time();
 
     //defer callback
     handle_defer_call(reactor);
 
-#if 0
-    //server worker
-    swWorker *worker = ServerWG.worker;
-    if (worker != NULL && SwooleWG.reload)
-    {
-        SwooleWG.reload_count++;
-
-        if (reactor->event_num <= 2 || SwooleWG.reload_count >= SW_MAX_RELOAD_WAIT)
+    //server worker  //TODO:
+    if (is_worker() || is_networker()) {
+        zanWorker *worker = zanServer_get_worker(ServerG.serv, ServerWG.worker_id);
+        if (worker != NULL && ServerWG.reload)
         {
-            reactor->running = 0;
+            ServerWG.reload_count++;
+            if (reactor->event_num <= 2 || ServerWG.reload_count >= SW_MAX_RELOAD_WAIT)
+            {
+                reactor->running = 0;
+            }
         }
     }
-#endif
 
     //client
     if (ServerG.serv == NULL && ServerG.timer.num <= 0 && !reactor->defer_callback_list)
@@ -303,6 +297,12 @@ static void handle_defer_call(swReactor* reactor)
 
 int swReactor_close(swReactor *reactor, int fd)
 {
+    if (fd <= 2)
+    {
+        zanWarn("error close fd=%d", fd);
+        return 0;
+    }
+
     swConnection *socket = swReactor_get(reactor, fd);
     if (socket && socket->out_buffer)
     {
@@ -353,8 +353,6 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
     swBuffer *buffer = socket->out_buffer;
 
     socket->fd = (socket->fd == 0)? fd:socket->fd;
-
-    //socket->buffer_size = (socket->buffer_size == 0)? SwooleG.socket_buffer_size:socket->buffer_size;
     socket->buffer_size = (socket->buffer_size == 0)? ServerG.servSet.socket_buffer_size:socket->buffer_size;
 
     if (swBuffer_empty(buffer))
@@ -432,7 +430,6 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
 
         if (buffer->length > socket->buffer_size)
         {
-            //if (SwooleG.socket_dontwait)
             if (ServerG.socket_dontwait)
             {
                 return ZAN_ERR;
