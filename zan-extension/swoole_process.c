@@ -703,7 +703,14 @@ static PHP_METHOD(swoole_process, push)
         RETURN_FALSE;
     }
 	
-	message.type = (process->worker_pid == 0) ? 1 : process->worker_pid;
+	if(process->ipc_mode == 2)
+	{
+		message.type = 1;
+	}
+	else
+	{
+		message.type = (process->worker_pid == 0)? 1 : process->worker_pid;
+	}
     memcpy(message.data, data, length);
 
     //if (swMsgQueue_push(process->queue, (swQueue_data *)&message, length) < 0)
@@ -739,8 +746,14 @@ static PHP_METHOD(swoole_process, pop)
         char data[SW_MSGMAX];
     } message;
 
-    message.type = (process->ipc_mode == 2)? 1:process->worker_pid;
-    message.type = (process->worker_pid == 0) ? 1 : process->worker_pid;
+	if(process->ipc_mode == 2)
+	{
+		message.type = 1;
+	}
+	else
+	{
+		message.type = (process->worker_pid == 0)? 1 : process->worker_pid;
+	}
     int n = process->queue->pop(process->queue, (zanQueue_Data *) &message, maxsize);
     if (n < 0)
     {
