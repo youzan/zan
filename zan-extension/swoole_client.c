@@ -1799,9 +1799,9 @@ static PHP_METHOD(swoole_client, getpeername)
         RETURN_FALSE;
     }
 
-    if (!swSocket_is_udpDgram(cli->type))
+    if (!swSocket_is_udpDgram(cli->type) && !swSocket_is_tcpStream(cli->type))
     {
-        zanWarn("only support udp dgram");
+        zanWarn("only support udp dgram and tcp stream! type=%d", cli->type);
         RETURN_FALSE;
     }
 
@@ -1809,16 +1809,32 @@ static PHP_METHOD(swoole_client, getpeername)
 
     int type = AF_INET;
     void* addrPtr = NULL;
-    if (cli->type == SW_SOCK_UDP)
-    {
-        add_assoc_long(return_value, "port", ntohs(cli->remote_addr.addr.inet_v4.sin_port));
-        addrPtr = (void*)((struct sockaddr*)(&cli->remote_addr.addr.inet_v4.sin_addr));
+    if (swSocket_is_udpDgram(cli->type)) {
+        if (cli->type == SW_SOCK_UDP)
+        {
+            add_assoc_long(return_value, "port", ntohs(cli->remote_addr.addr.inet_v4.sin_port));
+            addrPtr = (void*)((struct sockaddr*)(&cli->remote_addr.addr.inet_v4.sin_addr));
+        }
+        else if (cli->type == SW_SOCK_UDP6)
+        {
+            add_assoc_long(return_value, "port", ntohs(cli->remote_addr.addr.inet_v6.sin6_port));
+            addrPtr = (void*)((struct sockaddr*)(&cli->remote_addr.addr.inet_v6.sin6_addr));
+            type = AF_INET6;
+        }
     }
-    else if (cli->type == SW_SOCK_UDP6)
+    else
     {
-        add_assoc_long(return_value, "port", ntohs(cli->remote_addr.addr.inet_v6.sin6_port));
-        addrPtr = (void*)((struct sockaddr*)(&cli->remote_addr.addr.inet_v6.sin6_addr));
-        type = AF_INET6;
+        if (cli->type == SW_SOCK_TCP)
+        {
+            add_assoc_long(return_value, "port", ntohs(cli->server_addr.addr.inet_v4.sin_port));
+            addrPtr = (void*)((struct sockaddr*)(&cli->server_addr.addr.inet_v4.sin_addr));
+        }
+        else if (cli->type == SW_SOCK_TCP6)
+        {
+            add_assoc_long(return_value, "port", ntohs(cli->server_addr.addr.inet_v6.sin6_port));
+            addrPtr = (void*)((struct sockaddr*)(&cli->server_addr.addr.inet_v6.sin6_addr));
+            type = AF_INET6;
+        }
     }
 
     char tmp[SW_IP_MAX_LENGTH] = {0};
