@@ -580,7 +580,9 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
 int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int lenght, int flag)
 {
     int pipefd = (flag & ZAN_PIPE_MASTER) ? dst_worker->pipe_master : dst_worker->pipe_worker;
-    if (ZAN_PROCESS_TASKWORKER == dst_worker->process_type && ZAN_IPC_MSGQUEUE == ServerG.servSet.task_ipc_mode)
+
+    int task_ipc_mode = ServerG.servSet.task_ipc_mode;
+    if (ZAN_PROCESS_TASKWORKER == dst_worker->process_type && task_ipc_mode >= ZAN_IPC_MSGQUEUE)
     {
         struct
         {
@@ -588,9 +590,13 @@ int zanWorker_send2worker(zanWorker *dst_worker, void *buf, int lenght, int flag
             swEventData buf;
         } msg;
 
-        msg.mtype = dst_worker->worker_id + 1;
-        memcpy(&msg.buf, buf, lenght);
+        if (2 == task_ipc_mode) {
+            msg.mtype = dst_worker->worker_id + 1;
+        } else {
+            msg.mtype = 1;
+        }
 
+        memcpy(&msg.buf, buf, lenght);
         zanMsgQueue *queue = dst_worker->pool->queue;
         return queue->push(queue, (zanQueue_Data *) &msg, lenght);
     }

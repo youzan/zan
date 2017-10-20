@@ -40,17 +40,15 @@ if ($pid === 0) {
     exit;
 } else {
     $serv = new \swoole_server(UNIXSOCK_SERVER_PATH, 0, SWOOLE_PROCESS, SWOOLE_UNIX_DGRAM);
-    $serv->set([ "worker_num" => 1, ]);
+    $serv->set([
+        'worker_num' => 1,
+        'net_worker_num' => 1,
+        'log_file' => '/tmp/test_log.log',
+    ]);
 
-/*
     $serv->on("WorkerStart", function(\swoole_server $serv) use($pid) {
-        swoole_timer_after(1000, function() use($serv, $pid) {
-            @unlink(UNIXSOCK_SERVER_PATH);
-            pcntl_waitpid($pid, $status);
-            $serv->shutdown();
-        });
+        echo "onWorkerStart!\n";
     });
-*/
 
     $serv->on("packet", function (\swoole_server $serv, $data, $addr) use($pid) {
         echo $data . "\n";
@@ -58,7 +56,6 @@ if ($pid === 0) {
         // TODO
         // $serv->send($addr['address'], json_encode(array("hello" => $data, "addr" => $addr)).PHP_EOL);
         $serv->send($addr['address'], "HelloClient\n");
-        sleep(1);
         @unlink(UNIXSOCK_SERVER_PATH);
         pcntl_waitpid($pid, $status);
         $serv->shutdown();
@@ -69,6 +66,7 @@ if ($pid === 0) {
 ?>
 
 --EXPECT--
+onWorkerStart!
 HelloServer
 HelloClient
 

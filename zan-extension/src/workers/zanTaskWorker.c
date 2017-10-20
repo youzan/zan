@@ -47,7 +47,7 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
     key_t msgqueue_key = 0;
     zanServerSet *servSet = &ServerG.servSet;
 
-    if (ZAN_IPC_MSGQUEUE == servSet->task_ipc_mode)
+    if (servSet->task_ipc_mode >= ZAN_IPC_MSGQUEUE)
     {
         if (servSet->message_queue_key == 0)
         {
@@ -86,7 +86,7 @@ int zanPool_taskworker_alloc(zanProcessPool *pool)
             zanError("malloc[2] failed.");
             return ZAN_ERR;
         }
-        else if (zanMsgQueue_create(pool->queue, 1, msgqueue_key, 1) < 0)
+        else if (zanMsgQueue_create(pool->queue, 1, msgqueue_key) < 0)
         {
             sw_free(pool->queue);
             swHashMap_free(pool->map);
@@ -143,7 +143,7 @@ static void zanPool_taskworker_free(zanProcessPool *pool)
     int index = 0;
     zanPipe *_pipe = NULL;
 
-    if (ZAN_IPC_UNSOCK == ServerG.servSet.task_ipc_mode)
+    if (ServerG.servSet.task_ipc_mode == ZAN_IPC_UNSOCK)
     {
         for (index = 0; index < ServerG.servSet.task_worker_num; index++)
         {
@@ -235,11 +235,17 @@ static int zanTaskworker_loop(zanProcessPool *pool, zanWorker *worker)
     //Use from_fd save the task_worker->id
     int n = 0;
     out.buf.info.from_fd = worker->worker_id;
-    out.mtype = (ServerG.servSet.task_ipc_mode == ZAN_IPC_MSGQUEUE)? 0: worker->worker_id + 1;
+
+    out.mtype = 0;
+    if (ServerG.servSet.task_ipc_mode == ZAN_IPC_MSGQUEUE) {
+        out.mtype = worker->worker_id + 1;
+    } else if (ServerG.servSet.task_ipc_mode == ZAN_IPC_QUEUE_PREEMPTIVE) {
+        out.mtype = 1;
+    }
 
     while (ServerG.running > 0 && task_n > 0)
     {
-        if (ZAN_IPC_MSGQUEUE == ServerG.servSet.task_ipc_mode)
+        if (ServerG.servSet.task_ipc_mode >= ZAN_IPC_MSGQUEUE)
         {
             n = pool->queue->pop(pool->queue, (zanQueue_Data *) &out, sizeof(out.buf));
             if (n < 0 && errno != EINTR)
@@ -544,11 +550,6 @@ static inline int zan_pool_schedule_worker(zanProcessPool *pool)
     int index            = 0;
     int target_worker_id = 0;
     int run_worker_num   = ServerG.servSet.task_worker_num;
-
-    if (ZAN_IPC_MSGQUEUE == ServerG.servSet.task_ipc_mode)
-    {
-        return 0;
-    }
 
     for (index = 0; index < run_worker_num + 1; index++)
     {
