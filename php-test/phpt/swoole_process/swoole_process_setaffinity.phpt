@@ -12,12 +12,21 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-$r = \swoole_process::setaffinity([0]);
-assert($r);
 
-$r = \swoole_process::setaffinity([0, 1]);
-assert($r);
-echo "SUCCESS";
+$os = php_uname('s');
+if (strcmp("Darwin", $os) == 0) {
+    echo "SUCCESS";
+}
+else {
+    $r = \swoole_process::setaffinity([0]);
+    assert($r==true);
+
+    $r = \swoole_process::setaffinity([0, 1]);
+    assert($r==true);
+
+    echo "SUCCESS";
+}
+
 ?>
 --EXPECT--
 SUCCESS
