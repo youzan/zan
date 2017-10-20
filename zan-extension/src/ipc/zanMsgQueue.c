@@ -24,7 +24,7 @@ int zanMsgQueue_pop(zanMsgQueue *pMq, zanQueue_Data *out, int length);
 int zanMsgQueue_stat(zanMsgQueue *pMq, int *queue_num, int *queue_bytes);
 int zanMsgQueue_close(zanMsgQueue *pMq);
 
-int zanMsgQueue_create(zanMsgQueue *pMq, int blocking, key_t msg_key, long type)
+int zanMsgQueue_create(zanMsgQueue *pMq, int blocking, key_t msg_key)
 {
     if (!pMq){
         zanError("pMq is null, error.");
@@ -38,7 +38,6 @@ int zanMsgQueue_create(zanMsgQueue *pMq, int blocking, key_t msg_key, long type)
         return ZAN_ERR;
     }
 
-    pMq->type     = type;
     pMq->msg_id   = msg_id;
     pMq->ipc_wait = (!blocking) ? IPC_NOWAIT : 0;
 
@@ -108,19 +107,19 @@ int zanMsgQueue_close(zanMsgQueue *pMq)
         return ZAN_ERR;
     }
 
-	if(pMq->deleted == 1)
-	{
-		return ZAN_OK;
-	}
-	else
-	{
-		ret = msgctl(pMq->msg_id, IPC_RMID, 0);
-		if (-1 == ret)
-		{
-			zanError("msgctl failed, errno=%d:%s", errno, strerror(errno));
-			return ZAN_ERR;
-		}
-	}
+    if(pMq->deleted == 1)
+    {
+        return ZAN_OK;
+    }
+    else
+    {
+        ret = msgctl(pMq->msg_id, IPC_RMID, 0);
+        if (-1 == ret)
+        {
+            zanError("msgctl failed, errno=%d:%s", errno, strerror(errno));
+            return ZAN_ERR;
+        }
+    }
 
     return ZAN_OK;
 }
