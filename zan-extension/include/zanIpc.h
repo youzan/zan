@@ -86,6 +86,7 @@ enum zanIPCMode
 {
     ZAN_IPC_UNSOCK   = 1,
     ZAN_IPC_MSGQUEUE = 2,
+    ZAN_IPC_QUEUE_PREEMPTIVE = 3,
 };
 
 typedef struct _zanQueue_Data
@@ -100,7 +101,6 @@ typedef struct _zanMsgQueue
     int msg_id;
     int ipc_wait;
     uint8_t deleted;
-    long type;
 
     int (*pop)(struct _zanMsgQueue *, zanQueue_Data *buffer, int length);
     int (*push)(struct _zanMsgQueue *, zanQueue_Data *buffer, int length);
@@ -108,7 +108,7 @@ typedef struct _zanMsgQueue
     int (*close)(struct _zanMsgQueue *);
 } zanMsgQueue;
 
-int zanMsgQueue_create(zanMsgQueue *pMq, int wait, key_t msg_key, long type);
+int zanMsgQueue_create(zanMsgQueue *pMq, int wait, key_t msg_key);
 int zanMsgQueue_stat(zanMsgQueue *pMq, int *queue_num, int *queue_bytes);
 
 
