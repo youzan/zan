@@ -27,63 +27,40 @@ if ($pid < 0) {
 }
 
 if ($pid === 0) {
-    suicide(2000);
-
     $redis = new \swoole_redis();
     $redis->on("close", function() {
-        // echo "close";
-    });
-    $timerid = swoole_timer_after(1000, function() {
-        echo "ERROR";
-        swoole_event_exit();
+         //echo "onClose1";
     });
 
-    $redis->connect(REDIS_SERVER_HOST, REDIS_SERVER_PORT, function(\swoole_redis $redis, $r) use($timerid) {
-        swoole_timer_clear($timerid);
-        assert($r);
-
-        // TODO BUG
+    $redis->connect(REDIS_SERVER_HOST, REDIS_SERVER_PORT, function(\swoole_redis $redis, $r) {
         $r = $redis->publish("test_on_message", "payload!!!", function(\swoole_redis $redis, $r) {
-            // TODO
-            var_dump($redis);
-            var_dump($r);
-        });
-        assert($r);
-
-        swoole_timer_after(500, function() {
-            swoole_event_exit();
-            exit;
+            assert($r);
+            $redis->close();
         });
     });
+
 } else {
-    suicide(3000);
+
     $redis = new \swoole_redis();
     $redis->on("close", function() {
-        echo "close";
+        //echo "onClose2";
     });
+
     $redis->on("message", function(\swoole_redis $redis, $message) use($pid) {
-        // TODO
-        var_dump($message);
-        assert($message !== false);
-        assert($message[2] === "payload!!!");
+        //var_dump($message);
 
-        pcntl_waitpid($pid, $status);
-        swoole_event_exit();
+        if (0 == strcasecmp($message[2], "payload!!!")) {
+            //sleep(1);
+            echo "SUCCESS\n";
+            $redis->close();
+        }
     });
 
-    $timerid = swoole_timer_after(1000, function() {
-        echo "ERROR";
-        swoole_event_exit();
-    });
-
-    $redis->connect(REDIS_SERVER_HOST, REDIS_SERVER_PORT, function(\swoole_redis $redis, $r) use($timerid) {
-        swoole_timer_clear($timerid);
+    $redis->connect(REDIS_SERVER_HOST, REDIS_SERVER_PORT, function(\swoole_redis $redis, $r) {
         assert($r);
-
         $redis->subscribe("test_on_message");
     });
 }
-
 
 ?>
 --EXPECT--
