@@ -22,6 +22,7 @@ function get() {
     static $i = 0;
     global $cli;
     $cli->setHeaders([]);
+    echo "SUCCESS";
     if ($i > 10) {
         echo "SUCCESS";
     } else {
