@@ -236,13 +236,13 @@ static int zanServer_start_check(zanServer *serv)
 
     if (ServerG.max_sockets > 0 && servSet->max_connection > ServerG.max_sockets)
     {
-        zanWarn("serv->max_connection is exceed the maximum value[%d].", ServerG.max_sockets);
+        zanDebug("serv->max_connection is exceed the maximum value[%d].", ServerG.max_sockets);
         servSet->max_connection = ServerG.max_sockets;
     }
 
     if (servSet->max_connection < (servSet->worker_num + servSet->task_worker_num) * 2 + 32)
     {
-        zanWarn("serv->max_connection is too small.");
+        zanDebug("serv->max_connection is too small.");
         servSet->max_connection = ServerG.max_sockets;
     }
 
