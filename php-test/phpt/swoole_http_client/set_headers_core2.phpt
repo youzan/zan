@@ -27,7 +27,7 @@ function get() {
     ];
 
     $cli->setHeaders($zval["headers"]);
-
+    echo "SUCCESS";
     if ($i > 10) {
         echo "SUCCESS";
     } else {
