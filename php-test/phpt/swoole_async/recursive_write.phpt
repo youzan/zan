@@ -13,7 +13,28 @@ assert.quiet_eval=0
 --FILE--
 <?php
 require_once __DIR__ . "/../inc/zan.inc";
-require_once __DIR__ . "/../../apitest/swoole_async/recursive_write.php";
+
+function recursiveWrite($dep = 0, $size = 1024 * 1024)
+{
+    static $data;
+    if ($data === null) {
+        $data = file_get_contents("/dev/urandom", null, null, null, $size);
+    }
+
+    $file = "tmp.file";
+
+    swoole_async_write($file, $data, -1, function ($file, $len) use(&$recursiveWrite, $dep, $size) {
+        if ($dep > 100) {
+            echo "SUCCESS";
+            unlink($file);
+            return false;
+        }
+
+        assert($len === $size);
+        recursiveWrite(++$dep);
+        return true;
+    });
+}
 
 recursiveWrite();
 ?>

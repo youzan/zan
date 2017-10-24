@@ -12,21 +12,63 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 上午10:06
- */
+
 require_once __DIR__ . "/../inc/zan.inc";
 
-killself_in_syncmode(100, SIGTERM);
+$host = TCP_SERVER_HOST1;
+$port = TCP_SERVER_PORT1;
+
+$pid = pcntl_fork();
+if ($pid < 0) {
+    exit;
+}
+
+if ($pid === 0) {
+    usleep(1000);
+
+    $client = new swoole_client(SWOOLE_TCP, SWOOLE_SOCK_SYNC);
+    $client->connect("127.0.0.1", 9501);
+
+    
+	$data = "TcpSendto";
+	$client->send($data);
+
+	$message = $client->recv();
 
 
-$cli = new \swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_SYNC);
-$r = $cli->connect("11.11.11.11", 80);
-assert(false);
+} else {
+
+    $serv = new swoole_server("127.0.0.1", 9501);
+    $serv->set([
+        'worker_num' => 1,
+        'net_worker_num' => 1,
+        'task_worker_num' => 1,
+        'log_file' => '/tmp/test_log.log',
+    ]);
+
+    $serv->on('Connect', function ($serv, $fd){
+        //echo "Server: onConnected, client_fd=$fd\n";
+    });
+
+    $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
+        echo "Server: Receive data: $data";
+        $serv->task($data);
+    });
+
+    $serv->on('Task', function (swoole_server $serv, $task_id, $fromId, $data){
+        echo "Server: Task data: $data";
+        $serv->shutdown();
+    });
+
+    $serv->on('Finish', function (swoole_server $serv, $worker_task_id, $data){
+        //echo "Server: Finish data: $data";
+        //$serv->shutdown();
+    });
+
+    $serv->start();
+}
+
 ?>
 
 --EXPECT--
-Termsig=15
+Server: Receive data: TcpSendtoServer: Task data: TcpSendto
