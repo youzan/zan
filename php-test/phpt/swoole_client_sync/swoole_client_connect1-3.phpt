@@ -27,7 +27,7 @@ $cli = new \swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_SYNC);
 $r = $cli->connect(IP_BAIDU, 80, 1);
 assert($r);
 $r = $w = $e = [$cli];
-$n = swoole_client_select($r, $w, $e, 0);
+$n = swoole_client_select($r, $w, $e, 0.8);
 assert($n === 1);
 assert(count($w) === 1);
 assert(count($e) === 0);
