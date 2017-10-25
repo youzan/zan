@@ -321,7 +321,7 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
     zanWorker_signal_init();
 
     /// 设置cpu 亲和性
-    ///swoole_cpu_setAffinity(ServerWG.worker_id, serv);
+    swoole_cpu_setAffinity(ServerWG.worker_id, serv);
 
     int buffer_input_size = (serv->listen_list->open_eof_check ||
                              serv->listen_list->open_length_check ||

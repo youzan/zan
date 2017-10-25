@@ -242,7 +242,7 @@ static int swReactorKqueue_del(swReactor *reactor, int fd)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("kqueue->del(%d, SW_EVENT_READ) failed.", fd);
+            zanError("kqueue->del(%d, SW_EVENT_READ) failed, ret=%d, errno=%d:%s", fd, ret, errno, strerror(errno));
             return ZAN_ERR;
         }
     }
