@@ -23,50 +23,48 @@ if ($pid < 0) {
 }
 
 if ($pid === 0) {
-    usleep(1000);
+    usleep(500);
 
     $client = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
     
     //设置事件回调函数
     $client->on("connect", function($cli) {
-        echo "Client onConnected!\n";
-        //$cli->send("Hello Server!");
+        //echo "Client1 onConnected!\n";
     });
 
     $client->on("receive", function($cli, $data){
-        echo "Client Received: $data";
-        sleep(1);
-        $cli->close();
+        //echo "Client1 onReceive: $data\n";
+        $cli->send("From Client!");
+        //sleep(1);
+        //$cli->close();
     });
     $client->on("error", function($cli){
-        echo "Clinet Error.";
+        echo "Clinet1 Error.";
     });
     $client->on("close", function($cli){
-        //echo "Client Close.";
     });
-    //发起网络连接
     $client->connect($host, $port, 0.5);
 
     ////////////////////////////////////////////////////////////////////
+    usleep(500);
     $client1 = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
     
     //设置事件回调函数
     $client1->on("connect", function($client1) {
-        echo "Client onConnected!\n";
+        //echo "Client2 onConnected!\n";
     });
     $client1->on("receive", function($client1, $data){
-        echo "Client1 onReceive data: $data\n";
-        $client1->send("Hello Server, From Client1!");
-        $client1->close();
+        //echo "Client2 onReceive: $data\n";
+        $client1->send("From Client!");
+        //sleep(1);
+        //$client1->close();
     });
     $client1->on("error", function($client1){
-        echo "Clinet1 Error.";
+        echo "Clinet2 Error.";
     });
     $client1->on("close", function($client1){
-        //echo "Client Close.";
     });
 
-    ////////port2
     $client1->connect($host, $port, 0.5);
 
 } else {
@@ -80,18 +78,18 @@ if ($pid === 0) {
 
     $serv->on('Connect', function ($serv, $fd){
         //echo "Server: onConnected, client_fd=$fd\n";
-        $data= $serv->getClientList();
-
-        var_dump($data);
-
-//        var_dump($data['server_port']);
-
-        $serv->shutdown();
-
+        $serv->send($fd, "Hello Client!");
     });
 
-    $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
+    $serv->on('Receive', function ($serv, $fd, $from_id, $data) {
         echo "Server: Receive data: $data\n";
+        if ($fd == 2) {
+            //echo "fd=$fd\n";
+            $data= $serv->getClientList();
+            echo "count:" . count($data) . "\n";
+            //var_dump($data);
+            $serv->shutdown();
+        }
     });
     $serv->start();
 }
@@ -99,7 +97,6 @@ if ($pid === 0) {
 
 ?>
 --EXPECT--
-Client onConnected!
-Client onConnected!
-bool(true)
-bool(true)
+Server: Receive data: From Client!
+Server: Receive data: From Client!
+count:2
