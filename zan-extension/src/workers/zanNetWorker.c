@@ -244,6 +244,9 @@ void zanNetWorker_signal_handler(int signo)
 static void zanNetworker_onStart(zanProcessPool *pool, zanWorker *worker)
 {
     zanNetWorker_signal_init();
+
+    swoole_cpu_setAffinity(worker->worker_id, ServerG.serv);
+
     zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
     return;
 }
@@ -407,12 +410,7 @@ static int zanNetworker_onPipeReceive(swReactor *reactor, swEvent *ev)
 
     swPackage_response pkg_resp;
     zanWorker *worker;
-/*
-#ifdef SW_REACTOR_RECV_AGAIN
-    while (1)
-#endif
-    {
-*/
+
     while (1)
     {
         n = read(ev->fd, &resp, sizeof(resp));

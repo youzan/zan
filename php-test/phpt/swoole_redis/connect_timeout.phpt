@@ -40,4 +40,3 @@ $result = $redis->connect("11.11.11.11", 9000, function ($redis){
 
 --EXPECT--
 connect timeout
-closed

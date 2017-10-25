@@ -826,7 +826,7 @@ int zanServer_adduserworker(zanServer *serv, zanWorker *worker)
     return worker->worker_id;
 }
 
-int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId)
+int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId, int flag)
 {
     zanTrace("deny_request: dstworker_id=%ld", nWorkerId);
     if (nWorkerId < 0 || nWorkerId >= ServerG.servSet.worker_num)
@@ -837,15 +837,15 @@ int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId)
 
     if (nWorkerId == ServerWG.worker_id)
     {
-        ServerGS->event_workers.workers[nWorkerId].deny_request = 1;
-        zanDebug("set self worker deny_request, [dst_work_id=%ld], src_worker_id=%d", nWorkerId, ServerWG.worker_id);
+        ServerGS->event_workers.workers[nWorkerId].deny_request = flag;
+        zanDebug("set self worker deny_request=%d, [dst_work_id=%ld], src_worker_id=%d", flag, nWorkerId, ServerWG.worker_id);
         return ZAN_OK;
     }
 
     swEventData ev_data;
     ev_data.info.fd = 0;
     ev_data.info.worker_id = nWorkerId;
-    ev_data.info.type = SW_EVENT_DENY_REQUEST;
+    ev_data.info.type = (SW_TRUE == flag) ? SW_EVENT_DENY_REQUEST : SW_EVENT_DENY_EXIT;
     //copy data
     memcpy(ev_data.data, "0", 1);
 
@@ -898,7 +898,7 @@ int get_env_log_level()
     return level;
 }
 
-void swoole_cpu_setAffinity(int threadid, zanServer *serv)
+void swoole_cpu_setAffinity(int worker_id, zanServer *serv)
 {
 #ifdef HAVE_CPU_AFFINITY
     if (!serv){
@@ -913,11 +913,11 @@ void swoole_cpu_setAffinity(int threadid, zanServer *serv)
 
         if (serv->cpu_affinity_available_num)
         {
-            CPU_SET(serv->cpu_affinity_available[threadid % serv->cpu_affinity_available_num], &cpu_set);
+            CPU_SET(serv->cpu_affinity_available[worker_id % serv->cpu_affinity_available_num], &cpu_set);
         }
         else
         {
-            CPU_SET(threadid % ZAN_CPU_NUM, &cpu_set);
+            CPU_SET(worker_id % ZAN_CPU_NUM, &cpu_set);
         }
 
         if (0 != pthread_setaffinity_np(pthread_self(), sizeof(cpu_set), &cpu_set))

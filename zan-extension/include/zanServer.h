@@ -90,10 +90,10 @@ int zanServer_tcp_sendfile(zanServer *serv, int fd, char *filename, uint32_t len
 swString *zanServer_get_buffer(zanServer *serv, int networker_id, int fd);
 
 int zanServer_adduserworker(zanServer *serv, zanWorker *worker);
-int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId);
+int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId, int flag);
 
 int zanServer_get_first_sessionId(zanServer *serv);
-void swoole_cpu_setAffinity(int threadid, zanServer *serv);
+void swoole_cpu_setAffinity(int worker_id, zanServer *serv);
 
 #ifdef __cplusplus
 }
