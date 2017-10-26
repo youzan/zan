@@ -31,7 +31,8 @@ void zan_init(void)
 
     bzero(&ServerG, sizeof(zanServerG));
     bzero(&ServerWG, sizeof(zanWorkerG));
-
+    bzero(&ZanAIO, sizeof(zanAsyncIO));
+    
     //init global shared memory, 初始化内存池
     ServerG.g_shm_pool = zanShmGlobal_new(ZAN_GLOBAL_MEMORY_PAGESIZE, 1);
     if (NULL == ServerG.g_shm_pool)

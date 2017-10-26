@@ -60,14 +60,14 @@ int zanAio_init(void)
 }
 
 void zanAio_free(void)
-{
+{   
     if (!ZanAIO.init)
     {
         return;
     }
 
     ZanAIO.init = 0;
-    ZanAIO.mutexLock.free(&ZanAIO.mutexLock);
+    //ZanAIO.mutexLock.free(&ZanAIO.mutexLock);
     ZanAIO.destroy();
 }
 
