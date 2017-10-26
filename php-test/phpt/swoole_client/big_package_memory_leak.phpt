@@ -29,7 +29,7 @@ if ($pid === 0) {
     
     //设置事件回调函数
     $client->on("connect", function($cli) {
-        $cli->send("Hello Server!\n");
+        $cli->send("Hello Server!");
         $cli->close();
     });
     $client->on("receive", function($cli, $data){
