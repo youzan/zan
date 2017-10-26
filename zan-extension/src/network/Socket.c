@@ -189,35 +189,6 @@ void swSocket_ioctl_set_block(int sock, int nonblock)
     }
 }
 
-void swSocket_fcntl_set_block(int sock, int nonblock)
-{
-    int opts, ret;
-    opts = ret = 0;
-    do
-    {
-        opts = fcntl(sock, F_GETFL);
-    }while (opts < 0 && errno == EINTR);
-
-    if (opts < 0)
-    {
-        zanError("fcntl(%d, GETFL) failed.", sock);
-        /// 为避免opts < 0，操作sock 的掩码出现问题，将opts 进行转换
-        opts = (nonblock)? 0:1;
-    }
-
-    opts = (nonblock)? (opts | O_NONBLOCK):(opts & ~O_NONBLOCK);
-
-    do
-    {
-        ret = fcntl(sock, F_SETFL, opts);
-    }while (ret < 0 && errno == EINTR);
-
-    if (ret < 0)
-    {
-        zanError("fcntl(%d, SETFL, opts) failed.", sock);
-    }
-}
-
 int swSocket_write_blocking(int __fd, void *__data, int __len)
 {
     int n = 0;
@@ -501,3 +472,71 @@ int swSocket_set_timeout(int sock, double timeout)
     }
     return ZAN_OK;
 }
+
+void swSocket_fcntl_set_option(int sock, int nonblock, int cloexec)
+{
+    int opts, ret;
+    do
+    {
+        opts = fcntl(sock, F_GETFL);
+    }
+    while (opts < 0 && errno == EINTR);
+
+    if (opts < 0)
+    {
+        zanError("fcntl(%d, GETFL) failed.", sock);
+    }
+
+    if (nonblock)
+    {
+        opts = opts | O_NONBLOCK;
+    }
+    else
+    {
+        opts = opts & ~O_NONBLOCK;
+    }
+
+    do
+    {
+        ret = fcntl(sock, F_SETFL, opts);
+    }
+    while (ret < 0 && errno == EINTR);
+
+    if (ret < 0)
+    {
+        zanError("fcntl(%d, SETFL, opts) failed.", sock);
+    }
+#ifdef FD_CLOEXEC
+    do
+    {
+        opts = fcntl(sock, F_GETFD);
+    }
+    while (opts < 0 && errno == EINTR);
+
+    if (opts < 0)
+    {
+        zanError("fcntl(%d, GETFL) failed.", sock);
+    }
+
+    if (cloexec)
+    {
+        opts = opts | FD_CLOEXEC;
+    }
+    else
+    {
+        opts = opts & ~FD_CLOEXEC;
+    }
+
+    do
+    {
+        ret = fcntl(sock, F_SETFD, opts);
+    }
+    while (ret < 0 && errno == EINTR);
+
+    if (ret < 0)
+    {
+        zanError("fcntl(%d, SETFD, opts) failed.", sock);
+    }
+#endif
+}
+
