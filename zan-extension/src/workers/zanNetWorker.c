@@ -16,6 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
+#include "swoole.h"
 #include "list.h"
 #include "swSignal.h"
 #include "swBaseOperator.h"
