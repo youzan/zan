@@ -37,7 +37,7 @@ extern "C" {
 
 enum swSocket_type
 {
-	SW_SOCK_UNKNOW       =  0,
+    SW_SOCK_UNKNOW       =  0,
     SW_SOCK_TCP          =  1,
     SW_SOCK_UDP          =  2,
     SW_SOCK_TCP6         =  3,
@@ -48,8 +48,8 @@ enum swSocket_type
 
 typedef struct _swSocketLocal
 {
-	socklen_t len;
-	char file[0];
+    socklen_t len;
+    char file[0];
 } swSocketLocal;
 
 typedef struct
@@ -67,7 +67,7 @@ typedef struct
 #ifdef SW_USE_IOCTL
 #define swSetNonBlock(sock,flag)   swSocket_ioctl_set_block(sock, flag)
 #else
-#define swSetNonBlock(sock,flag)   swSocket_fcntl_set_block(sock,flag)
+#define swSetNonBlock(sock,flag)   swSocket_fcntl_set_option(sock, flag, 0)
 #endif
 
 #if defined(TCP_NOPUSH) || defined(TCP_CORK)
@@ -96,7 +96,7 @@ static sw_inline int swSocket_is_dgram(uint8_t type)
 
 static sw_inline int swSocket_is_udpDgram(uint8_t type)
 {
-	return (type == SW_SOCK_UDP || type == SW_SOCK_UDP6);
+    return (type == SW_SOCK_UDP || type == SW_SOCK_UDP6);
 }
 
 static sw_inline int swSocket_is_stream(uint8_t type)
@@ -106,17 +106,17 @@ static sw_inline int swSocket_is_stream(uint8_t type)
 
 static sw_inline int swSocket_is_tcpStream(uint8_t type)
 {
-	return (type == SW_SOCK_TCP || type == SW_SOCK_TCP6);
+    return (type == SW_SOCK_TCP || type == SW_SOCK_TCP6);
 }
 
 static sw_inline int swSocket_is_NET6(uint8_t type)
 {
-	return (type == SW_SOCK_TCP6 || type == SW_SOCK_UDP6);
+    return (type == SW_SOCK_TCP6 || type == SW_SOCK_UDP6);
 }
 
 static sw_inline int swSocket_is_NET(uint8_t type)
 {
-	return (type == SW_SOCK_TCP || type == SW_SOCK_UDP);
+    return (type == SW_SOCK_TCP || type == SW_SOCK_UDP);
 }
 
 int swSocket_create(int type,int *sockType,int* sockDomain);
@@ -137,7 +137,7 @@ int swSocket_write_blocking(int __fd, void *__data, int __len);
 int swSocket_sendto_blocking(int fd, void *__buf, size_t __n, int flag, struct sockaddr *__addr, socklen_t __addr_len);
 
 void swSocket_ioctl_set_block(int sock, int nonblock);
-void swSocket_fcntl_set_block(int sock, int nonblock);
+void swSocket_fcntl_set_option(int sock, int nonblock, int cloexec);
 
 
 int swWrite(int, void *, int);

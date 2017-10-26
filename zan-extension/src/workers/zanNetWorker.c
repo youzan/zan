@@ -50,6 +50,9 @@ static int zanNetworker_udp_setup(zanServer *serv);
 static int zanNetworker_dgram_loop(swThreadParam *param);
 static int zanNetworker_onPacket(swReactor *reactor, swEvent *event);
 
+static void zanHeartbeatThread_start();
+static void zanHeartbeatThread_loop();
+
 static void zanReactor_disableAccept(swReactor *reactor);
 static int swReactorThread_verify_ssl_state(swListenPort *port, swConnection *conn);
 static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int fd, int from_fd, int reactor_id);
@@ -326,6 +329,13 @@ static int zanNetworker_loop(zanProcessPool *pool, zanWorker *worker)
     {
         zanWarn("reactor tcp setup failed.");
         return ZAN_ERR;
+    }
+
+    //heartbeat thread
+    if (servSet->heartbeat_check_interval >= 1 && servSet->heartbeat_check_interval <= servSet->heartbeat_idle_time)
+    {
+        zanTrace("hb timer start, time: %d live time:%d", servSet->heartbeat_check_interval, servSet->heartbeat_idle_time);
+        zanHeartbeatThread_start();
     }
 
     //for worker->networker
@@ -1606,4 +1616,72 @@ static swConnection* zanConnection_create(zanServer *serv, swListenPort *ls, int
     connection->session_id = session_id;
 #endif
     return connection;
+}
+
+static void zanHeartbeatThread_start()
+{
+    if (!ServerG.serv->have_tcp_sock)
+    {
+        return;
+    }
+
+    pthread_t thread_id;
+    if (pthread_create(&thread_id, NULL, (void * (*)(void *)) zanHeartbeatThread_loop, NULL) < 0)
+    {
+        zanError("pthread_create[hbcheck] fail.");
+    }
+    ServerG.heartbeat_tid = thread_id;
+}
+static void zanHeartbeatThread_loop()
+{
+    swDataHead notify_ev;
+    swReactor *reactor;
+    zanServer *serv = ServerG.serv;
+    zanServerSet *servSet = &ServerG.servSet;
+
+    ServerTG.type = SW_THREAD_HEARTBEAT;
+    bzero(&notify_ev, sizeof(notify_ev));
+    notify_ev.type = SW_EVENT_CLOSE;
+
+    swSignal_none();
+    while (ServerG.running)
+    {
+        for(int networker_index = 0; networker_index < servSet->net_worker_num; ++networker_index)
+        {
+            int min_fd = zanServer_get_minfd(serv, networker_index);
+            int max_fd = zanServer_get_maxfd(serv, networker_index);
+
+            if(max_fd == 0)
+            {
+                break;
+            }
+
+            int checktime = (int) time(NULL) - servSet->heartbeat_idle_time;
+            for(int fd = min_fd; fd <= max_fd && fd > 2 && fd < servSet->max_connection; fd++)
+            {
+                swConnection *conn = &serv->connection_list[networker_index][fd];
+                if (conn != NULL && conn->active == 1 && conn->fdtype == SW_FD_TCP)
+                {
+                    if (conn->protect || conn->last_time > checktime)
+                    {
+                        continue;
+                    }
+
+                    zanTrace("fd=%d, checktime=%d, last_time=%d, interval=%d", fd, checktime, (int)conn->last_time, checktime - (int)conn->last_time);
+                    notify_ev.fd = fd;
+                    notify_ev.from_id = conn->from_id;
+
+                    conn->close_force = 1;
+                    conn->close_notify = 1;
+                    conn->close_wait = 1;
+
+                    //notify to reactor thread
+                    reactor = ServerG.main_reactor;
+                    reactor->set(reactor, fd, SW_FD_TCP | SW_EVENT_WRITE);
+                }
+            }
+        }
+        sleep(servSet->heartbeat_check_interval);
+    }
+    pthread_exit(0);
 }

@@ -1320,9 +1320,9 @@ static PHP_METHOD(swoole_client, connect)
         RETURN_FALSE;
     }
 
+    cli->timer_id = 0;
     if (cli->async && swSocket_is_stream(cli->type) && timeout > 0)
     {
-            cli->timer_id = 0;
         cli->timer_id = swTimer_add(&ServerG.timer,timeout,0,cli,TCPCLIENT_USED);
         if (cli->timer_id <= 0)
         {
