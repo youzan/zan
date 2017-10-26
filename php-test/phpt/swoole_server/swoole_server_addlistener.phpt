@@ -34,7 +34,7 @@ if ($pid === 0) {
     });
     $client->on("receive", function($client, $data){
         echo "Client onReceive data: $data\n";
-        $client->send("Hello Server, From Client!");
+        //$client->send("Hello Server, From Client!");
         $client->close();
     });
     $client->on("error", function($client){
@@ -100,5 +100,4 @@ Client onConnected!
 Client1 onConnected!
 Client onReceive data: Hello Client!
 Client1 onReceive data: Hello Client!
-Server: Receive data: Hello Server, From Client!
 Server: Receive data: Hello Server, From Client1!
