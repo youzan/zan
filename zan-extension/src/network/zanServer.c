@@ -16,6 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
+#include "swoole.h"
 #include <stdlib.h>
 #include <time.h>
 #include "list.h"

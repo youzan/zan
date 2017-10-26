@@ -20,6 +20,7 @@
 #include "swSignal.h"
 #include "swBaseOperator.h"
 
+#include "zanServer.h"
 #include "zanWorkers.h"
 #include "zanLog.h"
 #include "zanGlobalDef.h"
