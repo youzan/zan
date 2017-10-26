@@ -64,7 +64,7 @@ if ($pid === 0) {
     });
 
     $serv->on('Receive', function ($serv, $fd, $from_id, $data) {
-        echo "Server: Receive data: $data\n";
+        //echo "Server: Receive data: $data\n";
         //pcntl_waitpid($pid, $status);
         $serv->shutdown();
     });
@@ -74,7 +74,6 @@ if ($pid === 0) {
 
 ?>
 --EXPECT--
-Server: Receive data: Hello Server!
 Client Received: Hello Client!
 server port:9011
 server host:127.0.0.1

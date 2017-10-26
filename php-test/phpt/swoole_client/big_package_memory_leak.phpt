@@ -29,11 +29,13 @@ if ($pid === 0) {
     
     //设置事件回调函数
     $client->on("connect", function($cli) {
-        $cli->send("Hello Server!");
-        $cli->close();
+        //$cli->send("Hello Server!");
+        //$cli->close();
     });
     $client->on("receive", function($cli, $data){
-        //echo "Client Received: ".$data."\n";
+        echo "Client Received: ".$data."\n";
+        $cli->send("Hello Server!");
+        $cli->close();
     });
     $client->on("error", function($cli){
         echo "Clinet Error.\n";
@@ -65,6 +67,7 @@ if ($pid === 0) {
 
     $serv->on('Connect', function ($serv, $fd){
         echo "Server: onConnected, client_fd=$fd\n";
+        $serv->send($fd, "Hello Client!");
     });
 
     $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
@@ -80,4 +83,6 @@ if ($pid === 0) {
 
 --EXPECT--
 Server: onConnected, client_fd=1
+Client Received: Hello Client!
 Server: Receive data: Hello Server!
+
