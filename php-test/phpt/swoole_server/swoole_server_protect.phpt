@@ -1,5 +1,5 @@
 --TEST--
-swoole_server: protect true
+swoole_server: protect
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--
@@ -17,7 +17,6 @@ require_once __DIR__ . "/../inc/zan.inc";
 $host = TCP_SERVER_HOST1;
 $port = TCP_SERVER_PORT1;
 
-
 $pid = pcntl_fork();
 if ($pid < 0) {
     exit;
@@ -30,21 +29,19 @@ if ($pid === 0) {
     
     //设置事件回调函数
     $client->on("connect", function($cli) {
+        $cli->send("Hello Server!");
+        //$cli->close();
+    });
+    $client->on("receive", function($cli, $data){
+        //echo "Client Received: $data";
         $cli->close();
     });
-
-    $client->on("receive", function($cli, $data){
-        echo "Client Received: $data";
-    });
-
     $client->on("error", function($cli){
         echo "Clinet Error.";
     });
-
     $client->on("close", function($cli){
         //echo "Client Close.";
     });
-
     //发起网络连接
     $client->connect($host, $port, 0.5);
 
@@ -58,20 +55,27 @@ if ($pid === 0) {
     ]);
 
     $serv->on('Connect', function ($serv, $fd){
-        assert($serv->protect($fd, true) == true);
-        echo "SUCCESS";
-        //sleep(1);
+        //echo "Server: onConnected, client_fd=$fd\n";
+        $serv->send($fd, "Hello Client!");
+        $serv->protect($fd, true);
         $serv->shutdown();
+        //echo "SUCCESS!";
+    });
+
+    $serv->on('WorkerStop', function ($serv, $worker_id) {
+        echo "WorkerStop!";
     });
 
     $serv->on('Receive', function ($serv, $fd, $from_id, $data) {
         echo "Server: Receive data: $data\n";
+        //pcntl_waitpid($pid, $status);
     });
-
     $serv->start();
 }
 
 
+
 ?>
 --EXPECT--
-SUCCESS
+Server: Receive data: Hello Server!
+WorkerStop!
