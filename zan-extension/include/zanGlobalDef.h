@@ -206,7 +206,7 @@ typedef struct _zanServerG
 
     struct utsname uname;
 
-    pthread_t heartbeat_tid;   ///TODO:::
+    pthread_t heartbeat_tid;
 
     zanServerSet  servSet;
     zanServer    *serv;

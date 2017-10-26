@@ -295,9 +295,13 @@ static int swClient_tcp_connect_sync(swClient *cli, char *host, int port, double
         swSocket_set_timeout(cli->socket->fd,cli->timeout);
     }
 
-    if (nonblock || cli->timeout > 0)
+    if (nonblock)
     {
         swSetNonBlock(cli->socket->fd,1);
+    }
+    else
+    {
+        swSetNonBlock(cli->socket->fd,0);
     }
 
     ret = connect(cli->socket->fd, (struct sockaddr *) &cli->server_addr.addr, cli->server_addr.len);
@@ -322,11 +326,6 @@ static int swClient_tcp_connect_sync(swClient *cli, char *host, int port, double
 
     if (ret >= 0)
     {
-        if (cli->timeout > 0 && !nonblock)
-        {
-            swSetNonBlock(cli->socket->fd,0);
-        }
-
 #ifdef SW_USE_OPENSSL
         if (cli->open_ssl)
         {
@@ -431,8 +430,21 @@ static int swClient_tcp_connect_async(swClient *cli, char *host, int port, doubl
         return ZAN_ERR;
     }
 
-    /// 出现返回错误，还需要继续处理; ret == 0时需要，表示连接成了，还是需要继续处理
-    ret = connect(cli->socket->fd, (struct sockaddr *) &cli->server_addr.addr, cli->server_addr.len);
+    //ret = connect(cli->socket->fd, (struct sockaddr *) &cli->server_addr.addr, cli->server_addr.len);
+    while (1)
+    {
+        ret = connect(cli->socket->fd, (struct sockaddr *) &cli->server_addr.addr, cli->server_addr.len);
+        if (ret < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            ServerG.error = errno;
+        }
+        break;
+    }
+
     if (ret == 0 || (ret < 0 && errno == EINPROGRESS))
     {
         ret = ServerG.main_reactor->add(ServerG.main_reactor, cli->socket->fd, cli->reactor_fdtype | SW_EVENT_WRITE);

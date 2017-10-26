@@ -2415,6 +2415,7 @@ PHP_METHOD(swoole_server, heartbeat)
         RETURN_FALSE;
     }
 
+    array_init(return_value);
     int checktime = (int) (ServerGS->server_time - (time_t)(ServerG.servSet.heartbeat_idle_time));
 
     int tempfd = 0;
@@ -2422,7 +2423,6 @@ PHP_METHOD(swoole_server, heartbeat)
     {
         int serv_maxfd = zanServer_get_maxfd(serv, networker_index);
         int serv_minfd = zanServer_get_minfd(serv, networker_index);
-        array_init(return_value);
 
         for (tempfd = serv_minfd; tempfd <= serv_maxfd && tempfd >= 2; ++tempfd)
         {
@@ -2447,8 +2447,6 @@ PHP_METHOD(swoole_server, heartbeat)
             }
         }
     }
-
-    RETURN_TRUE;
 }
 
 PHP_METHOD(swoole_server, task)
