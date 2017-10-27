@@ -23,7 +23,7 @@ if ($pid < 0) {
 }
 
 if ($pid === 0) {
-    usleep(500);
+    usleep(500000);
 
     $client = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
     
@@ -46,7 +46,7 @@ if ($pid === 0) {
     $client->connect($host, $port, 0.5);
 
     ////////////////////////////////////////////////////////////////////
-    usleep(500);
+    usleep(1000000);
     $client1 = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
     
     //设置事件回调函数

@@ -17,7 +17,7 @@ assert.quiet_eval=0
 //$proc->start();
 //
 //$proc = new \swoole_process(function(\swoole_process $proc) {
-//    usleep(200000);
+//    sleep(1);
 //    // assert(false);
 //});
 //$proc->start();

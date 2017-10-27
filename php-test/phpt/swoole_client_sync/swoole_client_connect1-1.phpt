@@ -24,7 +24,7 @@ if ($pid < 0) {
 }
 
 if ($pid === 0) {
-    usleep(1000);
+    usleep(500000);
 
     $client = new swoole_client(SWOOLE_TCP, SWOOLE_SOCK_SYNC);
     $client->connect("127.0.0.1", 9501);

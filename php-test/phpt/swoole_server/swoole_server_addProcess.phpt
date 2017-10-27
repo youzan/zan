@@ -33,6 +33,7 @@ $process = new swoole_process(function($process) use ($serv) {
         echo "sleep, count=$count\n";
         if (intval($count) >= 3) 
         {
+            $serv->shutdown();
             sleep(3);
         }
     }
@@ -50,7 +51,7 @@ $serv->on('Receive', function ($serv, $fd, $from_id, $data) {
 $serv->on('WorkerStart', function ($serv, $worker_id) {
     //echo "onWorkerStart!\n";
     swoole_timer_after(1000, function() use($serv) {
-        $serv->shutdown();
+        //$serv->shutdown();
     });
 });
 

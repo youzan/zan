@@ -54,3 +54,4 @@ $serv->start();
 --EXPECT--
 onWorkerStart!
 onWorkerStop!
+onWorkerStop!

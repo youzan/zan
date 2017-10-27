@@ -24,7 +24,7 @@ if ($pid < 0) {
 }
 
 if ($pid === 0) {
-    usleep(1000);
+    usleep(500000);
 
     $client = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
     
@@ -46,6 +46,7 @@ if ($pid === 0) {
     $client->connect($host, $port, 0.5);
 
     ////////////////////////////////////////////////////////////////////
+    usleep(1000000);
     $client1 = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
     
     //设置事件回调函数
@@ -95,9 +96,9 @@ if ($pid === 0) {
 
 ?>
 --EXPECT--
-Client1 onConnected!
 Client onConnected!
-Client1 onReceive data: Hello Client!
+Client1 onConnected!
 Client onReceive data: Hello Client!
-Server: Receive data: Hello Server, From Client1!
+Client1 onReceive data: Hello Client!
 Server: Receive data: Hello Server, From Client!
+Server: Receive data: Hello Server, From Client1!
