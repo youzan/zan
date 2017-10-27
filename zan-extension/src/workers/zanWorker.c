@@ -147,7 +147,7 @@ void zanWorker_signal_handler(int signo)
 #ifdef SIGRTMIN
             if (signo == SIGRTMIN)
             {
-                swServer_reopen_log_file(ServerG.serv);
+                zanServer_reopen_log_file(ServerG.serv);
             }
             else
 #endif
