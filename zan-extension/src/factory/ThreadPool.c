@@ -144,11 +144,9 @@ static void* swThreadPool_loop(void *arg)
 
     while (ServerG.running)
     {
- //     pthread_mutex_lock(&(pool->mutex));
         pool->cond.lock.lock(&pool->cond.lock);
         if (pool->shutdown)
         {
-//            pthread_mutex_unlock(&(pool->mutex));
             pool->cond.lock.unlock(&pool->cond.lock);
             zanTrace("thread [%d] will exit\n", id);
             pthread_exit(NULL);
