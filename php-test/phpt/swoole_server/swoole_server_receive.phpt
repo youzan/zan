@@ -24,7 +24,7 @@ if ($pid < 0) {
 }
 
 if ($pid === 0) {
-    usleep(1000);
+    usleep(500000);
 
     $client = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
     

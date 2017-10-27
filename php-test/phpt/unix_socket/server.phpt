@@ -26,7 +26,7 @@ if ($pid < 0) {
 }
 
 if ($pid === 0) {
-    usleep(100);
+    sleep(1);
     $client = new \swoole_client(SWOOLE_SOCK_UNIX_DGRAM, SWOOLE_SOCK_SYNC);
     $r = $client->connect(UNIXSOCK_SERVER_PATH, 0, -1);
     if ($r === false) {
