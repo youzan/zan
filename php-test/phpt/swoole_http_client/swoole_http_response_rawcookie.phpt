@@ -110,7 +110,11 @@ if ($pid === 0) {
             echo "onRequest/rawcookie\n";
             $response->cookie($name, $value, $expire, $path, $domain, $secure, $httpOnly);
             $response->rawcookie("rawcontent", $request->rawcontent());
-            $httpServ->shutdown();
+
+            swoole_timer_after(800, function() use ($httpServ) {
+                $httpServ->shutdown();
+            });
+
             return;
         }
 
