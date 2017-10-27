@@ -1,5 +1,5 @@
 --TEST--
-swoole_server: protect
+swoole_server: protect true
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--

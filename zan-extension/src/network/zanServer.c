@@ -927,3 +927,20 @@ void swoole_cpu_setAffinity(int worker_id, zanServer *serv)
     }
 #endif
 }
+
+void zanServer_reopen_log_file(zanServer *serv)
+{
+    zanServerSet *servSet = &ServerG.servSet;
+    if (!servSet->log_file)
+    {
+        return;
+    }
+
+    close(ServerG.log_fd);
+    zanLog_init(servSet->log_file, 0);
+
+    if (servSet->daemonize)
+    {
+        swoole_redirect_stdout(ServerG.log_fd);
+    }
+}
