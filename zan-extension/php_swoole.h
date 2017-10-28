@@ -45,7 +45,15 @@
 #include "swoole.h"
 #include "swClient.h"
 
+#ifndef PHP_WIN32
 #include "zanGlobalVar.h"
+#else
+//TODO
+typedef struct { int i; } zanServer;
+typedef struct { int i; } zanWorker;
+typedef struct { int i; } swEventData;
+typedef unsigned int key_t;
+#endif
 
 #include "php7_wrapper.h"
 

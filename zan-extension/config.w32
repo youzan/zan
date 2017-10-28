@@ -8,6 +8,9 @@ ARG_WITH("zan", "With zan support", "yes,shared");
 ARG_ENABLE("zan", "Enable beast support", "yes,shared");
 
 if (PHP_ZAN != "no") {
-    EXTENSION("zan", "swoole.c", true)
+
+    EXTENSION("zan", "swoole.c", true);
+
+	ADD_FLAG('CFLAGS_ZAN', "/I " + configure_module_dirname + "/include");
 }
 

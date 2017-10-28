@@ -19,13 +19,16 @@
 #ifndef ZAN_IPC_H_
 #define ZAN_IPC_H_
 
+
+#ifndef PHP_WIN32
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
-
 #include "zanLock.h"
 #include "zanMemory/zanMemory.h"
 #include "swReactor.h"
+#endif
+
 
 
 #ifdef __cplusplus

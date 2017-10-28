@@ -28,8 +28,10 @@
 extern "C" {
 #endif
 
+#ifndef PHP_WIN32
 #include <pthread.h>
 #include <fcntl.h>
+#endif
 
 //===============================zanLock========================================
 enum ZAN_LOCK_TYPE

@@ -26,6 +26,7 @@
 extern "C" {
 #endif
 
+#ifndef PHP_WIN32
 #include <sys/un.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -34,6 +35,7 @@ extern "C" {
 #include <sys/time.h>
 #include <sys/select.h>
 #include <netdb.h>
+#endif
 
 enum swSocket_type
 {
@@ -58,7 +60,9 @@ typedef struct
     {
         struct sockaddr_in inet_v4;
         struct sockaddr_in6 inet_v6;
+#ifndef PHP_WIN32
         struct sockaddr_un un;
+#endif
     } addr;
     socklen_t len;
 

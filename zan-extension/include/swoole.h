@@ -37,7 +37,6 @@ extern "C" {
 
 #include <stdint.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -46,6 +45,9 @@ extern "C" {
 #include <signal.h>
 #include <assert.h>
 #include <time.h>
+
+#ifndef PHP_WIN32
+#include <unistd.h>
 #include <pthread.h>
 #include <sched.h>
 #include <sys/socket.h>
@@ -55,6 +57,7 @@ extern "C" {
 #include <sys/un.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#endif
 
 #ifdef SW_USE_OPENSSL
 #include <openssl/ssl.h>

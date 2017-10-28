@@ -19,8 +19,10 @@
 #ifndef _ZAN_ZANLOG_H_
 #define _ZAN_ZANLOG_H_
 
+#ifndef PHP_WIN32
 #include "swoole.h"
 #include "zanGlobalVar.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +39,7 @@ enum zanLog_level
     ZAN_LOG_ERROR,
     ZAN_LOG_FATAL_ERROR,
 };
-
+#ifndef PHP_WIN32
 #define ZAN_MSG_SIZE      512
 extern char zan_log_buffer[ZAN_MSG_SIZE];
 extern void zanLog_put(int level, char *cnt);
@@ -80,6 +82,7 @@ snprintf(zan_log_buffer, ZAN_MSG_SIZE, "%s(:%d): "str,__func__,__LINE__,##__VA_A
 zanLog_put(ZAN_LOG_FATAL_ERROR, zan_log_buffer);\
 ServerGS->log_lock.unlock(&ServerGS->log_lock);exit(1);}}while(0)
 
+#endif
 #ifdef __cplusplus
 }
 #endif
