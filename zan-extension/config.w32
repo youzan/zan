@@ -1,0 +1,13 @@
+// $Id$
+// vim:ft=javascript
+
+// If your extension references something external
+ARG_WITH("zan", "With zan support", "yes,shared");
+
+
+ARG_ENABLE("zan", "Enable beast support", "yes,shared");
+
+if (PHP_ZAN != "no") {
+    EXTENSION("zan", "swoole.c", true)
+}
+
