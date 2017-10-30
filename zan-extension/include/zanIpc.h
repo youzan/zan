@@ -24,12 +24,11 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
-#include "zanLock.h"
 #include "zanMemory/zanMemory.h"
 #include "swReactor.h"
 #endif
 
-
+#include "zanLock.h"
 
 #ifdef __cplusplus
 extern "C" {

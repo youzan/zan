@@ -21,16 +21,17 @@
 #ifdef PHP_WIN32
 #include <WinSock2.h>
 #include <Iphlpapi.h>
+#include <sys/types.h>
 #pragma comment(lib, "Iphlpapi.lib")
 #else
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <ifaddrs.h>
-#include "swError.h"
-#include "swBaseOperator.h"
 #endif
 
+#include "swError.h"
+#include "swBaseOperator.h"
 #include "zanLog.h"
 #include "php_swoole.h"
 
@@ -630,7 +631,6 @@ PHP_MINFO_FUNCTION(zan)
 PHP_RINIT_FUNCTION(zan)
 {
     //running
-    //SwooleG.running = 1;
 #ifndef PHP_WIN32
     ServerG.running = 1;
 #endif

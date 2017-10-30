@@ -21,10 +21,28 @@
 #define SW_ATOMIC_H_
 
 #include <stdint.h>
+#ifdef PHP_WIN32
+#include <Windows.h>
+#endif
 
 typedef volatile int64_t   atomic_int_t;
 typedef volatile uint64_t  atomic_uint_t;
 typedef atomic_uint_t      sw_atomic_t;
+
+#ifdef PHP_WIN32
+
+#define sw_atomic_fetch_add(value, add)   InterLockedExchangeAdd64(value, add)
+#define sw_atomic_fetch_sub(value, sub)   InterLockedExchangeSub64(value, sub)
+#define sw_atomic_add_fetch(value, add)
+#define sw_atomic_sub_fetch(value, sub)
+
+#define sw_atomic_memory_barrier()
+#define sw_atomic_set(ptr, value)
+#define sw_atomic_release(ptr)
+
+#define sw_atomic_cmp_set(lock, old, set)
+
+#else
 
 #define sw_atomic_fetch_add(value, add)   __sync_fetch_and_add(value, add)
 #define sw_atomic_fetch_sub(value, sub)   __sync_fetch_and_sub(value, sub)
@@ -36,6 +54,8 @@ typedef atomic_uint_t      sw_atomic_t;
 #define sw_atomic_release(ptr)            __sync_lock_release(ptr)
 
 #define sw_atomic_cmp_set(lock, old, set) __sync_bool_compare_and_swap(lock, old, set)
+
+#endif
 
 #ifdef __arm__
 #define sw_atomic_cpu_pause()             __asm__ __volatile__ ("NOP");

@@ -39,8 +39,10 @@ int zanLock_create(zanLock *lock, enum ZAN_LOCK_TYPE lock_type, int lock_arg)
 #endif
         zanFatalError("ZAN_RWLOCK lock_type not support, exit.");
         return ZAN_ERR;
+#ifndef PHP_WIN32
     } else if (lock_type == ZAN_FILELOCK) {
         return zanFileLock_create(lock, lock_arg);
+#endif
     } else if (lock_type == ZAN_MUTEX) {
         return zanMutex_create(lock, lock_arg);
     } else if (lock_type == ZAN_SEM) {

@@ -59,6 +59,11 @@ extern "C" {
 #include <sys/utsname.h>
 #endif
 
+// Windows Types
+#ifdef PHP_WIN32
+typedef unsigned int pid_t;
+#endif
+
 #ifdef SW_USE_OPENSSL
 #include <openssl/ssl.h>
 #endif

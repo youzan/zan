@@ -50,6 +50,15 @@ enum ZAN_LOCK_TYPE
 #define ZAN_ATOMLOCK ZAN_ATOMLOCK
 };
 
+#ifdef PHP_WIN32
+
+typedef struct _zanMutex
+{
+    HANDLE _lock;
+    char name[32];
+} zanMutex;
+
+#else
 typedef struct _zanFileLock
 {
     struct flock lock_t;
@@ -61,6 +70,7 @@ typedef struct _zanMutex
     pthread_mutex_t _lock;
     pthread_mutexattr_t attr;
 } zanMutex;
+#endif
 
 #ifdef HAVE_RWLOCK
 typedef struct _zanRWLock
@@ -103,7 +113,9 @@ typedef struct _zanLock
 #ifdef HAVE_SPINLOCK
         zanSpinLock spinlock;
 #endif
+#ifndef PHP_WIN32
         zanFileLock filelock;
+#endif
         zanSem sem;
         zanAtomicLock atomlock;
     } object;
