@@ -679,7 +679,6 @@ PHP_RSHUTDOWN_FUNCTION(zan)
         }
     }
 
-
     /// clean client information
     swoole_thread_clean();
     //SwooleWG.reactor_wait_onexit = 0;
@@ -688,6 +687,12 @@ PHP_RSHUTDOWN_FUNCTION(zan)
 
 PHP_FUNCTION(swoole_version)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_version can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     char swoole_version[32] = {0};
     snprintf(swoole_version, sizeof(PHP_SWOOLE_VERSION), "%s", PHP_SWOOLE_VERSION);
     SW_RETURN_STRING(swoole_version, 1);
@@ -695,6 +700,12 @@ PHP_FUNCTION(swoole_version)
 
 PHP_FUNCTION(swoole_cpu_num)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_cpu_num can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long cpu_num = 1;
     cpu_num = sysconf(_SC_NPROCESSORS_CONF);
     if(cpu_num < 1)
@@ -707,6 +718,12 @@ PHP_FUNCTION(swoole_cpu_num)
 
 PHP_FUNCTION(swoole_strerror)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_strerror can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
 #define STRERROR_MAX_LEN   256
     long swoole_errno = 0;
     char error_msg[STRERROR_MAX_LEN] = {0};
@@ -721,11 +738,22 @@ PHP_FUNCTION(swoole_strerror)
 
 PHP_FUNCTION(swoole_errno)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_errno can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
     RETURN_LONG(errno);
 }
 
 PHP_FUNCTION(swoole_set_process_name)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_set_process_name can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *name = NULL;
     long size = 128;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|l", &name, &size))
@@ -769,6 +797,12 @@ PHP_FUNCTION(swoole_set_process_name)
 
 PHP_FUNCTION(swoole_get_local_ip)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_get_local_ip can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     struct ifaddrs *ipaddrs = NULL;
     if (getifaddrs(&ipaddrs) != 0 || !ipaddrs)
     {

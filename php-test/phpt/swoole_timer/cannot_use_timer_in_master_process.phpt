@@ -37,7 +37,6 @@ $tcpServer->on('receive', function(swoole_server $server, $fd, $fromId, $data) {
 $tcpServer->start();
 ?>
 --EXPECTF--
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d m.%f] WARNING php_swoole_add_timer(:%d): cannot use timer in master process.
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d m.%f] WARNING zif_swoole_timer_after(:%d): add timer node failed.
+[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d m.%f] WARNING zif_swoole_timer_after(:%d): swoole_timer_after can not be used in master or networker process, type=1
 
 Termsig=0

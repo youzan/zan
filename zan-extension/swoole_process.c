@@ -319,6 +319,12 @@ static PHP_METHOD(swoole_process, __construct)
         RETURN_FALSE;
     }
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_process->__construct can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zanWorker *process = swoole_get_object(getThis());
     if (process)
     {

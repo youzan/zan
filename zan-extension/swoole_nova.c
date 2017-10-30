@@ -109,6 +109,12 @@ PHP_FUNCTION(nova_decode)
     zval* zdata;
     zval* zattach;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_decode can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
 #if PHP_MAJOR_VERSION < 7
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "szzzzzzz", &pBuf, &nBufLen, &zsname, &zmname, &zip, &zport, &zseqno, &zattach, &zdata )) {
 #else
@@ -152,6 +158,12 @@ PHP_FUNCTION(nova_decode_new)
 {
     char* pBuf;
     zend_size_t nBufLen;
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_decode_new can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
 
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pBuf, &nBufLen)) {
         RETURN_FALSE;
@@ -202,6 +214,12 @@ PHP_FUNCTION(nova_encode)
     char* pData = NULL;
     zend_size_t nDataLen = 0;
     zval* zbuffer = NULL;
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_encode can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
 
 #if PHP_MAJOR_VERSION < 7
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslllssz", &pServiceName, &nServiceNameLen, &pMethodName, &nMethodNameLen, &nIp, &nPort,
@@ -288,6 +306,12 @@ PHP_FUNCTION(nova_encode_new)
     char* pData = NULL;
     zend_size_t nDataLen = 0;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_encode_new can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslllss", &pServiceName, &nServiceNameLen, &pMethodName, &nMethodNameLen, &nIp, &nPort,
                                 &nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen)) {
         RETURN_FALSE;
@@ -369,16 +393,34 @@ PHP_FUNCTION(is_nova_packet)
 
 PHP_FUNCTION(nova_get_sequence)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_get_sequence can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     RETURN_LONG(swoole_get_seq_no());
 }
 
 PHP_FUNCTION(nova_get_time)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_get_time can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     RETURN_LONG(ServerGS->server_time);
 }
 
 PHP_FUNCTION(nova_get_ip)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_get_ip can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     char* ip = NULL;
     if(getServiceIp(&ip) < 0)
     {

@@ -247,6 +247,12 @@ void swoole_redis_init(int module_number TSRMLS_DC)
 
 static PHP_METHOD(swoole_redis, __construct)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_redis->setConnectTimeout can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *zset = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|z", &zset))
     {
@@ -362,6 +368,12 @@ static PHP_METHOD(swoole_redis, on)
 
 static PHP_METHOD(swoole_redis,setConnectTimeout)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_redis->setConnectTimeout can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long timeout = 0;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",&timeout))
     {
@@ -374,6 +386,12 @@ static PHP_METHOD(swoole_redis,setConnectTimeout)
 
 static PHP_METHOD(swoole_redis,setQueryTimeout)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_redis->setQueryTimeout can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long timeout = 0;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &timeout))
     {
@@ -387,6 +405,12 @@ static PHP_METHOD(swoole_redis,setQueryTimeout)
 
 static PHP_METHOD(swoole_redis, connect)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_redis->close can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     swRedisClient *redis = swoole_get_object(getThis());
     if(!redis || redis->context || redis->released)
     {
@@ -511,6 +535,12 @@ static PHP_METHOD(swoole_redis, connect)
 
 static PHP_METHOD(swoole_redis, close)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_redis->close can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *internal_user = sw_zend_read_property(swoole_redis_class_entry_ptr, getThis(), ZEND_STRL("internal_user"), 1 TSRMLS_CC);
     if (internal_user && Z_BVAL_P(internal_user))
     {
@@ -545,6 +575,12 @@ static PHP_METHOD(swoole_redis, __destruct)
 
 static PHP_METHOD(swoole_redis,isConnected)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_redis->isConnected can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     swRedisClient *redis = swoole_get_object(getThis());
     if (!redis || redis->released)
     {
@@ -555,6 +591,11 @@ static PHP_METHOD(swoole_redis,isConnected)
 
 static PHP_METHOD(swoole_redis, __call)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_redis->__call can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
 
     swRedisClient *redis = swoole_get_object(getThis());
     if(!redis || redis->released || !redis->context)

@@ -357,6 +357,12 @@ static void mysql_free_cb(mysql_client *client)
 
 static PHP_METHOD(swoole_mysql, __construct)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_mysql->__construct can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!mysql_request_buffer)
     {
         mysql_request_buffer = swString_new(SW_MYSQL_QUERY_INIT_SIZE);

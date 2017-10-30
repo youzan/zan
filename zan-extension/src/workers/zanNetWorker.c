@@ -247,11 +247,18 @@ void zanNetWorker_signal_handler(int signo)
 
 static void zanNetworker_onStart(zanProcessPool *pool, zanWorker *worker)
 {
+    zanServer *serv = ServerG.serv;
+
     zanNetWorker_signal_init();
 
     swoole_cpu_setAffinity(worker->worker_id, ServerG.serv);
 
     zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
+
+    if (serv->onNetWorkerStart)
+    {
+        serv->onNetWorkerStart(serv, worker->worker_id);
+    }
     return;
 }
 
