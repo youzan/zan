@@ -272,6 +272,12 @@ static int php_swoole_check_timer(int msec)
 /// 周期定时器
 PHP_FUNCTION(swoole_timer_tick)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_timer_tick can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long after_ms = 0;
     zval *callback;
     zval *param = NULL;
@@ -297,6 +303,12 @@ PHP_FUNCTION(swoole_timer_tick)
 /// 非周期定时器
 PHP_FUNCTION(swoole_timer_after)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_timer_after can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long after_ms = 0;
     zval *callback;
     zval *param = NULL;
@@ -323,6 +335,12 @@ PHP_FUNCTION(swoole_timer_after)
 
 PHP_FUNCTION(swoole_timer_set)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_timer_set can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *zset = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &zset))
     {
@@ -350,6 +368,12 @@ PHP_FUNCTION(swoole_timer_set)
 
 PHP_FUNCTION(swoole_timer_clear)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_timer_clear can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!ServerG.timer.set)
     {
         RETURN_FALSE;
@@ -367,6 +391,12 @@ PHP_FUNCTION(swoole_timer_clear)
 
 PHP_FUNCTION(swoole_timer_exists)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_timer_exists can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!ServerG.timer.set)
     {
         RETURN_FALSE;

@@ -61,11 +61,11 @@ if ($pid === 0) {
         $serv->send($fd, "Hello Client!");
         $serv->heartbeat(true);
         $serv->shutdown();
-        //echo "SUCCESS!";
+        echo "SUCCESS!";
     });
 
     $serv->on('WorkerStop', function ($serv, $worker_id) {
-        echo "WorkerStop!";
+        //echo "WorkerStop!";
     });
 
     $serv->on('Receive', function ($serv, $fd, $from_id, $data) use($pid) {
@@ -79,5 +79,4 @@ if ($pid === 0) {
 
 ?>
 --EXPECT--
-WorkerStop!
-
+SUCCESS!

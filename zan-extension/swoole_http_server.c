@@ -943,15 +943,16 @@ static int http_onReceive(zanServer *serv, swEventData *req)
     }
 
     int fd = req->info.fd;
-    swConnection *conn = zanServer_get_connection_by_sessionId(ServerG.serv, fd);
+    swConnection *conn = zanServer_get_connection_by_sessionId(serv, fd);
     if (!conn)
     {
-        zanWarn("connection[%d] is closed.", fd);
+        zanWarn("connection session_id:[%d] is closed.", fd);
         return ZAN_ERR;
     }
 
     int networker_index = zanServer_get_networker_index(req->info.networker_id);
-    swListenPort *port = serv->connection_list[networker_index][req->info.from_fd].object;
+    swListenPort *port = zanServer_get_port(serv, req->info.networker_id, conn->fd);
+
     //other server port
     if (!port->open_http_protocol)
     {
@@ -1055,8 +1056,8 @@ static int http_onReceive(zanServer *serv, swEventData *req)
         //websocket handshake
         if (conn->websocket_status == WEBSOCKET_STATUS_CONNECTION && zcallback == NULL)
         {
-                swoole_websocket_onHandshake(port, ctx);
-                goto free_object;
+            swoole_websocket_onHandshake(port, ctx);
+            goto free_object;
         }
 
         args[0] = &zrequest_object;
@@ -1511,6 +1512,12 @@ static PHP_METHOD(swoole_http_server, start)
 
 static PHP_METHOD(swoole_http_request, rawcontent)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->rawcontent can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx)
     {
@@ -1589,6 +1596,12 @@ static PHP_METHOD(swoole_http_request, __destruct)
 
 static PHP_METHOD(swoole_http_response, write)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->write can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx || ctx->response.release)
     {
@@ -1883,6 +1896,12 @@ static int http_response_compress(swString *body, int level)
 
 static PHP_METHOD(swoole_http_response, end)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->end can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx || ctx->response.release)
     {
@@ -1985,6 +2004,12 @@ static PHP_METHOD(swoole_http_response, end)
 
 static PHP_METHOD(swoole_http_response, sendfile)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->sendfile can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx || ctx->response.release)
     {
@@ -2054,6 +2079,12 @@ static PHP_METHOD(swoole_http_response, sendfile)
 
 static PHP_METHOD(swoole_http_response, cookie)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->cookie can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx || ctx->response.release)
     {
@@ -2161,6 +2192,12 @@ static PHP_METHOD(swoole_http_response, cookie)
 
 static PHP_METHOD(swoole_http_response, rawcookie)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->rawcookie can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx || ctx->response.release)
     {
@@ -2269,6 +2306,12 @@ static PHP_METHOD(swoole_http_response, rawcookie)
 
 static PHP_METHOD(swoole_http_response, status)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->status can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx || ctx->response.release)
     {
@@ -2287,6 +2330,12 @@ static PHP_METHOD(swoole_http_response, status)
 
 static PHP_METHOD(swoole_http_response, header)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->header can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *ctx = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!ctx || ctx->response.release)
     {
@@ -2347,6 +2396,12 @@ static PHP_METHOD(swoole_http_response, header)
 #ifdef SW_HAVE_ZLIB
 static PHP_METHOD(swoole_http_response, gzip)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_http_response->gzip can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     http_context *context = http_get_context(getThis(), 0 TSRMLS_CC);
     if (!context || context->response.release)
     {
