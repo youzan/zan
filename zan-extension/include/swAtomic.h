@@ -22,9 +22,9 @@
 
 #include <stdint.h>
 
-typedef long                    atomic_int_t;
-typedef unsigned long           atomic_uint_t;
-typedef volatile atomic_uint_t  sw_atomic_t;
+typedef volatile int64_t   atomic_int_t;
+typedef volatile uint64_t  atomic_uint_t;
+typedef atomic_uint_t      sw_atomic_t;
 
 #define sw_atomic_fetch_add(value, add)   __sync_fetch_and_add(value, add)
 #define sw_atomic_fetch_sub(value, sub)   __sync_fetch_and_sub(value, sub)
