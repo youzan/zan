@@ -698,7 +698,11 @@ PHP_FUNCTION(swoole_version)
 PHP_FUNCTION(swoole_cpu_num)
 {
     long cpu_num = 1;
-#ifndef PHP_WIN32
+#ifdef PHP_WIN32
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    cpu_num = info.dwNumberOfProcessors;
+#else
     cpu_num = sysconf(_SC_NPROCESSORS_CONF);
 #endif
     if(cpu_num < 1)
@@ -735,6 +739,15 @@ PHP_FUNCTION(swoole_errno)
 
 PHP_FUNCTION(swoole_set_process_name)
 {
+#ifdef PHP_WIN32
+    RETURN_FALSE;
+#else
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_set_process_name can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *name = NULL;
     long size = 128;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|l", &name, &size))
@@ -747,9 +760,7 @@ PHP_FUNCTION(swoole_set_process_name)
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "process name max len is 127");
         return;
     }
-#ifndef PHP_WIN32
     size = (size > ServerG.pagesize)? ServerG.pagesize:size;
-#endif
 #if PHP_MAJOR_VERSION >= 7 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 4)
     zval *function = NULL;
     SW_MAKE_STD_ZVAL(function);
@@ -774,6 +785,7 @@ PHP_FUNCTION(swoole_set_process_name)
     memcpy(sapi_module.executable_location, Z_STRVAL_P(name), Z_STRLEN_P(name));
 #endif
 
+#endif
 }
 
 PHP_FUNCTION(swoole_get_local_ip)

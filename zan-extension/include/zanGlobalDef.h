@@ -26,6 +26,7 @@
 
 #include "zanMemory/zanShmPool.h"
 #include "zanWorkers.h"
+#include "zanThread.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -207,7 +208,7 @@ typedef struct _zanServerG
 
     struct utsname uname;
 
-    pthread_t heartbeat_tid;
+    zan_thread_t heartbeat_tid;
 
     zanServerSet  servSet;
     zanServer    *serv;
