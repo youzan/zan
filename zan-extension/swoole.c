@@ -18,7 +18,11 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef PHP_WIN32
+#ifdef PHP_WIN32
+#include <WinSock2.h>
+#include <Iphlpapi.h>
+#pragma comment(lib, "Iphlpapi.lib")
+#else
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -780,7 +784,52 @@ PHP_FUNCTION(swoole_get_local_ip)
         RETURN_FALSE;
     }
 
-#ifndef PHP_WIN32
+#ifdef PHP_WIN32
+    ULONG size = sizeof(IP_ADAPTER_INFO);
+    int ret, i;
+    char *address = NULL;
+    char buf[128] = { 0 }, *pos;
+
+    PIP_ADAPTER_INFO pCurrentAdapter = NULL;
+    PIP_ADAPTER_INFO pIpAdapterInfo = (PIP_ADAPTER_INFO)emalloc(sizeof(*pIpAdapterInfo));
+    PIP_ADDR_STRING  pIPAddr;
+    if (!pIpAdapterInfo) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to allocate memory for IP_ADAPTER_INFO");
+        RETURN_FALSE;
+    }
+
+    ret = GetAdaptersInfo(pIpAdapterInfo, &size);
+    if (ERROR_BUFFER_OVERFLOW == ret) {
+        // see ERROR_BUFFER_OVERFLOW https://msdn.microsoft.com/en-us/library/aa365917(VS.85).aspx
+        efree(pIpAdapterInfo);
+        pIpAdapterInfo = (PIP_ADAPTER_INFO)malloc(size);
+
+        ret = GetAdaptersInfo(pIpAdapterInfo, &size);
+    }
+
+    if (ERROR_SUCCESS != ret) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to get network adapter information");
+        efree(pIpAdapterInfo);
+        return NULL;
+    }
+
+    array_init(return_value);
+    pCurrentAdapter = pIpAdapterInfo;
+    do {
+        pIPAddr = &pCurrentAdapter->IpAddressList;
+        while (pIPAddr) {
+            pIPAddr = pIPAddr->Next;
+            if (strncmp(pIPAddr->IpAddress.String, "127.",strlen("127.")) != 0)
+            {
+                sw_add_assoc_string(return_value, pCurrentAdapter->AdapterName,
+                        pIPAddr->IpAddress.String, 1);
+            }
+        }
+        pCurrentAdapter = pCurrentAdapter->Next;
+    } while (pCurrentAdapter);
+
+    efree(pIpAdapterInfo);
+#else
     struct ifaddrs *ipaddrs = NULL;
     if (getifaddrs(&ipaddrs) != 0 || !ipaddrs)
     {
