@@ -312,6 +312,12 @@ PHP_FUNCTION(swoole_event_add)
     zval *zfd = NULL;
     long event_flag = 0;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_event_add can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|zzl", &zfd, &cb_read, &cb_write, &event_flag))
     {
         RETURN_FALSE;
@@ -394,6 +400,12 @@ PHP_FUNCTION(swoole_event_add)
 
 PHP_FUNCTION(swoole_event_write)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_event_write can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!ServerG.main_reactor)
     {
         zanWarn("reactor no ready, cannot swoole_event_write.");
@@ -431,6 +443,12 @@ PHP_FUNCTION(swoole_event_write)
 
 PHP_FUNCTION(swoole_event_set)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_event_set can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!ServerG.main_reactor)
     {
         zanWarn("reactor no ready, cannot swoole_event_set.");
@@ -514,6 +532,12 @@ PHP_FUNCTION(swoole_event_set)
 
 PHP_FUNCTION(swoole_event_del)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_event_del can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!ServerG.main_reactor)
     {
         zanWarn("reactor no ready, cannot swoole_event_del.");
@@ -555,6 +579,12 @@ PHP_FUNCTION(swoole_event_del)
 
 PHP_FUNCTION(swoole_event_defer)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_event_defer can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!ServerG.main_reactor)
     {
         zanWarn("reactor no ready, cannot swoole_event_defer.");
@@ -588,6 +618,12 @@ PHP_FUNCTION(swoole_event_defer)
 
 PHP_FUNCTION(swoole_event_exit)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_event_exit can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     /// 只针对client 支持事件循环退出
     if (ServerWG.in_client == 1)
     {
@@ -602,6 +638,12 @@ PHP_FUNCTION(swoole_event_exit)
 
 PHP_FUNCTION(swoole_event_wait)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_event_wait can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (!ServerG.main_reactor)
     {
         return;

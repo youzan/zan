@@ -366,6 +366,12 @@ static PHP_METHOD(swoole_websocket_server, on)
 
 static PHP_METHOD(swoole_websocket_server, push)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_websocket_server->push can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *zdata;
     long fd = 0;
     long opcode = WEBSOCKET_OPCODE_TEXT_FRAME;
@@ -413,6 +419,12 @@ static PHP_METHOD(swoole_websocket_server, push)
 
 static PHP_METHOD(swoole_websocket_server, pack)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_websocket_server->pack can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     char *data;
     zend_size_t length;
     long opcode = WEBSOCKET_OPCODE_TEXT_FRAME;
@@ -451,6 +463,12 @@ static PHP_METHOD(swoole_websocket_server, pack)
 
 static PHP_METHOD(swoole_websocket_server, unpack)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_websocket_server->unpack can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     swString buffer;
     bzero(&buffer, sizeof(buffer));
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &buffer.str, &buffer.length))
@@ -464,6 +482,12 @@ static PHP_METHOD(swoole_websocket_server, unpack)
 
 static PHP_METHOD(swoole_websocket_server, exist)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_websocket_server->exist can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (ServerGS->started == 0)
     {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "Server is not running.");

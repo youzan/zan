@@ -77,6 +77,7 @@ typedef struct _zanServer
     void (*onShutdown)(struct _zanServer *);
     void (*onWorkerStart)(struct _zanServer *, int worker_id);
     void (*onWorkerStop)(struct _zanServer *, int worker_id);
+    void (*onNetWorkerStart)(struct _zanServer *, int worker_id);
     void (*onWorkerError)(struct _zanServer *, int worker_id, pid_t worker_pid, int exit_code, int signo);
     void (*onUserWorkerStart)(struct _zanServer *, zanWorker *);
     void (*onPipeMessage)(struct _zanServer *, swEventData *);    /*worker/task_worker pipe read*/

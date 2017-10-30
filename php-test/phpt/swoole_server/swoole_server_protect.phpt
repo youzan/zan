@@ -58,17 +58,19 @@ if ($pid === 0) {
         //echo "Server: onConnected, client_fd=$fd\n";
         $serv->send($fd, "Hello Client!");
         $serv->protect($fd, true);
-        $serv->shutdown();
+        //$serv->shutdown();
         //echo "SUCCESS!";
     });
 
     $serv->on('WorkerStop', function ($serv, $worker_id) {
-        echo "WorkerStop!";
+        //echo "WorkerStop!";
     });
 
     $serv->on('Receive', function ($serv, $fd, $from_id, $data) {
         echo "Server: Receive data: $data\n";
         //pcntl_waitpid($pid, $status);
+        $serv->shutdown();
+        echo "SUCCESS!";
     });
     $serv->start();
 }
@@ -78,4 +80,4 @@ if ($pid === 0) {
 ?>
 --EXPECT--
 Server: Receive data: Hello Server!
-WorkerStop!
+SUCCESS!

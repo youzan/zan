@@ -46,6 +46,7 @@ static void php_swoole_onWorkerStart(zanServer *, int worker_id);
 static void php_swoole_onWorkerStop(zanServer *, int worker_id);
 static void php_swoole_onWorkerError(zanServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo);
 static void php_swoole_onUserWorkerStart(zanServer *serv, zanWorker *worker);
+static void php_swoole_onNetWorkerStart(zanServer *, int worker_id);
 
 static int php_swoole_onTask(zanServer *, swEventData *task);
 static int php_swoole_onFinish(zanServer *, swEventData *task);
@@ -96,6 +97,7 @@ static char *swoole_server_callback[PHP_SERVER_CALLBACK_NUM] = {
     "Task",
     "Finish",
     "WorkerError",
+    "NetWorkerStart",
     //"ManagerStart",
     //"ManagerStop",
     "PipeMessage",
@@ -290,9 +292,11 @@ void swoole_server_init(int module_number TSRMLS_DC)
     zend_declare_property_long(swoole_server_class_entry_ptr,ZEND_STRL("master_pid"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
     zend_declare_property_long(swoole_server_class_entry_ptr,ZEND_STRL("worker_pid"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
     zend_declare_property_bool(swoole_server_class_entry_ptr,ZEND_STRL("taskworker"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
-    zend_declare_property_bool(swoole_server_class_entry_ptr,ZEND_STRL("pid"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
+    zend_declare_property_long(swoole_server_class_entry_ptr,ZEND_STRL("worker_type"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
 
-    zend_declare_property_long(swoole_server_class_entry_ptr,ZEND_STRL("id"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
+    //zend_declare_property_bool(swoole_server_class_entry_ptr,ZEND_STRL("pid"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
+    //zend_declare_property_long(swoole_server_class_entry_ptr,ZEND_STRL("id"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
+    zend_declare_property_long(swoole_server_class_entry_ptr,ZEND_STRL("worker_id"),0,ZEND_ACC_PUBLIC TSRMLS_CC);
 
     zend_declare_property_stringl(swoole_server_class_entry_ptr,ZEND_STRL("host"),"",0,ZEND_ACC_PUBLIC TSRMLS_CC);
     zend_declare_property_long(swoole_server_class_entry_ptr,ZEND_STRL("port"),-1,ZEND_ACC_PUBLIC TSRMLS_CC);
@@ -422,9 +426,6 @@ void php_swoole_server_before_start(zanServer *serv, zval *zobject TSRMLS_DC)
     zanTrace("Create swoole_server host=%s, port=%d, mode=%d, type=%d", serv->listen_list->host,
              (int) serv->listen_list->port, ServerG.factory_mode, (int) serv->listen_list->type);
 
-    /// Master Process ID
-    zend_update_property_long(swoole_server_class_entry_ptr, zobject, ZEND_STRL("master_pid"), getpid() TSRMLS_CC);
-
     zval *zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), 1 TSRMLS_CC);
     if (zsetting == NULL || ZVAL_IS_NULL(zsetting))
     {
@@ -516,7 +517,10 @@ static void php_swoole_onStart(zanServer *serv)
     }
 
     zval *zserv = (zval *) serv->ptr2;
+
     zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("master_pid"), ServerGS->master_pid TSRMLS_CC);
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_id"), -1 TSRMLS_CC);
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_type"), ZAN_PROCESS_MASTER TSRMLS_CC);
 
     zval **args[1];
     args[0] = &zserv;
@@ -583,15 +587,19 @@ static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
     args[0] = &zserv;
     args[1] = &zworker_id;
 
+
     /// update Worker ID property
-    zend_update_property(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_id"), zworker_id TSRMLS_CC);
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_id"), worker_id TSRMLS_CC);
 
     /// update Is a task worker property
     int isTaskWork = 0;
+    int worker_type = ZAN_PROCESS_WORKER;
     if (worker_id >= ServerG.servSet.worker_num && worker_id < ServerG.servSet.task_worker_num)
     {
         isTaskWork = 1;
+        worker_type = ZAN_PROCESS_TASKWORKER;
     }
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_type"),  worker_type TSRMLS_CC);
     zend_update_property_bool(swoole_server_class_entry_ptr, zserv, ZEND_STRL("taskworker"), isTaskWork TSRMLS_CC);
 
     /// Worker Process ID
@@ -616,6 +624,50 @@ static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
                                  &retval, 2, args, 0, NULL TSRMLS_CC) == FAILURE)
     {
         zanWarn("swoole_server: onWorkerStart handler error");
+    }
+    if (EG(exception))
+    {
+        zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
+    }
+
+    sw_zval_ptr_dtor(&zworker_id);
+
+    if (retval)
+    {
+        sw_zval_ptr_dtor(&retval);
+    }
+}
+
+static void php_swoole_onNetWorkerStart(zanServer *serv, int worker_id)
+{
+    SWOOLE_FETCH_TSRMLS;
+
+    zval *zworker_id = NULL;
+    SW_MAKE_STD_ZVAL(zworker_id);
+    ZVAL_LONG(zworker_id, worker_id);
+
+    zval *zserv = (zval *) serv->ptr2;
+    zval **args[2];
+    args[0] = &zserv;
+    args[1] = &zworker_id;
+
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_id"), worker_id TSRMLS_CC);
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_pid"), getpid() TSRMLS_CC);
+    zend_update_property_long(swoole_server_class_entry_ptr, zserv, ZEND_STRL("worker_type"), ZAN_PROCESS_NETWORKER TSRMLS_CC);
+
+    ///Have not set the event callback
+    zval* callback = php_sw_server_callbacks[SW_SERVER_CB_onNetWorkerStart];
+    if (!callback || ZVAL_IS_NULL(callback))
+    {
+        sw_zval_ptr_dtor(&zworker_id);
+        return;
+    }
+
+    zval *retval = NULL;
+    if (sw_call_user_function_ex(EG(function_table), NULL,callback,
+                                 &retval, 2, args, 0, NULL TSRMLS_CC) == FAILURE)
+    {
+        zanWarn("swoole_server: onNetWorkerStart handler error");
     }
     if (EG(exception))
     {
@@ -1376,6 +1428,7 @@ void php_swoole_register_callback(zanServer *serv)
 
     serv->onShutdown = php_swoole_onShutdown;
     serv->onWorkerStart = php_swoole_onWorkerStart;
+    serv->onNetWorkerStart = php_swoole_onNetWorkerStart;
 
     if (php_sw_server_callbacks[SW_SERVER_CB_onWorkerStop])
     {
@@ -1971,6 +2024,12 @@ PHP_METHOD(swoole_server, send)
         RETURN_FALSE;
     }
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->send can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *zfd = NULL;
     zval *zdata = NULL;
     long server_socket = -1;  ///udp: doc...
@@ -2054,6 +2113,12 @@ PHP_METHOD(swoole_server, sendto)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->sendto can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2202,6 +2267,12 @@ PHP_METHOD(swoole_server, sendfile)
         RETURN_FALSE;
     }
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->sendfile can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
 #ifdef __CYGWIN__
     zanWarn("cannot use swoole_server->sendfile() in cygwin.");
     RETURN_FALSE;
@@ -2227,9 +2298,9 @@ PHP_METHOD(swoole_server, sendfile)
 
 PHP_METHOD(swoole_server, close)
 {
-    if (is_master())
+    if (is_master() || is_networker())
     {
-        zanWarn("Cannot close connection in master process.");
+        zanWarn("serv->close can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2282,6 +2353,12 @@ PHP_METHOD(swoole_server, stats)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->stats can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2365,6 +2442,12 @@ PHP_METHOD(swoole_server, reload)
         RETURN_FALSE;
     }
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->reload can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval* zobject = getThis();
     zanServer *serv = swoole_get_object(zobject);
     if (!serv)
@@ -2393,6 +2476,12 @@ PHP_METHOD(swoole_server, heartbeat)
     if (!ServerGS->started)
     {
         zanWarn("Server is not running.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->heartbeat can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2464,6 +2553,12 @@ PHP_METHOD(swoole_server, task)
         RETURN_FALSE;
     }
 
+    if (!is_worker())
+    {
+        zanWarn("serv->task can only be used in worker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *data = NULL;
     long dst_worker_id = -1;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|l", &data, &dst_worker_id))
@@ -2503,6 +2598,12 @@ PHP_METHOD(swoole_server, sendMessage)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->sendMessage can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2572,6 +2673,12 @@ PHP_METHOD(swoole_server, finish)
         RETURN_FALSE;
     }
 
+    if (!is_taskworker())
+    {
+        zanWarn("serv->sendMessage can only be used in taskworker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *data = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &data))
     {
@@ -2594,6 +2701,12 @@ PHP_METHOD(swoole_server, bind)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->bind can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2669,6 +2782,12 @@ PHP_METHOD(swoole_server, getClientInfo)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->getClientInfo can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2799,6 +2918,12 @@ PHP_METHOD(swoole_server, getClientList)
         RETURN_FALSE;
     }
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->getClientList can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long start_fd = 0;
     long find_count = 10;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|ll", &start_fd, &find_count))
@@ -2875,6 +3000,12 @@ PHP_METHOD(swoole_server, exist)
         RETURN_FALSE;
     }
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->exist can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long fd = -1;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &fd))
     {
@@ -2909,6 +3040,12 @@ PHP_METHOD(swoole_server, protect)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->protect can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2947,6 +3084,12 @@ PHP_METHOD(swoole_server, shutdown)
         RETURN_FALSE;
     }
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->shutdown can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (swKill(ServerGS->master_pid, SIGTERM) < 0)
     {
         swoole_php_sys_error(E_WARNING, "shutdown failed. kill(%d, SIGTERM) failed.", ServerGS->master_pid);
@@ -2967,6 +3110,12 @@ PHP_METHOD(swoole_server, stop)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->stop can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -2995,6 +3144,12 @@ PHP_METHOD(swoole_server, stop)
 
 PHP_METHOD(swoole_server, getLastError)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->getLastError can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     RETURN_LONG(ServerG.error);
 }
 
@@ -3010,6 +3165,12 @@ PHP_METHOD(swoole_server, denyRequest)
     if (!serv)
     {
         zanWarn("not create servers.");
+        RETURN_FALSE;
+    }
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->denyRequest can not be used in master or networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -3034,16 +3195,34 @@ PHP_METHOD(swoole_server, exit)
 ///for test
 PHP_METHOD(swoole_server, getWorkerId)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("serv->getWorkerId can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     RETURN_LONG(ServerWG.worker_id);
 }
 
 PHP_METHOD(swoole_server, getWorkerType)
 {
+    if (is_networker())
+    {
+        zanWarn("serv->getWorkerType can not be used in networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     RETURN_LONG(ServerG.process_type);
 }
 
 PHP_METHOD(swoole_server, getWorkerPid)
 {
+    if (is_networker())
+    {
+        zanWarn("serv->getWorkerType can not be used in networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     RETURN_LONG(ServerG.process_pid);
 }
 

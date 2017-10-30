@@ -351,6 +351,12 @@ PHP_FUNCTION(swoole_async_read)
     long buf_size = -1;
     long offset = 0;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_async_read can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz|ll", &filename, &callback, &buf_size, &offset))
     {
         return;
@@ -440,6 +446,12 @@ PHP_FUNCTION(swoole_async_write)
     zend_size_t fcnt_len = 0;
     off_t offset = -1;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_async_write can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zs|lz", &filename, &fcnt, &fcnt_len, &offset, &callback))
     {
         RETURN_FALSE;
@@ -459,16 +471,16 @@ PHP_FUNCTION(swoole_async_write)
 
     convert_to_string(filename);
 
-	long fd = -1;
-	int open_flag = O_WRONLY | O_CREAT;
-	open_flag |= (offset < 0)? O_APPEND:0;
+    long fd = -1;
+    int open_flag = O_WRONLY | O_CREAT;
+    open_flag |= (offset < 0)? O_APPEND:0;
 
-	fd = open(Z_STRVAL_P(filename), open_flag, 0644);
-	if (fd < 0)
-	{
-		swoole_php_fatal_error(E_WARNING, "open(%s, %d) failed. Error: %s[%d]", Z_STRVAL_P(filename), open_flag, strerror(errno), errno);
-		RETURN_FALSE;
-	}
+    fd = open(Z_STRVAL_P(filename), open_flag, 0644);
+    if (fd < 0)
+    {
+        swoole_php_fatal_error(E_WARNING, "open(%s, %d) failed. Error: %s[%d]", Z_STRVAL_P(filename), open_flag, strerror(errno), errno);
+        RETURN_FALSE;
+    }
 
     offset = (offset < 0)? 0:offset;
 
@@ -513,6 +525,12 @@ PHP_FUNCTION(swoole_async_write)
 
 PHP_FUNCTION(swoole_async_set)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_async_set can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     zval *zset = NULL;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &zset))
     {
@@ -593,6 +611,13 @@ PHP_FUNCTION(swoole_async_dns_lookup)
 {
     zval *domain = NULL;
     zval *callback = NULL;
+
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_async_set can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &domain, &callback))
     {
         return;
@@ -638,6 +663,11 @@ PHP_FUNCTION(swoole_async_dns_lookup)
 
 PHP_FUNCTION(swoole_clean_dns_cache)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_clean_dns_cache can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
     swoole_clear_dns_cache();
 }
 
