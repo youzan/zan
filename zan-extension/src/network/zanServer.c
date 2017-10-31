@@ -29,7 +29,6 @@
 
 #include "zanServer.h"
 #include "zanWorkers.h"
-#include "zanSocket.h"
 #include "zanLog.h"
 
 zanServerG   ServerG;              //Local Global Variable
@@ -396,7 +395,7 @@ swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port
         zanWarn("allows up to %d ports to listen", SW_MAX_LISTEN_PORT);
         return NULL;
     }
-    if (!(type == ZAN_SOCK_UNIX_DGRAM || type == ZAN_SOCK_UNIX_STREAM) && (port < 1 || port > 65535))
+    if (!(type == SW_SOCK_UNIX_DGRAM || type == SW_SOCK_UNIX_STREAM) && (port < 1 || port > 65535))
     {
         zanError("invalid port [%d]", port);
         return NULL;
@@ -418,7 +417,7 @@ swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port
     if (type & SW_SOCK_SSL)
     {
         type = type & (~SW_SOCK_SSL);
-        if (zanSocket_is_stream(type))
+        if (swSocket_is_stream(type))
         {
             ls->type = type;
             ls->ssl = 1;
@@ -450,20 +449,20 @@ swListenPort* zanServer_add_port(zanServer *serv, int type, char *host, int port
 
     //stream socket, set nonblock
     ls->sock = sock;
-    if (zanSocket_is_stream(ls->type))
+    if (swSocket_is_stream(ls->type))
     {
         zan_set_nonblocking(sock,1);
         serv->have_tcp_sock = 1;
     }
-    else if (zanSocket_is_dgram(ls->type))
+    else if (swSocket_is_dgram(ls->type))
     {
         serv->have_udp_sock = 1;
         serv->dgram_port_num++;
-        if (ls->type == ZAN_SOCK_UDP)
+        if (ls->type == SW_SOCK_UDP)
         {
             serv->udp_socket_ipv4 = sock;
         }
-        else if (ls->type == ZAN_SOCK_UDP6)
+        else if (ls->type == SW_SOCK_UDP6)
         {
             serv->udp_socket_ipv6 = sock;
         }

@@ -22,7 +22,6 @@
 #include "zanGlobalDef.h"
 #include "zanWorkers.h"
 #include "zanServer.h"
-#include "zanSocket.h"
 #include "zanLog.h"
 
 int zan_spawn_net_process(zanProcessPool *pool);

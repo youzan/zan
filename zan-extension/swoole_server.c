@@ -23,8 +23,9 @@
 #include "swBaseOperator.h"
 #include "swSendfile.h"
 
+#include "swSocket.h"
 #include "zanServer.h"
-#include "zanSocket.h"
+#include "zanLog.h"
 
 #include "ext/standard/php_var.h"
 
@@ -1508,7 +1509,7 @@ PHP_METHOD(swoole_server, __construct)
     zend_size_t host_len = 0;
     char *serv_host = NULL;
     long serv_port  = -1;
-    long sock_type  = ZAN_SOCK_TCP;
+    long sock_type  = SW_SOCK_TCP;
     long serv_mode  = ZAN_MODE_PROCESS;
 
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl|ll", &serv_host,
