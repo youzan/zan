@@ -39,41 +39,42 @@ int swoole_sendfile(int out_fd, int in_fd, off_t *offset, size_t size)
 #endif
 
 //    swTrace("send file, out_fd:%d, in_fd:%d, offset:%d, size:%d", out_fd, in_fd, *offset, size);
-
-do_sendfile:
+    while(ret < 0)
+	{
 #ifdef __MACH__
-    ret = sendfile(in_fd, out_fd, *offset, (off_t*)&size, &hdtr, 0);
+		ret = sendfile(in_fd, out_fd, *offset, (off_t*)&size, &hdtr, 0);
 #else
-    ret = sendfile(in_fd, out_fd, *offset, size, 0, &sent_bytes, 0);
+		ret = sendfile(in_fd, out_fd, *offset, size, 0, &sent_bytes, 0);
 #endif
-    if (ret < 0)
-    {
-        if (errno == EAGAIN)
-        {
-            *offset += sent_bytes;
-            return sent_bytes;
-        }
-        else if (errno == EINTR)
-        {
-            goto do_sendfile;
-        }
-        else
-        {
-            return SW_ERR;
-        }
-    }
-    else if (ret == 0)
-    {
-        *offset += size;
-        return size;
-    }
-    else
-    {
-        zanError("sendfile failed.");
-        return SW_ERR;
-    }
+		if (ret < 0)
+		{
+			if (errno == EAGAIN)
+			{
+				*offset += sent_bytes;
+				return sent_bytes;
+			}
+			else if (errno == EINTR)
+			{
+				ret = -1;
+			}
+			else
+			{
+				return ZAN_ERR;
+			}
+		}
+		else if (ret == 0)
+		{
+			*offset += size;
+			return size;
+		}
+		else
+		{
+			zanError("sendfile failed.");
+			return ZAN_ERR;
+		}
+	}
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 #elif !defined(HAVE_SENDFILE)
