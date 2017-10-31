@@ -143,50 +143,56 @@ static int zanAioBase_thread_onTask(swThreadPool *pool, void *task, int task_len
     int ret = -1;
     int pipe_write_fd  = -1;
     swAio_event *event = (swAio_event *)task;
+    while(ret < 0)
+	{
+		switch(event->type)
+		{
+			case SW_AIO_WRITE:
+				//需要加锁吗?
+				ret = (event->nbytes <= 0)? 0: pwrite(event->fd, event->buf, event->nbytes, event->offset);
+				break;
+			case SW_AIO_READ:
+				//需要加锁吗?
+				ret = (event->nbytes <= 0)? 0: pread(event->fd, event->buf, event->nbytes, event->offset);
+				break;
+			case SW_AIO_DNS_LOOKUP:
+			{
+				struct in_addr addr;
+				ret = swoole_gethostbyname(AF_INET, event->buf, (char *) &addr);
 
-start_switch:
-    switch(event->type)
-    {
-    case SW_AIO_WRITE:
-        //需要加锁吗?
-        ret = (event->nbytes <= 0)? 0: pwrite(event->fd, event->buf, event->nbytes, event->offset);
-        break;
-    case SW_AIO_READ:
-        //需要加锁吗?
-        ret = (event->nbytes <= 0)? 0: pread(event->fd, event->buf, event->nbytes, event->offset);
-        break;
-    case SW_AIO_DNS_LOOKUP:
-        {
-            struct in_addr addr;
-            ret = swoole_gethostbyname(AF_INET, event->buf, (char *) &addr);
-
-            if (ret >= 0)
-            {
-               char *ip_addr = inet_ntoa(addr);
-               bzero(event->buf, event->nbytes);
-               memcpy(event->buf, ip_addr, strnlen(ip_addr, SW_IP_MAX_LENGTH) + 1);
-               ret = 0;
-            }
-        }
-        break;
-    default:
-        zanError("unknow aio task type=%d.", event->type);
-        break;
-    }
-
-    event->ret = ret;
-    if (ret < 0)
-    {
-        if (errno == EINTR || errno == EAGAIN)
-        {
-            goto start_switch;
-        }
-        else
-        {
-            zanError("error: ret=%d, errno=%d:%s", ret, errno, strerror(errno));
-            event->error = errno;
-        }
-    }
+				if (ret >= 0)
+				{
+					char *ip_addr = inet_ntoa(addr);
+					bzero(event->buf, event->nbytes);
+					memcpy(event->buf, ip_addr, strnlen(ip_addr, SW_IP_MAX_LENGTH) + 1);
+					ret = 0;
+				}
+			}
+			break;
+			default:
+				zanError("unknow aio task type=%d.", event->type);
+				break;
+		}
+		
+		event->ret = ret;
+		if (ret < 0)
+		{
+			if (errno == EINTR || errno == EAGAIN)
+			{
+				ret = -1;
+			}
+			else
+			{
+				zanError("error: ret=%d, errno=%d:%s", ret, errno, strerror(errno));
+				event->error = errno;
+				break;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
 
     //todo:::如果写管道失败怎么办?
     //无法执行回调，胶水层会有内存泄漏。。。

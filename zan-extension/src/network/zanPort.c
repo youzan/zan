@@ -176,15 +176,15 @@ static int swPort_onRead_raw(swReactor *reactor, swListenPort *port, swEvent *ev
             return ZAN_OK;
         case SW_CLOSE:
             zanWarn("onRead_raw error, recv_ret=%d, errno=%d:%s", n, errno, strerror(errno));
-            goto close_fd;
+            zanNetworker_onClose(reactor, event);
+			return ZAN_OK;
         default:
             return ZAN_OK;
         }
     }
     else if (n == 0)
     {
-        close_fd:
-            zanNetworker_onClose(reactor, event);
+        zanNetworker_onClose(reactor, event);
         return ZAN_OK;
     }
     else
