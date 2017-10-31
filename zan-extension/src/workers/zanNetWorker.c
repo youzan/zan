@@ -1073,7 +1073,11 @@ static int swReactorThread_verify_ssl_state(swListenPort *port, swConnection *co
                 ret = swSSL_get_client_certificate(conn->ssl, task.data.data, sizeof(task.data.data));
                 if (ret < 0)
                 {
-                    goto no_client_cert;
+					if (ServerG.serv->onConnect)
+					{
+						zanServer_connection_ready(ServerG.serv, conn->fd, conn->from_id, conn->networker_id);
+					}
+					return ZAN_OK;
                 }
                 else
                 {
@@ -1090,7 +1094,7 @@ static int swReactorThread_verify_ssl_state(swListenPort *port, swConnection *co
                     }
                 }
             }
-no_client_cert:
+			
             if (ServerG.serv->onConnect)
             {
                 zanServer_connection_ready(ServerG.serv, conn->fd, conn->from_id, conn->networker_id);

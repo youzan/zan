@@ -1373,14 +1373,16 @@ static PHP_METHOD(swoole_client, send)
         uint32_t len_tmp = htonl(data_len);
         if (cli->send(cli, (char *) &len_tmp,sizeof(uint32_t), flags) < 0)
         {
-            goto send_error;
+			ServerG.error = errno;
+			zanError("client(%d) send %d bytes failed.", cli->socket->fd, data_len);
+			zend_update_property_long(swoole_client_class_entry_ptr, getThis(), SW_STRL("errCode")-1, ServerG.error TSRMLS_CC);
+			RETVAL_FALSE;
         }
     }
 
     ret = cli->send(cli, data, data_len, flags);
     if (ret < 0)
     {
-send_error:
         ServerG.error = errno;
         zanError("client(%d) send %d bytes failed.", cli->socket->fd, data_len);
         zend_update_property_long(swoole_client_class_entry_ptr, getThis(), SW_STRL("errCode")-1, ServerG.error TSRMLS_CC);
