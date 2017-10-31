@@ -270,7 +270,18 @@ static int zanFactory_end(zanFactory *factory, int session_id)
     }
     else if (conn->close_force)
     {
-        goto do_close;
+		conn->closing = 1;
+        if (serv->onClose != NULL)
+        {
+            info.fd = session_id;
+            info.from_id =  conn->from_id;
+            info.from_fd =  conn->from_fd;
+            info.networker_id = conn->networker_id;
+            serv->onClose(serv, &info);
+        }
+        conn->closing = 0;
+        conn->closed = 1;
+        return factory->finish(factory, &_send);
     }
     else if (conn->closing)
     {
@@ -284,7 +295,6 @@ static int zanFactory_end(zanFactory *factory, int session_id)
     }
     else
     {
-        do_close:
         conn->closing = 1;
         if (serv->onClose != NULL)
         {

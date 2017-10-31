@@ -51,7 +51,8 @@ static void swTable_compress_list(swTable *table)
     if (!tmp)
     {
         swFatalError("malloc() failed, cannot compress the jump table.");
-        goto unlock;
+        table->lock.unlock(&table->lock);
+		return;
     }
 
     int index = 0, tmp_i = 0;
@@ -68,8 +69,6 @@ static void swTable_compress_list(swTable *table)
     memcpy(table->rows_list, tmp, sizeof(swTableRow *) * tmp_i);
     sw_free(tmp);
     table->list_n = tmp_i;
-
-unlock:
     table->lock.unlock(&table->lock);
 }
 
@@ -497,11 +496,14 @@ int swTableRow_del(swTable *table, char *key, int keylen)
                 swTable_compress_list(table);
             }
             bzero(row, sizeof(swTableRow));
-            goto delete_element;
+			sw_atomic_fetch_sub(&(table->row_num), 1);
+			sw_spinlock_release(lock);
+			return SW_OK;
         }
         else
         {
-            goto not_exists;
+			sw_spinlock_release(lock);
+            return SW_ERR;
         }
     }
     else
@@ -521,7 +523,6 @@ int swTableRow_del(swTable *table, char *key, int keylen)
 
         if (tmp == NULL)
         {
-            not_exists:
             sw_spinlock_release(lock);
             return SW_ERR;
         }
@@ -550,8 +551,7 @@ int swTableRow_del(swTable *table, char *key, int keylen)
         table->pool->free(table->pool, tmp);
         table->lock.unlock(&table->lock);
     }
-
-    delete_element:
+	
     sw_atomic_fetch_sub(&(table->row_num), 1);
     sw_spinlock_release(lock);
 
