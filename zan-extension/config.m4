@@ -315,7 +315,7 @@ dnl        src/memory/Table.c \
         src/network/Client.c \
         src/network/Connection.c \
         src/network/Socket.c \
-        src/network/zanSocket.c \
+dnl        src/network/zanSocket.c \
         src/network/zanServer.c \
         src/network/zanPort.c \
         src/protocol/Base.c \
