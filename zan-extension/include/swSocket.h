@@ -124,8 +124,6 @@ int swSocket_bind(int sock, int type, char *host, int port);
 int swSocket_wait(int fd, int timeout_ms, int events);
 
 void swSocket_clean(int fd);
-int swSocket_status(int fd);
-
 int swSocket_set_buffer_size(int fd, int buffer_size);
 int swSocket_set_timeout(int sock, double timeout);
 
@@ -139,6 +137,7 @@ int swSocket_sendto_blocking(int fd, void *__buf, size_t __n, int flag, struct s
 void swSocket_ioctl_set_block(int sock, int nonblock);
 void swSocket_fcntl_set_option(int sock, int nonblock, int cloexec);
 
+int zan_set_nonblocking(int fd, int isNonBlock);
 
 int swWrite(int, void *, int);
 

@@ -38,18 +38,6 @@ void swSocket_clean(int fd)
     while (recv(fd, buf, sizeof(buf), MSG_DONTWAIT) > 0);
 }
 
-int swSocket_status(int fd)
-{
-    uint64_t buf = 0;
-    int ret = recv(fd,&buf,sizeof(buf),MSG_DONTWAIT | MSG_PEEK);
-    int errType = swConnection_error(errno);
-    if (0 == ret || (ret < 0 && errType == SW_CLOSE))
-    {
-        return SW_CLOSE;
-    }
-
-    return ret > 0? SW_READY: errType;
-}
 /**
  * Wait socket can read or write.
  */
@@ -84,57 +72,6 @@ int swSocket_wait(int fd, int timeout_ms, int events)
             return ZAN_OK;
         }
     }
-    return ZAN_OK;
-}
-
-/**
- * Wait some sockets can read or write.
- */
-int swSocket_wait_multi(int *list_of_fd, int n_fd, int timeout_ms, int events)
-{
-    assert(n_fd < 65535);
-
-    struct pollfd *event_list = sw_calloc(n_fd, sizeof(struct pollfd));
-    int i;
-
-    int _events = 0;
-    if (events & SW_EVENT_READ)
-    {
-        _events |= POLLIN;
-    }
-    if (events & SW_EVENT_WRITE)
-    {
-        _events |= POLLOUT;
-    }
-
-    for (i = 0; i < n_fd; i++)
-    {
-        event_list[i].fd = list_of_fd[i];
-        event_list[i].events = _events;
-    }
-
-    while (1)
-    {
-        int ret = poll(event_list, n_fd, timeout_ms);
-        if (ret == 0)
-        {
-            sw_free(event_list);
-            return ZAN_ERR;
-        }
-        else if (ret < 0 && errno != EINTR)
-        {
-            sw_free(event_list);
-            zanError("poll() failed.");
-            return ZAN_ERR;
-        }
-        else
-        {
-            sw_free(event_list);
-            return ret;
-        }
-    }
-
-    sw_free(event_list);
     return ZAN_OK;
 }
 
@@ -237,7 +174,7 @@ int swSocket_udp_sendto(int server_sock, char *dst_ip, int dst_port, char *data,
     }
 
     addr.sin_family = AF_INET;
-        addr.sin_port = htons(dst_port);
+    addr.sin_port = htons(dst_port);
     return swSocket_sendto_blocking(server_sock, data, len, 0, (struct sockaddr *) &addr, sizeof(addr));
 }
 
@@ -439,14 +376,14 @@ int swSocket_bind(int sock, int type, char *host, int port)
 
 int swSocket_set_buffer_size(int fd, int buffer_size)
 {
-    if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size)) < 0)
+    if (-1 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size)))
     {
-        zanError("setsockopt(%d, SOL_SOCKET, SO_SNDBUF, %d) failed.", fd, buffer_size);
+        zanError("setsockopt(SO_SNDBUF,fd=%d,size=%d) failed, errno=%d:%s", fd, buffer_size, errno, strerror(errno));
         return ZAN_ERR;
     }
-    if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &buffer_size, sizeof(buffer_size)) < 0)
+    if (-1 == setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &buffer_size, sizeof(buffer_size)))
     {
-        zanError("setsockopt(%d, SOL_SOCKET, SO_RCVBUF, %d) failed.", fd, buffer_size);
+        zanError("setsockopt(SO_RCVBUF,fd=%d,size=%d) failed, errno=%d:%s", fd, buffer_size, errno, strerror(errno));
         return ZAN_ERR;
     }
     return ZAN_OK;
@@ -538,5 +475,35 @@ void swSocket_fcntl_set_option(int sock, int nonblock, int cloexec)
         zanError("fcntl(%d, SETFD, opts) failed.", sock);
     }
 #endif
+}
+
+int zan_set_nonblocking(int fd, int isNonblock)
+{
+    int opts, ret;
+    opts = ret = 0;
+    do
+    {
+        opts = fcntl(fd, F_GETFL);
+    }while (-1 == opts && errno == EINTR);
+
+    if (-1 == opts)
+    {
+        zanSysError("fcntl(%d, GETFL) failed.", fd);
+        //opts = (isNonblock)? 0:1;
+        return ZAN_ERR;
+    }
+    opts = (isNonblock)? (opts | O_NONBLOCK):(opts & ~O_NONBLOCK);
+
+    do
+    {
+        ret = fcntl(fd, F_SETFL, opts);
+    }while (-1 == ret && errno == EINTR);
+
+    if (-1 == ret)
+    {
+        zanSysError("fcntl(%d, SETFL, opts) failed, errno=%d:%s.", fd, errno, strerror(errno));
+        return ZAN_ERR;
+    }
+    return ZAN_OK;
 }
 
