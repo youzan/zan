@@ -366,14 +366,18 @@ int swSSL_get_client_certificate(SSL *ssl, char *buffer, size_t length)
     if (PEM_write_bio_X509(bio, cert) == 0)
     {
         zanWarn("PEM_write_bio_X509() failed.");
-        goto failed;
+		BIO_free(bio);
+		X509_free(cert);
+		return ZAN_ERR;
     }
 
     len = BIO_pending(bio);
     if (len < 0 && len > length)
     {
         zanWarn("certificate length[%ld] is too big.", len);
-        goto failed;
+		BIO_free(bio);
+		X509_free(cert);
+		return ZAN_ERR;
     }
 
     int n = BIO_read(bio, buffer, len);
@@ -382,13 +386,6 @@ int swSSL_get_client_certificate(SSL *ssl, char *buffer, size_t length)
     X509_free(cert);
 
     return n;
-
-failed:
-
-    BIO_free(bio);
-    X509_free(cert);
-
-    return ZAN_ERR;
 }
 
 int swSSL_accept(swConnection *conn)
