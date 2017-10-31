@@ -17,10 +17,8 @@
 */
 
 #include "zanIpc.h"
-#include "zanSocket.h"
+#include "swSocket.h"
 #include "zanLog.h"
-
-///TODO:::read or write argument
 
 static int zanUnSock_read(zanPipe *pPipe, void *buffer, int length);
 static int zanUnSock_write(zanPipe *pPipe, void *buffer, int length);
@@ -58,8 +56,8 @@ int zanUnSock_create(zanPipe *pPipe, int isNonBlock, int protocol)
 
     ///TODO:::
     int sbsize = ServerG.servSet.socket_buffer_size;
-    zan_socket_set_buffersize(object->fds[0], sbsize);
-    zan_socket_set_buffersize(object->fds[1], sbsize);
+    swSocket_set_buffer_size(object->fds[0], sbsize);
+    swSocket_set_buffer_size(object->fds[1], sbsize);
 
     pPipe->object      = object;
     pPipe->is_nonblock = isNonBlock;
