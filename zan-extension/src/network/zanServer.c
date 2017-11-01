@@ -281,7 +281,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint3
     zanServerSet *servSet = &ServerG.servSet;
     zanProcessPool *event_pool = &ServerGS->event_workers;
 
-    //轮循: 多个 networker 进程情况下，这种轮循不正确。。。。
+    //轮循: 多个 networker 进程情况下...
     if (servSet->dispatch_mode == ZAN_DISPATCH_ROUND)
     {
         target_worker_id = sw_atomic_fetch_add(&serv->worker_round_id, 1) % servSet->worker_num;
@@ -308,6 +308,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint3
 #endif
         }
     }
+    /*
     else if (servSet->dispatch_mode == ZAN_DISPATCH_UIDMOD)
     {
         swConnection *conn = zanServer_get_connection(serv, networker_id, conn_fd);
@@ -321,7 +322,7 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint3
             uid = conn->uid;
         }
         target_worker_id = uid % servSet->worker_num;
-    }
+    }*/
     else //空闲 worker
     {
         for (index = 0; index < servSet->worker_num + 1; index++)

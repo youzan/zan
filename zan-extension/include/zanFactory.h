@@ -34,7 +34,7 @@ enum zanDispatchMode
     ZAN_DISPATCH_FDMOD  = 2,      //固定模式，根据连接的文件描述符分配worker
     ZAN_DISPATCH_QUEUE  = 3,      //抢占模式
     ZAN_DISPATCH_IPMOD  = 4,      //对 client IP 取模，分配给一个固定 worker
-    ZAN_DISPATCH_UIDMOD = 5,      //UID 分配
+    //ZAN_DISPATCH_UIDMOD = 5,      //UID 分配
 };
 
 typedef struct
