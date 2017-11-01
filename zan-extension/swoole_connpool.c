@@ -731,17 +731,23 @@ static sw_inline int redisclient_args_check(zval* args,int type TSRMLS_DC)
         php_swoole_array_separate(connection_cfg);
         HashTable *_ht = Z_ARRVAL_P(connection_cfg);
         zval *value = NULL;
-        if (!php_swoole_array_get_value(_ht, "host", value))
+        if (php_swoole_array_get_value(_ht, "host", value))
         {
-            sw_zval_ptr_dtor(&connection_cfg);
-            return SW_ERR;
+            value = NULL;
+            if (!php_swoole_array_get_value(_ht,"port",value))
+            {
+                sw_zval_ptr_dtor(&connection_cfg);
+                return SW_ERR;
+            }
         }
-
-        value = NULL;
-        if (!php_swoole_array_get_value(_ht,"port",value))
+        else
         {
-            sw_zval_ptr_dtor(&connection_cfg);
-            return SW_ERR;
+            value = NULL;
+            if (!php_swoole_array_get_value(_ht, "path", value))
+            {
+                sw_zval_ptr_dtor(&connection_cfg);
+                return SW_ERR;
+            }
         }
 
         sw_zval_ptr_dtor(&connection_cfg);
@@ -808,27 +814,39 @@ static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* 
     HashTable *_ht = Z_ARRVAL_P(connection_cfg);
 
     zval *host = NULL;
-    if (!php_swoole_array_get_value(_ht, "host", host))
-    {
-        sw_zval_ptr_dtor(&connection_cfg);
-        return SW_ERR;
-    }
+    zval *path = NULL;
+    zval *port = NULL;
 
-    if (sw_convert_to_string(host) < 0)
+    if (php_swoole_array_get_value(_ht, "host", host))
     {
-        zanWarn("convert to string failed.");
-        sw_zval_ptr_dtor(&connection_cfg);
-        return SW_ERR;
-    }
+        if (sw_convert_to_string(host) < 0)
+        {
+            zanWarn("convert to string failed.");
+            sw_zval_ptr_dtor(&connection_cfg);
+            return SW_ERR;
+        }
+        if (!php_swoole_array_get_value(_ht,"port",port))
+        {
+            sw_zval_ptr_dtor(&connection_cfg);
+            return SW_ERR;
+        }
+        zan_convert_to_long(port);
 
-    zval* port = NULL;
-    if (!php_swoole_array_get_value(_ht,"port",port))
+    }
+    else
     {
-        sw_zval_ptr_dtor(&connection_cfg);
-        return SW_ERR;
+        if (!php_swoole_array_get_value(_ht, "path", path))
+        {
+            sw_zval_ptr_dtor(&connection_cfg);
+            return SW_ERR;
+        }
+        if (sw_convert_to_string(path) < 0)
+        {
+            zanWarn("convert to string failed.");
+            sw_zval_ptr_dtor(&connection_cfg);
+            return SW_ERR;
+        }
     }
-
-    zan_convert_to_long(port);
 
     int ret = SW_OK;
     zval* client = connClient->client;
@@ -854,7 +872,15 @@ static sw_inline int redisclient_connect(connpool_property* poolproper,connobj* 
     SW_ZVAL_STRING(callback,"onSubClientConnect",1);
 
     zval** argvs[3];
-    argvs[0] = &host;
+    if (port == NULL)
+    {
+        argvs[0] = &path;
+        SW_MAKE_STD_ZVAL(port);
+    }
+    else
+    {
+        argvs[0] = &host;
+    }
     argvs[1] = &port;
     argvs[2] = &callback;
 
