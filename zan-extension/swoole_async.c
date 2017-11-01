@@ -374,7 +374,7 @@ PHP_FUNCTION(swoole_async_read)
         RETURN_FALSE;
     }
 
-    convert_to_string(filename);
+    sw_convert_to_string(filename);
     int open_flag = O_RDONLY;
 //  open_flag |= (ZanAIO.mode == SW_AIO_LINUX)? O_DIRECT:0;
     int fd = open(Z_STRVAL_P(filename), open_flag, 0644);
@@ -469,7 +469,7 @@ PHP_FUNCTION(swoole_async_write)
         RETURN_FALSE;
     }
 
-    convert_to_string(filename);
+    sw_convert_to_string(filename);
 
     long fd = -1;
     int open_flag = O_WRONLY | O_CREAT;
@@ -544,21 +544,21 @@ PHP_FUNCTION(swoole_async_set)
     value = NULL;
     if (php_swoole_array_get_value(vht, "thread_num", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         ZanAIO.thread_num = (uint8_t) Z_LVAL_P(value);
     }
 
     value = NULL;
     if (php_swoole_array_get_value(vht, "enable_signalfd", value))
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         ServerG.enable_signalfd = Z_BVAL_P(value);
     }
 
     value = NULL;
     if (php_swoole_array_get_value(vht, "socket_buffer_size", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         int valueSize = Z_LVAL_P(value);
         valueSize = (valueSize <= 0 || valueSize > SW_MAX_INT)? SW_MAX_INT:valueSize;
         ServerG.servSet.socket_buffer_size = valueSize;
@@ -567,28 +567,28 @@ PHP_FUNCTION(swoole_async_set)
     value = NULL;
     if (php_swoole_array_get_value(vht, "socket_dontwait", value))
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         ServerG.socket_dontwait = Z_BVAL_P(value);
     }
 
     value = NULL;
     if (php_swoole_array_get_value(vht,"aio_max_buffer",value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         ZanAIO.buf_max_len = Z_LVAL_P(value);
     }
 
     value = NULL;
     if (php_swoole_array_get_value(vht, "disable_dns_cache", value))
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         ServerG.disable_dns_cache = Z_BVAL_P(value);
     }
 
     value = NULL;
     if (php_swoole_array_get_value(vht, "dns_lookup_random", value))
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         ServerG.dns_lookup_random = Z_BVAL_P(value);
     }
 
@@ -597,7 +597,7 @@ PHP_FUNCTION(swoole_async_set)
     value = NULL;
     if (php_swoole_array_get_value(vht, "enable_reuse_port", value))
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         if (swoole_version_compare(ServerG.uname.release, "3.9.0") >= 0)
         {
             ServerG.reuse_port = Z_BVAL_P(value)? 1:ServerG.reuse_port;

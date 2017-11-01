@@ -489,17 +489,17 @@ static void client_check_ssl_setting(swClient *cli, zval *zset TSRMLS_DC)
 
     if (php_swoole_array_get_value(vht, "ssl_method", v))
     {
-        convert_to_long(v);
+        zan_convert_to_long(v);
         cli->ssl_option.method = (int) Z_LVAL_P(v);
     }
     if (php_swoole_array_get_value(vht, "ssl_compress", v))
     {
-        convert_to_boolean(v);
+        zan_convert_to_boolean(v);
         cli->ssl_option.disable_compress = !Z_BVAL_P(v);
     }
     if (php_swoole_array_get_value(vht, "ssl_cert_file", v))
     {
-        convert_to_string(v);
+        sw_convert_to_string(v);
         cli->ssl_option.cert_file = strdup(Z_STRVAL_P(v));
         if (access(cli->ssl_option.cert_file, R_OK) < 0)
         {
@@ -509,7 +509,7 @@ static void client_check_ssl_setting(swClient *cli, zval *zset TSRMLS_DC)
     }
     if (php_swoole_array_get_value(vht, "ssl_key_file", v))
     {
-        convert_to_string(v);
+        sw_convert_to_string(v);
         cli->ssl_option.key_file = strdup(Z_STRVAL_P(v));
         if (access(cli->ssl_option.key_file, R_OK) < 0)
         {
@@ -519,7 +519,7 @@ static void client_check_ssl_setting(swClient *cli, zval *zset TSRMLS_DC)
     }
     if (php_swoole_array_get_value(vht, "ssl_passphrase", v))
     {
-        convert_to_string(v);
+        sw_convert_to_string(v);
         cli->ssl_option.passphrase = strdup(Z_STRVAL_P(v));
     }
     if (cli->ssl_option.cert_file && !cli->ssl_option.key_file)
@@ -722,7 +722,7 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
     if (sw_zend_hash_find(vht, ZEND_STRS("open_eof_split"), (void **) &valuePtr) == SUCCESS
             || sw_zend_hash_find(vht, ZEND_STRS("open_eof_check"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_boolean(valuePtr);
+        zan_convert_to_boolean(valuePtr);
         cli->open_eof_check = Z_BVAL_P(valuePtr);
         cli->protocol.split_by_eof = 1;
     }
@@ -746,7 +746,7 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
     //open length check
     if (sw_zend_hash_find(vht, ZEND_STRS("open_length_check"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_boolean(valuePtr);
+        zan_convert_to_boolean(valuePtr);
         cli->open_length_check = Z_BVAL_P(valuePtr);
         cli->protocol.get_package_length = swProtocol_get_package_length;
         cli->protocol.onPackage = client_onPackage;
@@ -772,13 +772,13 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
     //package length offset
     if (sw_zend_hash_find(vht, ZEND_STRS("package_length_offset"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_long(valuePtr);
+        zan_convert_to_long(valuePtr);
         cli->protocol.package_length_offset = (int) Z_LVAL_P(valuePtr);
     }
     //package body start
     if (sw_zend_hash_find(vht, ZEND_STRS("package_body_offset"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_long(valuePtr);
+        zan_convert_to_long(valuePtr);
         cli->protocol.package_body_offset = (int) Z_LVAL_P(valuePtr);
     }
     /**
@@ -786,7 +786,7 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
      */
     if (sw_zend_hash_find(vht, ZEND_STRS("package_max_length"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_long(valuePtr);
+        zan_convert_to_long(valuePtr);
         cli->protocol.package_max_length = (int) Z_LVAL_P(valuePtr);
     }
     else
@@ -798,7 +798,7 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
      */
     if (sw_zend_hash_find(vht, ZEND_STRS("socket_buffer_size"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_long(valuePtr);
+        zan_convert_to_long(valuePtr);
         value = (int) Z_LVAL_P(valuePtr);
         value = (value <= 0 || value > SW_MAX_INT)? SW_MAX_INT:value;
         swSocket_set_buffer_size(cli->socket->fd, value);
@@ -822,7 +822,7 @@ static void client_check_setting(swClient *cli, zval *zset TSRMLS_DC)
      */
     if (sw_zend_hash_find(vht, ZEND_STRS("bind_port"), (void **) &valuePtr) == SUCCESS)
     {
-        convert_to_long(valuePtr);
+        zan_convert_to_long(valuePtr);
         bind_port = (int) Z_LVAL_P(valuePtr);
     }
     if (bind_address)
@@ -1304,7 +1304,7 @@ static PHP_METHOD(swoole_client, connect)
     zval* connectTimeout = sw_zend_read_property(swoole_client_class_entry_ptr, getThis(), ZEND_STRL("connectTimeout"), 1 TSRMLS_CC);
     if (connectTimeout)
     {
-        convert_to_long(connectTimeout);
+        zan_convert_to_long(connectTimeout);
         timeout = Z_LVAL_P(connectTimeout);
     }
 
@@ -1373,10 +1373,10 @@ static PHP_METHOD(swoole_client, send)
         uint32_t len_tmp = htonl(data_len);
         if (cli->send(cli, (char *) &len_tmp,sizeof(uint32_t), flags) < 0)
         {
-			ServerG.error = errno;
-			zanError("client(%d) send %d bytes failed.", cli->socket->fd, data_len);
-			zend_update_property_long(swoole_client_class_entry_ptr, getThis(), SW_STRL("errCode")-1, ServerG.error TSRMLS_CC);
-			RETVAL_FALSE;
+            ServerG.error = errno;
+            zanError("client(%d) send %d bytes failed.", cli->socket->fd, data_len);
+            zend_update_property_long(swoole_client_class_entry_ptr, getThis(), SW_STRL("errCode")-1, ServerG.error TSRMLS_CC);
+            RETVAL_FALSE;
         }
     }
 
@@ -1401,7 +1401,7 @@ static PHP_METHOD(swoole_client, send)
         zval* sendTimeout = sw_zend_read_property(swoole_client_class_entry_ptr, getThis(), ZEND_STRL("sendTimeout"), 1 TSRMLS_CC);
         if (sendTimeout)
         {
-            convert_to_long(sendTimeout);
+            zan_convert_to_long(sendTimeout);
             timeout = Z_LVAL_P(sendTimeout);
         }
 

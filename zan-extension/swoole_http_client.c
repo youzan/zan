@@ -323,7 +323,7 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
     zval* reqTimeout = sw_zend_read_property(swoole_http_client_class_entry_ptr, zobject, ZEND_STRL("requestTimeout"), 1 TSRMLS_CC);
     if (reqTimeout)
     {
-        convert_to_long(reqTimeout);
+        zan_convert_to_long(reqTimeout);
         timeout = Z_LVAL_P(reqTimeout);
     }
 
@@ -395,18 +395,18 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
     #ifdef SW_USE_OPENSSL
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_method"), (void **) &valuePtr) == SUCCESS)
         {
-            convert_to_long(valuePtr);
+            zan_convert_to_long(valuePtr);
             cli->ssl_option.method = (int) Z_LVAL_P(valuePtr);
             cli->open_ssl = 1;
         }
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_compress"), (void **) &valuePtr) == SUCCESS)
         {
-            convert_to_boolean(valuePtr);
+            zan_convert_to_boolean(valuePtr);
             cli->ssl_option.disable_compress = !Z_BVAL_P(valuePtr);
         }
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_cert_file"), (void **) &valuePtr) == SUCCESS)
         {
-            convert_to_string(valuePtr);
+            sw_convert_to_string(valuePtr);
             cli->ssl_option.cert_file = strdup(Z_STRVAL_P(valuePtr));
             if (access(cli->ssl_option.cert_file, R_OK) < 0)
             {
@@ -417,7 +417,7 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
         }
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_key_file"), (void **) &valuePtr) == SUCCESS)
         {
-            convert_to_string(valuePtr);
+            sw_convert_to_string(valuePtr);
             cli->ssl_option.key_file = strdup(Z_STRVAL_P(valuePtr));
             if (access(cli->ssl_option.key_file, R_OK) < 0)
             {
@@ -427,7 +427,7 @@ static int http_client_execute(zval *zobject, char *uri, zend_size_t uri_len, zv
         }
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_passphrase"), (void **) &valuePtr) == SUCCESS)
         {
-            convert_to_string(valuePtr);
+            sw_convert_to_string(valuePtr);
             cli->ssl_option.passphrase = strdup(Z_STRVAL_P(valuePtr));
         }
         if (cli->ssl_option.cert_file && !cli->ssl_option.key_file)
@@ -1201,7 +1201,7 @@ static http_client* http_client_create(zval *object TSRMLS_DC)
 
     ztmp = NULL;
     ztmp = sw_zend_read_property(swoole_http_client_class_entry_ptr, object, ZEND_STRL("port"), 0 TSRMLS_CC);
-    convert_to_long(ztmp);
+    zan_convert_to_long(ztmp);
     http->port = Z_LVAL_P(ztmp);
 
     http->timeout = 0;
@@ -1224,7 +1224,7 @@ static http_client* http_client_create(zval *object TSRMLS_DC)
         ztmp = NULL;
         if (php_swoole_array_get_value(vht, "keep_alive", ztmp))
         {
-            convert_to_boolean(ztmp);
+            zan_convert_to_boolean(ztmp);
             http->keep_alive = (int) Z_LVAL_P(ztmp);
         }
     }

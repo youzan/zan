@@ -555,8 +555,6 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
             serv->onPipeMessage(serv, task);
             break;
 
-        ///TODO:::
-            //.....
         default:
             zanWarn("[Worker] fd=%d, networker_id=%d, error event[type=%d], worker_id=%d",
                      task->info.fd, task->info.networker_id, (int)task->info.type, ServerWG.worker_id);

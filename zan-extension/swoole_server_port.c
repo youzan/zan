@@ -118,35 +118,35 @@ static PHP_METHOD(swoole_server_port, set)
     zval *value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("backlog"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->backlog = (int) Z_LVAL_P(value);
     }
     //tcp_nodelay
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_tcp_nodelay"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->open_tcp_nodelay = Z_BVAL_P(value);
     }
     //tcp_defer_accept
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("tcp_defer_accept"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->tcp_defer_accept = (uint8_t) Z_LVAL_P(value);
     }
     //tcp_keepalive
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_tcp_keepalive"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->open_tcp_keepalive = Z_BVAL_P(value);
     }
     //buffer: split package with eof
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_eof_split"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->protocol.split_by_eof = Z_BVAL_P(value);
         port->open_eof_check = (port->protocol.split_by_eof)? 1:port->open_eof_check;
     }
@@ -174,14 +174,14 @@ static PHP_METHOD(swoole_server_port, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_http_protocol"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->open_http_protocol = Z_BVAL_P(value);
     }
     //websocket protocol
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_websocket_protocol"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->open_websocket_protocol = Z_BVAL_P(value);
     }
 #ifdef SW_USE_HTTP2
@@ -189,7 +189,7 @@ static PHP_METHOD(swoole_server_port, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_http2_protocol"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->open_http2_protocol = Z_BVAL_P(value);
     }
 #endif
@@ -197,35 +197,35 @@ static PHP_METHOD(swoole_server_port, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_mqtt_protocol"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->open_mqtt_protocol = Z_BVAL_P(value);
     }
     //tcp_keepidle
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("tcp_keepidle"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->tcp_keepidle = (uint16_t) Z_LVAL_P(value);
     }
     //tcp_keepinterval
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("tcp_keepinterval"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->tcp_keepinterval = (uint16_t) Z_LVAL_P(value);
     }
     //tcp_keepcount
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("tcp_keepcount"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->tcp_keepcount = (uint16_t) Z_LVAL_P(value);
     }
     //open length check
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_length_check"), (void **) &value) == SUCCESS)
     {
-        convert_to_boolean(value);
+        zan_convert_to_boolean(value);
         port->open_length_check = Z_BVAL_P(value);
     }
     //package length size
@@ -250,7 +250,7 @@ static PHP_METHOD(swoole_server_port, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("package_length_offset"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->protocol.package_length_offset = (int) Z_LVAL_P(value);
     }
     //package body start
@@ -258,7 +258,7 @@ static PHP_METHOD(swoole_server_port, set)
     if (sw_zend_hash_find(vht, ZEND_STRS("package_body_offset"), (void **) &value) == SUCCESS
             || sw_zend_hash_find(vht, ZEND_STRS("package_body_start"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->protocol.package_body_offset = (int) Z_LVAL_P(value);
     }
 
@@ -266,7 +266,7 @@ static PHP_METHOD(swoole_server_port, set)
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("package_max_length"), (void **) &value) == SUCCESS)
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         port->protocol.package_max_length = (int) Z_LVAL_P(value);
     }
 
@@ -330,7 +330,7 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_method"), (void **) &value) == SUCCESS)
         {
-            convert_to_long(value);
+            zan_convert_to_long(value);
             port->ssl_option.method = (int) Z_LVAL_P(value);
         }
         //verify client cert
@@ -357,13 +357,13 @@ static PHP_METHOD(swoole_server_port, set)
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_verify_depth"), (void **) &value) == SUCCESS)
         {
-            convert_to_long(value);
+            zan_convert_to_long(value);
             port->ssl_option.verify_depth = (int) Z_LVAL_P(value);
         }
         value = NULL;
         if (sw_zend_hash_find(vht, ZEND_STRS("ssl_prefer_server_ciphers"), (void **) &value) == SUCCESS)
         {
-            convert_to_boolean(value);
+            zan_convert_to_boolean(value);
             port->ssl_config.prefer_server_ciphers = Z_BVAL_P(value);
         }
         value = NULL;

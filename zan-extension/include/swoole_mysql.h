@@ -1179,18 +1179,18 @@ safe:
                     case IS_FALSE:
                     case IS_TRUE:
 #endif
-                        convert_to_long(&tmp_param);
+                        zan_convert_to_long(&tmp_param);
                     /* fall through */
                     case IS_LONG:
                     case IS_DOUBLE:
-                        convert_to_string(&tmp_param);
+                        sw_convert_to_string(&tmp_param);
                         plc->qlen = Z_STRLEN(tmp_param);
                         plc->quoted = estrdup(Z_STRVAL(tmp_param));
                         plc->freeq = 1;
                         break;
 
                     default:
-                        convert_to_string(&tmp_param);
+                        sw_convert_to_string(&tmp_param);
                         if (!mysql_handle_quoter(Z_STRVAL(tmp_param),
                         Z_STRLEN(tmp_param), &plc->quoted, &plc->qlen))
                         {

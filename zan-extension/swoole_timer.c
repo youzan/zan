@@ -352,7 +352,7 @@ PHP_FUNCTION(swoole_timer_set)
     timer_cfg.use_time_wheel = 0;
     if (php_swoole_array_get_value(vht, "use_time_wheel", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         timer_cfg.use_time_wheel = (uint8_t) Z_LVAL_P(value);
     }
 
@@ -360,7 +360,7 @@ PHP_FUNCTION(swoole_timer_set)
     timer_cfg.precision = 100;
     if (php_swoole_array_get_value(vht, "time_wheel_precision", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         int precision = (int)Z_LVAL_P(value);
         timer_cfg.precision =  precision < 10? 10:precision;
     }

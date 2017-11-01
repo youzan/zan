@@ -2076,7 +2076,7 @@ PHP_METHOD(swoole_server, send)
     }
 
 convert:
-    convert_to_long(zfd);
+    zan_convert_to_long(zfd);
     uint32_t fd = (uint32_t) Z_LVAL_P(zfd);
 
     if (swServer_is_udp(fd))
@@ -2325,7 +2325,7 @@ PHP_METHOD(swoole_server, close)
         return;
     }
 
-    convert_to_long(zfd);
+    zan_convert_to_long(zfd);
 
     //Reset send buffer, Immediately close the connection.
     if (reset)
@@ -2819,7 +2819,7 @@ PHP_METHOD(swoole_server, getClientInfo)
     }
     else
     {
-        convert_to_long(zfd);
+        zan_convert_to_long(zfd);
         fd = Z_LVAL_P(zfd);
     }
 
