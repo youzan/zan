@@ -103,6 +103,7 @@ typedef struct _zanServerGS
 
     zanLock      lock;
     zanLock      log_lock;
+    zanLock      accept_lock;
     uint8_t      log_level;
     sw_atomic_t spinlock;
 
@@ -129,7 +130,6 @@ typedef struct _zanWorkerG
     uint8_t shutdown :1;
 
     swString **buffer_input;
-    //swString **buffer_output;
 
     uint8_t fatal_error;
 
@@ -220,8 +220,6 @@ typedef struct _zanThreadG
 {
     uint16_t id;
     uint8_t type;
-    //uint8_t factory_lock_target;
-    //int16_t factory_target_worker;
 } zanThreadG;
 
 //==============================================================================

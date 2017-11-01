@@ -61,6 +61,12 @@ void zan_init(void)
         exit(3);
     }
 
+    if (ZAN_OK !=  zanLock_create(&ServerGS->accept_lock, ZAN_MUTEX, 1))
+    {
+        printf("[Master] Fatal Error: zanLock_create ServerGS->accept_lock failed.");
+        exit(3);
+    }
+
     /// 统计信息
     ServerStatsG = ServerG.g_shm_pool->alloc(ServerG.g_shm_pool, sizeof(zanServerStats));
     if (NULL == ServerStatsG)
