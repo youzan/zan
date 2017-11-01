@@ -1579,10 +1579,9 @@ PHP_METHOD(swoole_server, __construct)
     zval *ports = NULL;
     SW_ALLOC_INIT_ZVAL(ports);
     array_init(ports);
-    zend_update_property(swoole_server_class_entry_ptr, server_object, ZEND_STRL("ports"), ports TSRMLS_CC);
     server_port_list.zports = ports;
-
     php_swoole_server_add_port(port TSRMLS_CC);
+    zend_update_property(swoole_server_class_entry_ptr, server_object, ZEND_STRL("ports"), ports TSRMLS_CC);
 }
 
 PHP_METHOD(swoole_server, set)
@@ -1899,11 +1898,12 @@ PHP_METHOD(swoole_server, set)
     zval *port_object = server_port_list.zobjects[0];
 
     sw_zval_add_ref(&port_object);
-    sw_zval_add_ref(&zset);
     sw_zval_add_ref(&zobject);
 
     sw_zend_call_method_with_1_params(&port_object, swoole_server_port_class_entry_ptr, NULL, "set", &retval, zset);
     zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), zset TSRMLS_CC);
+	
+    sw_zval_ptr_dtor(&zset);
 
     RETURN_TRUE;
 }
