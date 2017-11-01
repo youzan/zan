@@ -276,7 +276,7 @@ static PHP_METHOD(swoole_redis, __construct)
         zval* ztmp = NULL;
         if (php_swoole_array_get_value(vht, "password", ztmp))
         {
-            convert_to_string(ztmp);
+            sw_convert_to_string(ztmp);
             if (Z_STRLEN_P(ztmp) >= 1 << 8)
             {
                 swoole_php_fatal_error(E_WARNING, "redis password is too long.");
@@ -292,7 +292,7 @@ static PHP_METHOD(swoole_redis, __construct)
         ztmp = NULL;
         if (php_swoole_array_get_value(vht, "database", ztmp))
         {
-            convert_to_long(ztmp);
+            zan_convert_to_long(ztmp);
             if (Z_LVAL_P(ztmp) > 1 << 8)
             {
                 swoole_php_fatal_error(E_WARNING, "redis database is too big.");
@@ -512,7 +512,7 @@ static PHP_METHOD(swoole_redis, connect)
     zval* connectTimeout = sw_zend_read_property(swoole_redis_class_entry_ptr, getThis(), ZEND_STRL("connectTimeout"), 1 TSRMLS_CC);
     if (connectTimeout)
     {
-        convert_to_long(connectTimeout);
+        zan_convert_to_long(connectTimeout);
         timeout = Z_LVAL_P(connectTimeout);
     }
 
@@ -774,7 +774,7 @@ static PHP_METHOD(swoole_redis, __call)
         zval* querytimeout = sw_zend_read_property(swoole_redis_class_entry_ptr, getThis(), ZEND_STRL("queryTimeout"), 1 TSRMLS_CC);
         if (querytimeout)
         {
-            convert_to_long(querytimeout);
+            zan_convert_to_long(querytimeout);
             timeout = Z_LVAL_P(querytimeout);
         }
 

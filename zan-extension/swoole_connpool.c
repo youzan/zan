@@ -566,7 +566,7 @@ static sw_inline int tcpclient_connect(connpool_property* poolproper,connobj* co
         return SW_ERR;
     }
 
-    convert_to_long(port);
+    zan_convert_to_long(port);
 
     zval* retval = NULL;
     zend_update_property_long(swoole_client_class_entry_ptr, client, ZEND_STRL("connectTimeout"), poolproper->connectTimeout TSRMLS_CC);
@@ -1460,7 +1460,7 @@ ZEND_METHOD(swoole_connpool,setConfig)
     zval *value = NULL;
     if (php_swoole_array_get_value(_ht, "hbTimeout", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         proptr->hbTimeout = Z_LVAL_P(value);
         proptr->hbTimeout = proptr->hbTimeout <=0 ?
                             DEFAULT_RECVMSG_TIMEOUT:proptr->hbTimeout;
@@ -1469,7 +1469,7 @@ ZEND_METHOD(swoole_connpool,setConfig)
 
     if (php_swoole_array_get_value(_ht, "hbIntervalTime", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         proptr->hbIntervalTime = Z_LVAL_P(value);
         proptr->hbIntervalTime = proptr->hbIntervalTime <= 0?
                                  0:proptr->hbIntervalTime;
@@ -1478,7 +1478,7 @@ ZEND_METHOD(swoole_connpool,setConfig)
 
     if (php_swoole_array_get_value(_ht, "connectTimeout", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         proptr->connectTimeout = Z_LVAL_P(value);
         proptr->connectTimeout = proptr->connectTimeout <= 0?
                                         DEFAULT_CONNECT_TIMEOUT:
@@ -1488,7 +1488,7 @@ ZEND_METHOD(swoole_connpool,setConfig)
 
     if (php_swoole_array_get_value(_ht, "connectInterval", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         int curConnIntvl = proptr->connIntvl;
         proptr->connIntvl = Z_LVAL_P(value);
         proptr->connIntvl = proptr->connIntvl <= 0?
@@ -1497,7 +1497,7 @@ ZEND_METHOD(swoole_connpool,setConfig)
 
     if (php_swoole_array_get_value(_ht, "maxConnectInterval", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         int curConnectIntvl = proptr->maxConnIntvl;
         proptr->maxConnIntvl = Z_LVAL_P(value);
         proptr->maxConnIntvl = proptr->maxConnIntvl <= 0?
@@ -1506,7 +1506,7 @@ ZEND_METHOD(swoole_connpool,setConfig)
 
     if (php_swoole_array_get_value(_ht, "maxConnectTimes", value))
     {
-        convert_to_long(value);
+        zan_convert_to_long(value);
         int defConnectTimes =  proptr->maxConnIntvl;
         proptr->maxConnTimes = Z_LVAL_P(value);
         proptr->maxConnTimes = proptr->maxConnTimes <= 0? defConnectTimes:
