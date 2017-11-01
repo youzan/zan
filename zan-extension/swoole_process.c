@@ -846,7 +846,7 @@ static PHP_METHOD(swoole_process, setaffinity)
     CPU_ZERO(&cpu_set);
 
     SW_HASHTABLE_FOREACH_START(Z_ARRVAL_P(array), value)
-        convert_to_long(value);
+        zan_convert_to_long(value);
         if (Z_LVAL_P(value) >= ZAN_CPU_NUM)
         {
             zanWarn("invalid cpu id [%d]", (int) Z_LVAL_P(value));
