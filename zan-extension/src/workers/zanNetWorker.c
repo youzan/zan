@@ -1441,6 +1441,13 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
     network_index  = zanServer_get_networker_index(networker_id);
     listen_host    = serv->connection_list[network_index][event->fd].object;
 
+    int lock_ret = ServerGS->log_lock.trylock(&ServerGS->accept_lock);
+    if (ZAN_OK != lock_ret)
+    {
+        zanDebug("trylock failed, lock_ret=%d, networker_index=%d", lock_ret, network_index);
+        return ZAN_OK;
+    }
+
     int index = 0;
     for (index = 0; index < SW_ACCEPT_MAX_COUNT; index++)
     {
@@ -1453,11 +1460,13 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         new_fd = accept(event->fd, (struct sockaddr*)&client_addr, &client_addrlen);
 #endif
 
+        zanDebug("accept ret=%d, networker_index=%d", new_fd, network_index);
         if (new_fd < 0)
         {
             switch (errno)
             {
                 case EAGAIN:
+                    ServerGS->log_lock.unlock(&ServerGS->accept_lock);
                     return ZAN_OK;
                 case EINTR:
                     continue;
@@ -1468,6 +1477,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
                         zanReactor_disableAccept(reactor);
                         reactor->disable_accept = 1;
                     }
+                    ServerGS->log_lock.unlock(&ServerGS->accept_lock);
                     zanWarn("accept failed, errno=%d:%s", errno, strerror(errno));
                     return ZAN_OK;
             }
@@ -1482,15 +1492,16 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         uint32_t connection_num = zanServer_get_connection_num(serv);
         zanDebug("[NetWorker] Accept new connection. connection_num=%d|networker_id/reactor_id=%d|new_fd=%d", connection_num, reactor->id, new_fd);
 
-        //TODO::: too many connection; max_connection/networker_num
+        //too many connection; max_connection/networker_num
         if (connection_num >= servSet->max_connection)
         {
             zanWarn("Too many connections [now: %d], max_connection=%d, close it.", new_fd, servSet->max_connection);
             close(new_fd);
+            ServerGS->log_lock.unlock(&ServerGS->accept_lock);
             return ZAN_OK;
         }
 
-        zanDebug("new_fd=%d, sockfd event->fd=%d, reactor->id=%d， networker_id=%d", new_fd, event->fd, reactor->id, networker_id);
+        //zanDebug("new_fd=%d, sockfd event->fd=%d, reactor->id=%d， networker_id=%d", new_fd, event->fd, reactor->id, networker_id);
         //add to connection_list
         swConnection *conn = zanConnection_create(serv, listen_host, new_fd, event->fd, reactor->id);
         memcpy(&conn->info.addr, &client_addr, sizeof(client_addr));
@@ -1506,6 +1517,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             {
                 bzero(conn, sizeof(swConnection));
                 close(new_fd);
+                ServerGS->log_lock.unlock(&ServerGS->accept_lock);
                 return SW_OK;
             }
         }
@@ -1529,6 +1541,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
             zanError("networker, reactor->add new_fd=%d failed, events=%d", new_fd, SW_FD_TCP | events);
             bzero(conn, sizeof(swConnection));
             close(new_fd);
+            ServerGS->log_lock.unlock(&ServerGS->accept_lock);
             return ZAN_OK;
         }
         //zanDebug("networker accept, reactor->add new_fd=%d, events=%d", new_fd, SW_FD_TCP | events);
@@ -1539,6 +1552,8 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
         break;
 #endif
     }
+
+    ServerGS->log_lock.unlock(&ServerGS->accept_lock);
     return ZAN_OK;
 }
 
