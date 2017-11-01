@@ -28,7 +28,7 @@
 int swoole_sendfile(int out_fd, int in_fd, off_t *offset, size_t size)
 {
     off_t sent_bytes = 0;
-    int ret = 0;
+    int ret = -1;
 
 #ifdef __MACH__
     struct sf_hdtr hdtr;
