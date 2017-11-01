@@ -2869,10 +2869,12 @@ PHP_METHOD(swoole_server, getClientInfo)
     }
 
     array_init(return_value);
+/*
     if (conn->uid > 0 || ServerG.servSet.dispatch_mode == ZAN_DISPATCH_UIDMOD)
     {
         add_assoc_long(return_value, "uid", conn->uid);
     }
+*/
 
     swListenPort *port = zanServer_get_port(serv, conn->networker_id, conn->fd);
     if (port->open_websocket_protocol)
