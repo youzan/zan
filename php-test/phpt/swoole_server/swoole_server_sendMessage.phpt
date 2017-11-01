@@ -1,5 +1,5 @@
 --TEST--
-swoole_server: send message
+swoole_server: sendMessage
 --SKIPIF--
 <?php require __DIR__ . "/../inc/skipif.inc"; ?>
 --INI--
@@ -11,31 +11,44 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 下午4:34
- */
+
 require_once __DIR__ . "/../inc/zan.inc";
 
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/opcode_server.php";
-$port = get_one_free_port();
+$host = TCP_SERVER_HOST1;
+$port = TCP_SERVER_PORT1;
 
-start_server($simple_tcp_server, TCP_SERVER_HOST, $port);
+$serv = new swoole_server($host, $port);
+$serv->set([
+    'worker_num' => 2,
+    'net_worker_num' => 1,
+    'log_file' => '/tmp/test_log.log',
+]);
 
-suicide(2000);
-usleep(500 * 1000);
-
-makeTcpClient(TCP_SERVER_HOST, $port, function(\swoole_client $cli) use($port) {
-    $r = $cli->send(opcode_encode("sendMessage", ["SUCCESS", 1]));
-    assert($r !== false);
-}, function(\swoole_client $cli, $recv) {
-    list($op, $msg) = opcode_decode($recv);
-    echo $msg;
-    swoole_event_exit();
+$serv->on('Connect', function ($serv, $fd){
+    //echo "Server: onConnected, client_fd=$fd\n";
 });
+
+$serv->on('Receive', function ($serv, $fd, $from_id, $data) {
+    echo "Server: Receive data: $data";
+});
+
+$serv->on('PipeMessage', function (swoole_server $serv, $from_worker_id, $message) {
+    echo "PipeMessage from worker_id=$from_worker_id: $message";
+    $serv->shutdown();
+});
+
+$serv->on('WorkerStart', function ($serv, $worker_id) {
+    if (0 == $worker_id) {
+        swoole_timer_after(1000, function() use($serv) {
+            $serv->sendMessage("Hello Worker1", 1);
+        });
+    }
+});
+
+
+$serv->start();
+
 
 ?>
 --EXPECT--
-SUCCESS
+PipeMessage from worker_id=0: Hello Worker1

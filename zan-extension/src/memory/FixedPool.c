@@ -16,7 +16,8 @@
   +----------------------------------------------------------------------+
 */
 
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
+#include "zanIpc.h"
 
 static void swFixedPool_init(swFixedPool *object);
 static void* swFixedPool_alloc(swMemoryPool *pool, uint32_t size);
@@ -32,7 +33,7 @@ swMemoryPool* swFixedPool_new(uint32_t slice_num, uint32_t slice_size, uint8_t s
 {
     size_t size = slice_size * slice_num + slice_num * sizeof(swFixedPool_slice);
     size_t alloc_size = size + sizeof(swFixedPool) + sizeof(swMemoryPool);
-    void *memory = (shared == 1) ? sw_shm_malloc(alloc_size) : sw_malloc(alloc_size);
+    void *memory = (shared == 1) ? zan_shm_malloc(alloc_size) : sw_malloc(alloc_size);
 
     swFixedPool *object = memory;
     memory += sizeof(swFixedPool);
@@ -205,7 +206,7 @@ static void swFixedPool_destroy(swMemoryPool *pool)
     swFixedPool *object = pool->object;
     if (object->shared)
     {
-        sw_shm_free(object);
+        zan_shm_free(object);
     }
     else
     {

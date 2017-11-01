@@ -26,8 +26,7 @@
 #include "swSocket.h"
 #include "swAtomic.h"
 #include "swBaseData.h"
-#include "swMemory/buffer.h"
-
+#include "zanMemory/buffer.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -94,7 +93,7 @@ typedef struct _swConnection
     uint8_t close_force;
     uint8_t close_reset;
     uint8_t event_trigger;
-    uint8_t removed;			//// 是否从reactor 中移除
+    uint8_t removed;            //// 是否从reactor 中移除
     uint8_t overflow;
 
     uint8_t tcp_nopush;
@@ -115,6 +114,8 @@ typedef struct _swConnection
      * from which socket fd, 由哪个监听套接字accepte 出来
      */
     uint8_t from_fd;
+
+    uint8_t networker_id;  //networker_id
 
     /**
      * socket address
@@ -177,12 +178,8 @@ typedef struct _swConnection
 
 int swConnection_buffer_send(swConnection *conn);
 
-swString* swConnection_get_string_buffer(swConnection *conn);
-void swConnection_clear_string_buffer(swConnection *conn);
 swBuffer_trunk* swConnection_get_out_buffer(swConnection *conn, uint32_t type);
-swBuffer_trunk* swConnection_get_in_buffer(swConnection *conn);
 
-int swConnection_sendfile_sync(swConnection *conn, char *filename, double timeout);
 int swConnection_sendfile_async(swConnection *conn, char *filename);
 int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk);
 void swConnection_sendfile_destructor(swBuffer_trunk *chunk);
@@ -195,33 +192,9 @@ ssize_t swConnection_recv(swConnection *conn, void *__buf, size_t __n, int __fla
 /// Send data to connection
 int swConnection_send(swConnection *conn, void *__buf, size_t __n, int __flags);
 
-static sw_inline int swConnection_error(int err)
-{
-    switch (err)
-    {
-    case EFAULT:
-        abort();
-        return SW_ERROR;
-	case ECONNRESET:
-	case EPIPE:
-	case ENOTCONN:
-	case ETIMEDOUT:
-	case ECONNREFUSED:
-	case ENETDOWN:
-	case ENETUNREACH:
-	case EHOSTDOWN:
-	case EHOSTUNREACH:
-		return SW_CLOSE;
-	case EAGAIN:
-#ifdef HAVE_KQUEUE
-	case ENOBUFS:
-#endif
-	case 0:
-		return SW_WAIT;
-	default:
-		return SW_ERROR;
-	}
-}
+int swConnection_error(int err);
+
+int zanNetworker_dispatch(swConnection *conn, char *data, uint32_t length);
 
 #ifdef __cplusplus
 }

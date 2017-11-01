@@ -12,79 +12,58 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 上午10:59
- */
 
 require_once __DIR__ . "/../inc/zan.inc";
 
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/simple_server.php";
-start_server($simple_tcp_server, TCP_SERVER_HOST, TCP_SERVER_PORT);
+$pid = pcntl_fork();
+if ($pid < 0) {
+    exit;
+}
+
+if ($pid === 0) {
+    usleep(500000);
+
+    $client = new swoole_client(SWOOLE_SOCK_UDP);
+    $client->connect('127.0.0.1', 9503);
+
+    $ret = $client->sendto("127.0.0.1", 9503, "Hello UdpServer!");
+    
+    $message2 = $client->recv();
+    echo "From Server:{$message2}\n";
+
+    $peer = $client->getpeername();
+    echo "ip: " . $peer["host"] . "\n";
+    echo "port: " . $peer["port"] . "\n";
+
+} else {
+
+    $serv = new swoole_server("127.0.0.1", 9503, SWOOLE_PROCESS, SWOOLE_SOCK_UDP);
+
+    $serv->set(array(
+        'worker_num' => 1,
+        'net_worker_num' => 1,
+        'log_file' => '/tmp/test_log.log',
+    ));
+
+    $serv->on('Packet', function ($serv, $data, $clientInfo) {
+        echo ("onPacket: $data\n");
+        $serv->sendto($clientInfo['address'], $clientInfo['port'], "Hello UdpClient!");
+        $serv->shutdown();
+    });
 
 
-suicide(5000);
+    $serv->on('connect', function ($serv, $fd){
+        echo "onConnect, fd=%d\n";
+    });
 
-
-$cli = new \swoole_client(SWOOLE_SOCK_UDP, SWOOLE_SOCK_ASYNC);
-
-
-$cli->on("connect", function(\swoole_client $cli) {
-    // TODO 这里坑爹的同步调用
-    // TODO defer 也是同步调用!!!
-//     swoole_event_defer(function() use($cli) {
-        echo "DEFER\n\n\n\n";
-        swoole_timer_after(1, function() use($cli) {
-            // var_dump($cli->timeo_id);
-            var_dump(swoole_timer_exists($cli->timeo_id));
-             echo "ON_CONNECT\n";
-            swoole_timer_clear($cli->timeo_id);
-            assert($cli->isConnected() === true);
-            $cli->send("test");
-        });
-//     });
-});
-
-$cli->on("receive", function(\swoole_client $cli, $data){
-    var_dump($data);
-    $i = $cli->getpeername();
-    assert($i !== false);
-
-    // TODO assert
-    var_dump($i);
-
-
-
-    $cli->close();
-});
-
-$cli->on("error", function(\swoole_client $cli) {
-    echo "error";
-});
-
-$cli->on("close", function(\swoole_client $cli) {
-    swoole_event_exit();
-    echo "SUCCESS";
-});
-
-
-// TODO on connect 回调同步调用
-$r = $cli->connect(IP_BAIDU, 80);
-assert($r);
-echo "CONNECT RETURN\n";
-
-
-$cli->timeo_id = swoole_timer_after(1000, function() use($cli) {
-    echo "connect timeout";
-    $cli->close();
-    assert($cli->isConnected() === false);
-});
-
-echo "TIMER_AFTER\n";
+    //启动服务器
+    $serv->start();
+}
 
 ?>
 
 --EXPECT--
-SUCCESS
+onPacket: Hello UdpServer!
+From Server:Hello UdpClient!
+ip: 127.0.0.1
+port: 9503

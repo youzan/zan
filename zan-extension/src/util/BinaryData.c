@@ -15,10 +15,10 @@
  | Author: Tianfeng Han  <mikan.tenny@gmail.com>                        |
  +----------------------------------------------------------------------+
  */
- 
+
 #include "swoole.h"
 #include "swProtocol/binarydata.h"
-#include "swMemory/memoryPool.h"
+#include "zanMemory/zanMemory.h"
 
 int swReadI64(const uchar_t* pData, int64_t *pValue)
 {

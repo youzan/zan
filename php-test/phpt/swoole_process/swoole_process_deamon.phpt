@@ -11,23 +11,21 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
+
+
 $proc = new \swoole_process(function(\swoole_process $proc) {
     $r = \swoole_process::daemon();
     assert($r);
-
-    $proc->push(posix_getpid());
+    echo $proc->pop();  
 });
 $proc->useQueue();
-$forkPid = $proc->start();
-$demonPid = intval($proc->pop());
-
-assert($forkPid !== $demonPid);
-
-\swoole_process::kill($demonPid, SIGKILL);
+$proc->start();
+$proc->push("SUCCESS");
 
 \swoole_process::wait(true);
-\swoole_process::wait(true);
-echo "SUCCESS";
+$proc->freeQueue();
+
+
 ?>
 --EXPECT--
 SUCCESS

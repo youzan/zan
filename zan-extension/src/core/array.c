@@ -18,7 +18,7 @@
 
 
 #include "swError.h"
-#include "swLog.h"
+#include "zanLog.h"
 #include "swBaseData.h"
 
 #define swArray_page(array, n)      ((!array->page_size)? array->page_num: (n) / (array)->page_size)
@@ -32,7 +32,7 @@ swArray *swArray_create(int page_size, size_t item_size)
     swArray *array = sw_malloc(sizeof(swArray));
     if (array == NULL)
     {
-    	swFatalError("malloc[0] failed.");
+        zanFatalError("malloc[0] failed.");
         return NULL;
     }
 
@@ -41,7 +41,7 @@ swArray *swArray_create(int page_size, size_t item_size)
     if (array->pages == NULL)
     {
         sw_free(array);
-        swFatalError("malloc[1] failed.");
+        zanFatalError("malloc[1] failed.");
         return NULL;
     }
 
@@ -75,13 +75,13 @@ int swArray_extend(swArray *array)
 {
     if (!array || array->page_num == SW_ARRAY_PAGE_MAX)
     {
-        swWarn("max page_num is %d", array->page_num);
+        zanWarn("max page_num is %d", array->page_num);
         return SW_ERR;
     }
     array->pages[array->page_num] = sw_calloc(array->page_size, array->item_size);
     if (array->pages[array->page_num] == NULL)
     {
-        swFatalError("malloc[1] failed.");
+        zanFatalError("malloc[1] failed.");
         return SW_ERR;
     }
 
@@ -94,14 +94,14 @@ int swArray_extend(swArray *array)
  */
 void *swArray_fetch(swArray *array, uint32_t n)
 {
-	if (!array){
-		return NULL;
-	}
+    if (!array){
+        return NULL;
+    }
 
     int page = swArray_page(array, n);
 
     return (page >= array->page_num)? NULL:
-    		array->pages[page] + (swArray_offset(array, n) * array->item_size);
+            array->pages[page] + (swArray_offset(array, n) * array->item_size);
 }
 
 /**
@@ -109,9 +109,9 @@ void *swArray_fetch(swArray *array, uint32_t n)
  */
 int swArray_append(swArray *array, void *data)
 {
-	if (!array){
-		return SW_ERR;
-	}
+    if (!array){
+        return SW_ERR;
+    }
 
     int n = array->offset++;
     int page = swArray_page(array, n);
@@ -129,14 +129,14 @@ int swArray_append(swArray *array, void *data)
 
 int swArray_store(swArray *array, uint32_t n, void *data)
 {
-	if (!array){
-		return SW_ERR;
-	}
+    if (!array){
+        return SW_ERR;
+    }
 
     int page = swArray_page(array, n);
     if (page >= array->page_num)
     {
-        swWarn("fetch index[%d] out of array", n);
+        zanWarn("fetch index[%d] out of array", n);
         return SW_ERR;
     }
 
@@ -146,9 +146,9 @@ int swArray_store(swArray *array, uint32_t n, void *data)
 
 void *swArray_alloc(swArray *array, uint32_t n)
 {
-	if (!array){
-		return NULL;
-	}
+    if (!array){
+        return NULL;
+    }
 
     while (n >= array->page_num * array->page_size)
     {
@@ -161,7 +161,7 @@ void *swArray_alloc(swArray *array, uint32_t n)
     int page = swArray_page(array, n);
     if (page >= array->page_num)
     {
-        swWarn("fetch index[%d] out of array", n);
+        zanWarn("fetch index[%d] out of array", n);
         return NULL;
     }
     return array->pages[page] + (swArray_offset(array, n) * array->item_size);
