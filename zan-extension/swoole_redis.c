@@ -1083,9 +1083,7 @@ static int swoole_redis_onError(swReactor *reactor, swEvent *event)
     		return SW_OK;
     }
 
-    disconnect_client(redis);
-    handle_close(redis);
-    return SW_OK;
+    return swoole_redis_onRead(reactor, event);
 }
 
 static int disconnect_client(swRedisClient* redis)
