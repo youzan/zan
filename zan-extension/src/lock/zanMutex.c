@@ -103,7 +103,7 @@ static int zanMutex_trylock(zanLock *lock)
 
     ret = pthread_mutex_trylock(&lock->object.mutex._lock);
     if (0 != ret) {
-        zanError("pthread_mutex_trylock return ret=%d, errno=%d:%s", ret, errno, strerror(errno));
+        //zanError("pthread_mutex_trylock return ret=%d, errno=%d:%s", ret, errno, strerror(errno));
         return ZAN_ERR;
     }
     return ZAN_OK;

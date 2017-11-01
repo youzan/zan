@@ -3196,9 +3196,9 @@ PHP_METHOD(swoole_server, exit)
 ///for test
 PHP_METHOD(swoole_server, getWorkerId)
 {
-    if (is_master() || is_networker())
+    if (is_master())
     {
-        zanWarn("serv->getWorkerId can not be used in master or networker process, type=%d", ServerG.process_type);
+        zanWarn("serv->getWorkerId can not be used in networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
@@ -3207,23 +3207,11 @@ PHP_METHOD(swoole_server, getWorkerId)
 
 PHP_METHOD(swoole_server, getWorkerType)
 {
-    if (is_networker())
-    {
-        zanWarn("serv->getWorkerType can not be used in networker process, type=%d", ServerG.process_type);
-        RETURN_FALSE;
-    }
-
     RETURN_LONG(ServerG.process_type);
 }
 
 PHP_METHOD(swoole_server, getWorkerPid)
 {
-    if (is_networker())
-    {
-        zanWarn("serv->getWorkerType can not be used in networker process, type=%d", ServerG.process_type);
-        RETURN_FALSE;
-    }
-
     RETURN_LONG(ServerG.process_pid);
 }
 
