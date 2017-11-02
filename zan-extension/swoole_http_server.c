@@ -1437,6 +1437,7 @@ static PHP_METHOD(swoole_http_server, start)
     serv->onClose = http_onClose;
 
     zval *zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), 1 TSRMLS_CC);
+    int is_update = 0;
     if (zsetting == NULL || ZVAL_IS_NULL(zsetting))
     {
     	zval* tmp = NULL;
@@ -1445,14 +1446,17 @@ static PHP_METHOD(swoole_http_server, start)
         zend_update_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), tmp TSRMLS_CC);
         zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), 1 TSRMLS_CC);
         sw_zval_ptr_dtor(&tmp);
+    } else {
+      	is_update = 1;
+        php_swoole_array_separate(zsetting);
     }
 
     serv->listen_list->open_http_protocol = 1;
-	serv->listen_list->open_mqtt_protocol = 0;
-	serv->listen_list->open_eof_check = 0;
-	serv->listen_list->open_length_check = 0;
+    serv->listen_list->open_mqtt_protocol = 0;
+    serv->listen_list->open_eof_check = 0;
+    serv->listen_list->open_length_check = 0;
 
-	add_assoc_bool(zsetting, "open_http_protocol", serv->listen_list->open_http_protocol);
+    add_assoc_bool(zsetting, "open_http_protocol", serv->listen_list->open_http_protocol);
     add_assoc_bool(zsetting, "open_mqtt_protocol", serv->listen_list->open_mqtt_protocol);
     add_assoc_bool(zsetting, "open_eof_check", serv->listen_list->open_eof_check);
     add_assoc_bool(zsetting, "open_length_check", serv->listen_list->open_length_check);
@@ -1460,8 +1464,11 @@ static PHP_METHOD(swoole_http_server, start)
     if (serv->listen_list->open_websocket_protocol)
     {
         add_assoc_bool(zsetting, "open_websocket_protocol", 1);
-    }
+    } 
 
+    if (is_update) {
+        zend_update_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), zsetting TSRMLS_CC);
+    }
     serv->ptr2 = getThis();
 
     //for is_uploaded_file and move_uploaded_file
