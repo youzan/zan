@@ -974,7 +974,19 @@ swListenPort* swServer_add_port(swServer *serv, int type, char *host, int port)
         swError("invalid port [%d]", port);
         return NULL;
     }
-
+	swListenPort *lstmp = NULL;
+	int port_listen = 0;
+	LL_FOREACH(serv->listen_list, lstmp)
+	{
+		port_listen = lstmp->port;
+		if(port_listen == port)
+		{
+			swFatalError("this port is listen now");
+			return NULL;
+		}
+		
+	}
+	
     swListenPort *ls = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swListenPort));
     if (ls == NULL)
     {
