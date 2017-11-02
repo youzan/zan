@@ -415,9 +415,9 @@ PHP_FUNCTION(nova_get_time)
 
 PHP_FUNCTION(nova_get_ip)
 {
-    if (is_master() || is_networker())
+    if (is_networker())
     {
-        zanWarn("nova_get_ip can not be used in master or networker process, type=%d", ServerG.process_type);
+        zanWarn("nova_get_ip can not be used in networker process, type=%d", ServerG.process_type);
         RETURN_FALSE;
     }
 
