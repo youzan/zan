@@ -401,14 +401,14 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
             {
                 if (reactor->set(reactor, fd, socket->fdtype | socket->events) < 0)
                 {
-                    zanError("reactor->set(%d, SW_EVENT_WRITE) failed.", fd);
+                    zanWarn("reactor->set(%d, SW_EVENT_WRITE) failed.", fd);
                 }
             }
             else
             {
                 if (reactor->add(reactor, fd, socket->fdtype | SW_EVENT_WRITE) < 0)
                 {
-                    zanError("reactor->add(%d, SW_EVENT_WRITE) failed.", fd);
+                    zanWarn("reactor->add(%d, SW_EVENT_WRITE) failed.", fd);
                 }
             }
 
@@ -499,14 +499,14 @@ int swReactor_onWrite(swReactor *reactor, swEvent *ev)
             socket->events &= (~SW_EVENT_WRITE);
             if (reactor->set(reactor, fd, socket->fdtype | socket->events) < 0)
             {
-                zanError("reactor->set(%d, SW_EVENT_READ) failed.", fd);
+                zanWarn("reactor->set(%d, SW_EVENT_READ) failed.", fd);
             }
         }
         else
         {
             if (reactor->del(reactor, fd) < 0)
             {
-                zanError("reactor->del(%d) failed.", fd);
+                zanWarn("reactor->del(%d) failed.", fd);
             }
         }
     }

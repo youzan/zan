@@ -100,7 +100,7 @@ int swReactorEpoll_create(swReactor *reactor, int max_event_num)
     reactor_object->epfd = epoll_create(512);
     if (reactor_object->epfd < 0)
     {
-        zanError("epoll_create failed.");
+        zanWarn("epoll_create failed.");
         sw_free(reactor_object->events);
         sw_free(reactor_object);
         return ZAN_ERR;
@@ -145,7 +145,7 @@ static int swReactorEpoll_add(swReactor *reactor, int fd, int fdtype)
     ret = epoll_ctl(object->epfd, EPOLL_CTL_ADD, fd, &e);
     if (ret < 0)
     {
-        zanError("add events[fd=%d#%d, type=%d, events=%d] failed.", fd, reactor->id, fd_.fdtype, e.events);
+        zanWarn("add events[fd=%d#%d, type=%d, events=%d] failed.", fd, reactor->id, fd_.fdtype, e.events);
         return ZAN_ERR;
     }
 
@@ -166,7 +166,7 @@ static int swReactorEpoll_del(swReactor *reactor, int fd)
     ret = epoll_ctl(object->epfd, EPOLL_CTL_DEL, fd, NULL);
     if (ret < 0)
     {
-        zanError("epoll remove fd[%d#%d] failed.", fd, reactor->id);
+        zanWarn("epoll remove fd[%d#%d] failed.", fd, reactor->id);
         return ZAN_ERR;
     }
 
@@ -202,7 +202,7 @@ static int swReactorEpoll_set(swReactor *reactor, int fd, int fdtype)
     ret = epoll_ctl(object->epfd, EPOLL_CTL_MOD, fd, &e);
     if (ret < 0)
     {
-        zanError("reactor#%d->set(fd=%d|type=%d|events=%d) failed.", reactor->id, fd, fd_.fdtype, e.events);
+        zanWarn("reactor#%d->set(fd=%d|type=%d|events=%d) failed.", reactor->id, fd, fd_.fdtype, e.events);
         return ZAN_ERR;
     }
     //execute parent method
@@ -238,7 +238,7 @@ static int swReactorEpoll_wait(swReactor *reactor, struct timeval *timeo)
         {
             if (swReactor_error(reactor) < 0)
             {
-                zanError("[Reactor#%d] epoll_wait failed.", reactor_id);
+                zanWarn("[Reactor#%d] epoll_wait failed.", reactor_id);
                 return ZAN_ERR;
             }
             else
