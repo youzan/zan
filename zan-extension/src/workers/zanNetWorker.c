@@ -481,7 +481,7 @@ static int zanNetworker_onPipeReceive(swReactor *reactor, swEvent *ev)
         }
         else
         {
-            zanError("read(worker_pipe) failed, n=%d, errno:%d:%s", n, errno, strerror(errno));
+            zanWarn("read(worker_pipe) failed, n=%d, errno:%d:%s", n, errno, strerror(errno));
             return ZAN_ERR;
         }
     }
@@ -538,7 +538,7 @@ static int zanNetworker_onPipeWrite(swReactor *reactor, swEvent *ev)
                 }
                 else
                 {
-                    zanError("write pipe_fd=%d failed, errno=%d:%s, ret=%d, data=%s", ev->fd, errno, strerror(errno), ret, send_data->data);
+                    zanWarn("write pipe_fd=%d failed, errno=%d:%s, ret=%d, data=%s", ev->fd, errno, strerror(errno), ret, send_data->data);
                     return ZAN_ERR;
                 }
             }
@@ -556,7 +556,7 @@ static int zanNetworker_onPipeWrite(swReactor *reactor, swEvent *ev)
         ret = reactor->set(reactor, ev->fd, SW_FD_PIPE | SW_EVENT_READ);
         if (ret < 0)
         {
-            zanError("reactor->set(%d) failed, networker_id=%d, reactor_id=%d", ev->fd, networker_id, reactor->id);
+            zanWarn("reactor->set(%d) failed, networker_id=%d, reactor_id=%d", ev->fd, networker_id, reactor->id);
         }
     }
 
@@ -939,7 +939,7 @@ int zanNetworker_send2worker(void *data, int len, uint16_t worker_id)
             }
             else
             {
-                zanError("write pipd_fd=%d failed, errno=%d:%s.", pipe_fd, errno, strerror(errno));
+                zanWarn("write pipd_fd=%d failed, errno=%d:%s.", pipe_fd, errno, strerror(errno));
                 return ZAN_ERR;
             }
         }
@@ -961,7 +961,7 @@ int zanNetworker_send2worker(void *data, int len, uint16_t worker_id)
     swReactor *reactor = ServerG.main_reactor;
     if (reactor->set(reactor, pipe_fd, SW_FD_PIPE | SW_EVENT_READ | SW_EVENT_WRITE) < 0)
     {
-        zanError("reactor->set(%d, PIPE | READ | WRITE) failed.", pipe_fd);
+        zanWarn("reactor->set(%d, PIPE | READ | WRITE) failed.", pipe_fd);
         ret = ZAN_ERR;
     }
 
@@ -1073,11 +1073,11 @@ static int swReactorThread_verify_ssl_state(swListenPort *port, swConnection *co
                 ret = swSSL_get_client_certificate(conn->ssl, task.data.data, sizeof(task.data.data));
                 if (ret < 0)
                 {
-					if (ServerG.serv->onConnect)
-					{
-						zanServer_connection_ready(ServerG.serv, conn->fd, conn->from_id, conn->networker_id);
-					}
-					return ZAN_OK;
+                    if (ServerG.serv->onConnect)
+                    {
+                        zanServer_connection_ready(ServerG.serv, conn->fd, conn->from_id, conn->networker_id);
+                    }
+                    return ZAN_OK;
                 }
                 else
                 {
@@ -1094,7 +1094,7 @@ static int swReactorThread_verify_ssl_state(swListenPort *port, swConnection *co
                     }
                 }
             }
-			
+
             if (ServerG.serv->onConnect)
             {
                 zanServer_connection_ready(ServerG.serv, conn->fd, conn->from_id, conn->networker_id);
@@ -1400,12 +1400,12 @@ void zan_networker_shutdown(zanProcessPool *pool)
 
         if (swKill(worker->worker_pid, SIGTERM) < 0)
         {
-            zanError("kill(%d) failed.", worker->worker_pid);
+            zanWarn("kill(%d) failed.", worker->worker_pid);
             continue;
         }
         if (swWaitpid(worker->worker_pid, &status, 0) < 0)
         {
-            zanError("waitpid(%d) failed.", worker->worker_pid);
+            zanWarn("waitpid(%d) failed.", worker->worker_pid);
         }
     }
     zanPool_networker_free(pool);
@@ -1538,7 +1538,7 @@ int zanReactor_onAccept(swReactor *reactor, swEvent *event)
 
         if (reactor->add(reactor, new_fd, SW_FD_TCP | events) < 0)
         {
-            zanError("networker, reactor->add new_fd=%d failed, events=%d", new_fd, SW_FD_TCP | events);
+            zanWarn("networker, reactor->add new_fd=%d failed, events=%d", new_fd, SW_FD_TCP | events);
             bzero(conn, sizeof(swConnection));
             close(new_fd);
             ServerGS->log_lock.unlock(&ServerGS->accept_lock);
