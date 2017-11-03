@@ -249,6 +249,7 @@ static zend_function_entry swoole_server_methods[] = {
     PHP_ME(swoole_server, getClientList, arginfo_swoole_server_getClientList_oo, ZEND_ACC_PUBLIC)
     PHP_ME(swoole_server, denyRequest, arginfo_swoole_server_denyRequest_oo, ZEND_ACC_PUBLIC)
     //PHP_ME(swoole_server, exit, arginfo_swoole_void, ZEND_ACC_PUBLIC)
+    PHP_MALIAS(swoole_server, exit, shutdown, arginfo_swoole_server_listen, ZEND_ACC_PUBLIC)
 
     //process
     PHP_ME(swoole_server, sendMessage, arginfo_swoole_server_sendMessage, ZEND_ACC_PUBLIC)
