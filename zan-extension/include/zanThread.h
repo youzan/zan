@@ -24,3 +24,5 @@ typedef DWORD zan_thread_t;
 #else
 typedef pthread_t zan_thread_t;
 #endif
+
+#endif

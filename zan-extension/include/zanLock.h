@@ -70,6 +70,13 @@ typedef struct _zanMutex
     pthread_mutex_t _lock;
     pthread_mutexattr_t attr;
 } zanMutex;
+
+typedef struct _zanSem
+{
+    key_t key;
+    int semid;
+} zanSem;
+
 #endif
 
 #ifdef HAVE_RWLOCK
@@ -94,12 +101,6 @@ typedef struct _zanAtomicLock
     uint32_t spin;
 } zanAtomicLock;
 
-typedef struct _zanSem
-{
-    key_t key;
-    int semid;
-} zanSem;
-
 typedef struct _zanLock
 {
     enum ZAN_LOCK_TYPE lock_type;
@@ -115,8 +116,8 @@ typedef struct _zanLock
 #endif
 #ifndef PHP_WIN32
         zanFileLock filelock;
-#endif
         zanSem sem;
+#endif
         zanAtomicLock atomlock;
     } object;
 

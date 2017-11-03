@@ -25,10 +25,10 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 #include "zanMemory/zanMemory.h"
-#include "swReactor.h"
 #endif
 
 #include "zanLock.h"
+#include "swReactor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +38,11 @@ extern "C" {
 typedef struct _zanCond
 {
     zanLock lock;
+#ifdef PHP_WIN32
+    HANDLE cond;
+#else
     pthread_cond_t cond;
+#endif
 
     int (*wait)(struct _zanCond *object);
     int (*timewait)(struct _zanCond *object, long, long);
@@ -91,6 +95,10 @@ enum zanIPCMode
     ZAN_IPC_QUEUE_PREEMPTIVE = 3,
 };
 
+#ifdef PHP_WIN32
+typedef unsigned int key_t;
+#endif
+
 typedef struct _zanQueue_Data
 {
     long mtype;
@@ -112,7 +120,6 @@ typedef struct _zanMsgQueue
 
 int zanMsgQueue_create(zanMsgQueue *pMq, int wait, key_t msg_key);
 int zanMsgQueue_stat(zanMsgQueue *pMq, int *queue_num, int *queue_bytes);
-
 
 //=======================zanShm=================================================
 //share memory

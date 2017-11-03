@@ -170,6 +170,7 @@ static sw_inline int sw_convert_to_string(zval* val)
 
 
 #else
+
 #define sw_php_var_serialize                php_var_serialize
 typedef size_t zend_size_t;
 #define ZEND_SET_SYMBOL(ht,str,arr)         zval_add_ref(arr); zend_hash_str_update(ht, str, sizeof(str)-1, arr);

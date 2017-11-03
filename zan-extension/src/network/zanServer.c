@@ -30,6 +30,7 @@
 #include "zanServer.h"
 #include "zanWorkers.h"
 #include "zanLog.h"
+#include "win32/def.h"
 
 zanServerG   ServerG;              //Local Global Variable
 zanServerGS *ServerGS = NULL;      //Share Memory Global Variable

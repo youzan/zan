@@ -36,6 +36,7 @@ extern "C" {
 //2. 不在 zanServerSet 中的属性，在 swListenPort 中
 
 //todo::: 将全局的相关的变量都放到 zanServerG 中
+
 typedef struct _zanServer
 {
     sw_atomic_t worker_round_id;
@@ -205,8 +206,9 @@ typedef struct _zanServerG
     int log_fd;
     int null_fd;
     int signal_fd;
-
+#ifndef PHP_WIN32
     struct utsname uname;
+#endif
 
     zan_thread_t heartbeat_tid;
 

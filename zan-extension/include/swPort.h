@@ -23,6 +23,7 @@
 #include "swoole.h"
 #include "swReactor.h"
 #include "swProtocol/protocol.h"
+#include "zanThread.h"
 
 #ifdef SW_USE_OPENSSL
 #include "swProtocol/ssl.h"
@@ -59,7 +60,7 @@ typedef struct _swListenPort
     uint8_t ssl;
     int port;
     int sock;
-    pthread_t thread_id;
+    zan_thread_t thread_id;
     char host[SW_HOST_MAXSIZE];
 
     /**

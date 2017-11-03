@@ -16,31 +16,9 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef _ZAN_GLOBAL_VARS_H_
-#define _ZAN_GLOBAL_VARS_H_
+#if (defined PHP_WIN32) && (!defined _WIN32_DEF_H_)
+#define _WIN32_DEF_H_
 
-#include "zanGlobalDef.h"
-#include "zanAsyncIo.h"
-#include "win32/def.h"
+#define __thread __declspec(thread)
 
-#ifdef __cplusplus
-extern "C" {
 #endif
-
-//==============================================================================
-extern zanServerG   ServerG;              //Local Global Variable
-extern zanServerGS *ServerGS;             //Share Memory Global Variable
-extern zanWorkerG   ServerWG;             //Worker Global Variable
-extern __thread zanThreadG ServerTG;      //Thread Global Variable
-extern zanServerStats *ServerStatsG;
-
-extern zanAsyncIO ZanAIO;
-
-#define ZAN_CPU_NUM           (ServerG.cpu_num)
-#define ZAN_REACTOR_NUM       ZAN_CPU_NUM
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  //_ZAN_GLOBAL_VARS_H_

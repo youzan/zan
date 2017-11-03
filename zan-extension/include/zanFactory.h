@@ -20,6 +20,7 @@
 #define _ZAN_ZANFACTORY_H_
 
 #include "swoole.h"
+#include "zanThread.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,7 +114,7 @@ struct _swThreadPool
 
 struct _swThread
 {
-    pthread_t tid;
+    zan_thread_t tid;
     int id;
     swThreadPool *pool;
 };
