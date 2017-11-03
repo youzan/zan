@@ -656,7 +656,7 @@ PHP_RSHUTDOWN_FUNCTION(zan)
             case E_USER_ERROR:
             case E_COMPILE_ERROR:
                     zanWarn("PHP_RSHUTDOWN_FUNCTION(swoole).");
-                    zanError("Fatal error: %s in %s on line %d.",
+                    zanWarn("Fatal error: %s in %s on line %d.",
                         PG(last_error_message), PG(last_error_file)?PG(last_error_file):"-", PG(last_error_lineno));
                 break;
             default:

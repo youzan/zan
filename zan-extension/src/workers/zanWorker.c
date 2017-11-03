@@ -290,7 +290,7 @@ static int zanWorker_onPipeRead(swReactor *reactor, swEvent *event)
         }
         else
         {
-            zanError("read from pipe_worker=%d error, cur_worker_id=%d, errno=%d:%s", event->fd, ServerWG.worker_id, errno, strerror(errno));
+            zanWarn("read from pipe_worker=%d error, cur_worker_id=%d, errno=%d:%s", event->fd, ServerWG.worker_id, errno, strerror(errno));
             break;
         }
     }
@@ -815,12 +815,12 @@ void zan_worker_shutdown(zanProcessPool *pool)
 
         if (swKill(worker->worker_pid, SIGTERM) < 0)
         {
-            zanError("kill(%d) failed.", worker->worker_pid);
+            zanWarn("kill(%d) failed.", worker->worker_pid);
             continue;
         }
         if (swWaitpid(worker->worker_pid, &status, 0) < 0)
         {
-            zanError("waitpid(%d) failed.", worker->worker_pid);
+            zanWarn("waitpid(%d) failed.", worker->worker_pid);
         }
     }
     zanPool_worker_free(pool);

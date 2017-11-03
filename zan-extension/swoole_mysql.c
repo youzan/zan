@@ -1389,7 +1389,7 @@ static int swoole_mysql_onHandShake(mysql_client *client TSRMLS_DC)
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-            zanError("Read from socket[%d] failed.", cli->socket->fd);
+            zanWarn("Read from socket[%d] failed.", cli->socket->fd);
             return SW_ERR;
         case SW_CLOSE:
             goto system_call_error;
@@ -1642,7 +1642,7 @@ static int query_handler(mysql_client *client,zval* zobject,swString* sql)
         zval* queryTimeout = sw_zend_read_property(swoole_mysql_class_entry_ptr,zobject, ZEND_STRL("queryTimeout"), 1 TSRMLS_CC);
         if (queryTimeout)
         {
-            convert_to_long(queryTimeout);
+            zan_convert_to_long(queryTimeout);
             timeout = Z_LVAL_P(queryTimeout);
         }
 

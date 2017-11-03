@@ -497,7 +497,7 @@ int zan_master_process_loop(zanServer *serv)
         }
         else
         {
-            zanError("server is not running");
+            zanWarn("server is not running");
             break;
         }
         //zanDebug("wait success, child pid=%d exit, status=%d", pid, status);
@@ -570,7 +570,7 @@ int zanworker_freeprocess(int *reloadworker_index, zanWorker *reload_workers, in
 {
     if(reload_workers == NULL)
     {
-        zanError("reload workers is null");
+        zanWarn("reload workers is null");
         return ZAN_ERR;
     }
 
@@ -646,7 +646,7 @@ static void zanMaster_checkexitstatus(zanServer *serv, int worker_id, zan_pid_t 
 {
     if (status != 0)
     {
-        zanError("worker#%d[pid#%ld] abnormal exit, exited=%d, status=%d, wifsignaled=%d, signal=%d", worker_id, (long)pid,WIFEXITED(status), WEXITSTATUS(status), WIFSIGNALED(status), WTERMSIG(status));
+        zanWarn("worker#%d[pid#%ld] abnormal exit, exited=%d, status=%d, wifsignaled=%d, signal=%d", worker_id, (long)pid,WIFEXITED(status), WEXITSTATUS(status), WIFSIGNALED(status), WTERMSIG(status));
         if (serv->onWorkerError != NULL)
         {
             serv->onWorkerError(serv, worker_id, pid, WEXITSTATUS(status), WTERMSIG(status));

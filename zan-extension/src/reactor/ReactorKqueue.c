@@ -137,7 +137,7 @@ static int swReactorKqueue_add(swReactor *reactor, int fd, int fdtype)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("add events[fd=%d#%d, type=%d, events=read] failed.", fd, reactor->id, fd_.fdtype);
+            zanWarn("add events[fd=%d#%d, type=%d, events=read] failed.", fd, reactor->id, fd_.fdtype);
             return ZAN_ERR;
         }
     }
@@ -149,7 +149,7 @@ static int swReactorKqueue_add(swReactor *reactor, int fd, int fdtype)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("add events[fd=%d#%d, type=%d, events=write] failed.", fd, reactor->id, fd_.fdtype);
+            zanWarn("add events[fd=%d#%d, type=%d, events=write] failed.", fd, reactor->id, fd_.fdtype);
             return ZAN_ERR;
         }
     }
@@ -184,7 +184,7 @@ static int swReactorKqueue_set(swReactor *reactor, int fd, int fdtype)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("kqueue->set(%d, SW_EVENT_READ) failed.", fd);
+            zanWarn("kqueue->set(%d, SW_EVENT_READ) failed.", fd);
             return ZAN_ERR;
         }
     }
@@ -195,7 +195,7 @@ static int swReactorKqueue_set(swReactor *reactor, int fd, int fdtype)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("kqueue->del(%d, SW_EVENT_READ) failed.", fd);
+            zanWarn("kqueue->del(%d, SW_EVENT_READ) failed.", fd);
             return ZAN_ERR;
         }
     }
@@ -207,7 +207,7 @@ static int swReactorKqueue_set(swReactor *reactor, int fd, int fdtype)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("kqueue->set(%d, SW_EVENT_WRITE) failed.", fd);
+            zanWarn("kqueue->set(%d, SW_EVENT_WRITE) failed.", fd);
             return ZAN_ERR;
         }
     }
@@ -218,7 +218,7 @@ static int swReactorKqueue_set(swReactor *reactor, int fd, int fdtype)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("kqueue->del(%d, SW_EVENT_WRITE) failed.", fd);
+            zanWarn("kqueue->del(%d, SW_EVENT_WRITE) failed.", fd);
             return ZAN_ERR;
         }
     }
@@ -242,7 +242,7 @@ static int swReactorKqueue_del(swReactor *reactor, int fd)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("kqueue->del(%d, SW_EVENT_READ) failed, ret=%d, errno=%d:%s", fd, ret, errno, strerror(errno));
+            zanWarn("kqueue->del(%d, SW_EVENT_READ) failed, ret=%d, errno=%d:%s", fd, ret, errno, strerror(errno));
             return ZAN_ERR;
         }
     }
@@ -253,7 +253,7 @@ static int swReactorKqueue_del(swReactor *reactor, int fd)
         ret = kevent(this->epfd, &e, 1, NULL, 0, NULL);
         if (ret < 0)
         {
-            zanError("kqueue->del(%d, SW_EVENT_WRITE) failed.", fd);
+            zanWarn("kqueue->del(%d, SW_EVENT_WRITE) failed.", fd);
             return ZAN_ERR;
         }
     }
@@ -338,7 +338,7 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
                         ret = handle(reactor, &event);
                         if (ret < 0)
                         {
-                            zanError("kqueue event read socket#%d handler failed.", event.fd);
+                            zanWarn("kqueue event read socket#%d handler failed.", event.fd);
                         }
                     }
                 }
@@ -351,7 +351,7 @@ static int swReactorKqueue_wait(swReactor *reactor, struct timeval *timeo)
                         ret = handle(reactor, &event);
                         if (ret < 0)
                         {
-                            zanError("kqueue event write socket#%d handler failed.", event.fd);
+                            zanWarn("kqueue event write socket#%d handler failed.", event.fd);
                         }
                     }
                 }

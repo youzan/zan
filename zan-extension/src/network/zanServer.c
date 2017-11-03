@@ -832,7 +832,7 @@ int zanServer_tcp_deny_request(zanServer *serv, long nWorkerId, int flag)
     zanTrace("deny_request: dstworker_id=%ld", nWorkerId);
     if (nWorkerId < 0 || nWorkerId >= ServerG.servSet.worker_num)
     {
-        zanError("workerid=%ld is error, worker_num=%d", nWorkerId, ServerG.servSet.worker_num);
+        zanWarn("workerid=%ld is error, worker_num=%d", nWorkerId, ServerG.servSet.worker_num);
         return ZAN_ERR;
     }
 
