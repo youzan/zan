@@ -1519,7 +1519,7 @@ PHP_METHOD(swoole_server, __construct)
         RETURN_FALSE;
     }
 
-    ServerG.factory_mode = serv_mode;
+    ServerG.factory_mode = ZAN_MODE_PROCESS; //serv_mode;
     zanServer *serv = sw_malloc(sizeof(zanServer));
     if (!serv)
     {
