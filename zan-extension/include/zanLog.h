@@ -19,10 +19,8 @@
 #ifndef _ZAN_ZANLOG_H_
 #define _ZAN_ZANLOG_H_
 
-#ifndef PHP_WIN32
 #include "swoole.h"
 #include "zanGlobalVar.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

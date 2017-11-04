@@ -16,14 +16,11 @@
   +----------------------------------------------------------------------+
 */
 
-#if defined(PHP_WIN32) && !defined (_WIN32_DEF_H_)
-#define _WIN32_DEF_H_
+#ifndef _ZAN_SYSTEM_H_
+#define _ZAN_SYSTEM_H_
 
-#include <stdio.h>
-
-#define __thread __declspec(thread)
-typedef int socklen_t;
-typedef long off_t;
-#define STDOUT_FILENO _fileno(stdout)
+int zan_get_cpu_num();
+int zan_get_pagesize();
 
 #endif
+

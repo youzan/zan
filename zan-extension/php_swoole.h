@@ -351,12 +351,13 @@ PHP_FUNCTION(swoole_client_select);
 //---------------------------------------------------------
 //                  swoole_connpool callback api
 //---------------------------------------------------------
+#ifndef PHP_WIN32
 ZEND_FUNCTION(onClientConnect);
 ZEND_FUNCTION(onClientClose);
 ZEND_FUNCTION(onClientTimeout);
 ZEND_FUNCTION(onClientRecieve);
 ZEND_FUNCTION(onSubClientConnect);
-
+#endif
 //---------------------------------------------------------
 //                 others global api
 //---------------------------------------------------------

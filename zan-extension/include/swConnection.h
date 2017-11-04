@@ -187,7 +187,9 @@ int swConnection_get_ip(swConnection *conn,char* addip,int len);
 int swConnection_get_port(swConnection *conn);
 
 /// Receive data from connection
+#ifndef PHP_WIN32
 ssize_t swConnection_recv(swConnection *conn, void *__buf, size_t __n, int __flags);
+#endif
 
 /// Send data to connection
 int swConnection_send(swConnection *conn, void *__buf, size_t __n, int __flags);

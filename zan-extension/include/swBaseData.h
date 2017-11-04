@@ -17,7 +17,7 @@
  */
 
 #include "swoole.h"
-
+#include "win32/def.h"
 
 #ifndef _SW_DATASTRUCT_H_
 #define _SW_DATASTRUCT_H_

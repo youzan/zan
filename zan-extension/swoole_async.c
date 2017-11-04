@@ -217,7 +217,7 @@ static void swoole_aio_file_complete(swAio_event *event TSRMLS_DC)
     else if (event->type == SW_AIO_WRITE)
     {
         file_req->offset += ret;
-        event->buf += ret;
+        (char *)event->buf += ret;
         event->nbytes -= ret;
         file_req->length = (file_req->length <= ret)? 0:file_req->length - ret;
         isEOF = file_req->length > 0 ? 0: 1;
@@ -237,7 +237,7 @@ static void swoole_aio_file_complete(swAio_event *event TSRMLS_DC)
     SW_MAKE_STD_ZVAL(zcontent);
     if (event->type == SW_AIO_READ)
     {
-        memset(event->buf + ret, 0, 1);
+        memset((char *)event->buf + ret, 0, 1);
         SW_ZVAL_STRINGL(zcontent, event->buf, ret, 1);
     }
     else if (event->type == SW_AIO_WRITE)

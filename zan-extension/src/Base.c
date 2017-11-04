@@ -16,10 +16,14 @@
   +----------------------------------------------------------------------+
 */
 
+#ifdef PHP_WIN32
+#else
 #include <sys/resource.h>
+#endif
 #include "swSignal.h"
 #include "zanGlobalVar.h"
 #include "zanLog.h"
+#include "zanSystem.h"
 
 void zan_init(void)
 {
@@ -32,7 +36,7 @@ void zan_init(void)
     bzero(&ServerG, sizeof(zanServerG));
     bzero(&ServerWG, sizeof(zanWorkerG));
     bzero(&ZanAIO, sizeof(zanAsyncIO));
-    
+
     //init global shared memory, 初始化内存池
     ServerG.g_shm_pool = zanShmGlobal_new(ZAN_GLOBAL_MEMORY_PAGESIZE, 1);
     if (NULL == ServerG.g_shm_pool)
@@ -84,8 +88,8 @@ void zan_init(void)
     ServerG.factory_mode    = ZAN_MODE_PROCESS;
     ServerG.running         = 1;
     ServerG.log_fd          = STDOUT_FILENO;
-    ServerG.cpu_num         = sysconf(_SC_NPROCESSORS_ONLN);
-    ServerG.pagesize        = sysconf(_SC_PAGESIZE);
+    ServerG.cpu_num         = zan_get_cpu_num();
+    ServerG.pagesize        = zan_get_pagesize();
     ServerG.process_pid     = getpid();
 
 #ifdef HAVE_SIGNALFD
@@ -99,11 +103,18 @@ void zan_init(void)
 #endif
     ServerG.use_timer_pipe = 1;
 
+#ifndef PHP_WIN32
     uname(&ServerG.uname);
+#endif
 
+#ifdef PHP_WIN32
+    // todo
+    ServerG.max_sockets = 512;
+#else
     struct rlimit rlmt;
     ServerG.max_sockets = (getrlimit(RLIMIT_NOFILE, &rlmt) < 0) ?
                           1024:(int) rlmt.rlim_cur;
+#endif
 
 #ifdef __MACH__
     ServerG.servSet.socket_buffer_size = 256 * 1024;
@@ -111,7 +122,7 @@ void zan_init(void)
     ServerG.servSet.socket_buffer_size = SW_SOCKET_BUFFER_SIZE;
 #endif
 
-#if defined(HAVE_REUSEPORT) && defined(HAVE_EPOLL)
+#if defined(HAVE_REUSEPORT) && defined(HAVE_EPOLL) && !defined(PHP_WIN32)
     if (swoole_version_compare(ServerG.uname.release, "3.9.0") >= 0)
     {
         ServerG.reuse_port = 1;

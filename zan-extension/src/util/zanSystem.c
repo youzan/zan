@@ -16,14 +16,18 @@
   +----------------------------------------------------------------------+
 */
 
-#if defined(PHP_WIN32) && !defined (_WIN32_DEF_H_)
-#define _WIN32_DEF_H_
+/**
+ * posix interface
+ */
+#include "zanSystem.h"
+#include "unistd.h"
 
-#include <stdio.h>
+int zan_get_cpu_num()
+{
+    return sysconf(_SC_NPROCESSORS_ONLN);
+}
 
-#define __thread __declspec(thread)
-typedef int socklen_t;
-typedef long off_t;
-#define STDOUT_FILENO _fileno(stdout)
-
-#endif
+int zan_get_pagesize()
+{
+    return sysconf(_SC_PAGESIZE);
+}

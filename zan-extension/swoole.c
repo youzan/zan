@@ -34,6 +34,7 @@
 #include "swBaseOperator.h"
 #include "zanLog.h"
 #include "php_swoole.h"
+#include "zanSystem.h"
 
 #if PHP_MAJOR_VERSION < 7
 #include "ext/standard/php_smart_str.h"
@@ -56,6 +57,7 @@ extern sapi_module_struct sapi_module;
 ZEND_BEGIN_ARG_INFO_EX(arginfo_swoole_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+#ifndef PHP_WIN32
 //arginfo nova
 ZEND_BEGIN_ARG_INFO_EX(arginfo_nova_decode, 0, 0, 8)
     ZEND_ARG_INFO(0, buf)
@@ -93,9 +95,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_nova_encode_new, 0, 0, 7)
     ZEND_ARG_INFO(0, data)
 ZEND_END_ARG_INFO()
 
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_is_nova_packet, 0, 0, 1)
     ZEND_ARG_INFO(0, data)
 ZEND_END_ARG_INFO()
+
+#endif
 
 //arginfo event
 ZEND_BEGIN_ARG_INFO_EX(arginfo_swoole_event_add, 0, 0, 2)
@@ -195,6 +200,7 @@ const zend_function_entry zan_functions[] =
     PHP_FE(swoole_version, NULL)
     PHP_FE(swoole_cpu_num, NULL)
 
+#ifndef PHP_WIN32
     /*------nova_packet------*/
     PHP_FE(nova_decode, arginfo_nova_decode)
     PHP_FE(nova_encode, arginfo_nova_encode)
@@ -204,6 +210,7 @@ const zend_function_entry zan_functions[] =
     PHP_FE(nova_get_sequence, NULL)
     PHP_FE(nova_get_time, NULL)
     PHP_FE(nova_get_ip, NULL)
+#endif
 
     /*------swoole_event-----*/
     PHP_FE(swoole_event_add, arginfo_swoole_event_add)
@@ -213,6 +220,8 @@ const zend_function_entry zan_functions[] =
     PHP_FE(swoole_event_wait, arginfo_swoole_void)
     PHP_FE(swoole_event_write, arginfo_swoole_event_write)
     PHP_FE(swoole_event_defer, arginfo_swoole_event_defer)
+
+#ifndef PHP_WIN32
     /*------swoole_timer-----*/
     PHP_FE(swoole_timer_after, arginfo_swoole_timer_after)
     PHP_FE(swoole_timer_tick, arginfo_swoole_timer_tick)
@@ -225,19 +234,24 @@ const zend_function_entry zan_functions[] =
     PHP_FE(swoole_async_write, arginfo_swoole_async_write)
     PHP_FE(swoole_async_dns_lookup, arginfo_swoole_async_dns_lookup)
     PHP_FE(swoole_clean_dns_cache,arginfo_swoole_void)
+#endif
 
     /*------other-----*/
+#ifndef PHP_WIN32
     PHP_FE(swoole_client_select, arginfo_swoole_client_select)
+#endif
     PHP_FE(swoole_set_process_name, arginfo_swoole_set_process_name)
     PHP_FE(swoole_strerror, arginfo_swoole_strerror)
     PHP_FE(swoole_errno, arginfo_swoole_void)
     PHP_FE(swoole_get_local_ip, arginfo_swoole_void)
 
+#ifndef PHP_WIN32
     PHP_FE(onClientClose,NULL)
     PHP_FE(onClientTimeout,NULL)
     PHP_FE(onClientConnect,NULL)
     PHP_FE(onClientRecieve,NULL)
     PHP_FE(onSubClientConnect,NULL)
+#endif
 
     PHP_FE_END /* Must be the last line in swoole_functions[] */
 };
@@ -698,13 +712,7 @@ PHP_FUNCTION(swoole_version)
 PHP_FUNCTION(swoole_cpu_num)
 {
     long cpu_num = 1;
-#ifdef PHP_WIN32
-    SYSTEM_INFO info;
-    GetSystemInfo(&info);
-    cpu_num = info.dwNumberOfProcessors;
-#else
-    cpu_num = sysconf(_SC_NPROCESSORS_CONF);
-#endif
+    cpu_num = zan_get_cpu_num();
     if(cpu_num < 1)
     {
         cpu_num = 1;

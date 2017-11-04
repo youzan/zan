@@ -46,7 +46,9 @@ extern "C" {
 #include <assert.h>
 #include <time.h>
 
-#ifndef PHP_WIN32
+#ifdef PHP_WIN32
+#include <winsock2.h>
+#else
 #include <unistd.h>
 #include <pthread.h>
 #include <sched.h>

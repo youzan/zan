@@ -26,7 +26,11 @@
 extern "C" {
 #endif
 
-#ifndef PHP_WIN32
+#ifdef PHP_WIN32
+#include "winsock2.h"
+#include "ws2tcpip.h"
+#pragma comment(lib, "ws2_32.lib")
+#else
 #include <sys/un.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -36,6 +40,8 @@ extern "C" {
 #include <sys/select.h>
 #include <netdb.h>
 #endif
+
+#include "win32/def.h"
 
 enum swSocket_type
 {
@@ -123,7 +129,7 @@ static sw_inline int swSocket_is_NET(uint8_t type)
     return (type == SW_SOCK_TCP || type == SW_SOCK_UDP);
 }
 
-int swSocket_create(int type,int *sockType,int* sockDomain);
+int swSocket_create(int type,int *sockType,int *sockDomain);
 int swSocket_bind(int sock, int type, char *host, int port);
 int swSocket_wait(int fd, int timeout_ms, int events);
 
