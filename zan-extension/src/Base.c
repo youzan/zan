@@ -141,10 +141,12 @@ void zan_clean(void)
         ServerG.g_shm_pool = NULL;
     }
 
+#ifndef PHP_WIN32
     if (ServerG.timer.fd > 0)
     {
         swTimer_free(&ServerG.timer);
     }
+#endif
 
     if (ServerG.main_reactor)
     {

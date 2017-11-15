@@ -79,8 +79,8 @@ static void* zanShmGlobal_new_page(zanShmGlobal *gShm)
     ((void **)page)[0] = NULL;       //将next设置为NULL
 
     gShm->offset = 0;
-    gShm->size = gShm->pagesize - sizeof(void*);
-    gShm->mem  = page + sizeof(void*);
+    gShm->size = gShm->pagesize - sizeof(char*);
+    gShm->mem  = page + sizeof(char*);
     return page;
 }
 

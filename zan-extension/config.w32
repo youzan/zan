@@ -9,7 +9,14 @@ ARG_ENABLE("zan", "Enable beast support", "yes,shared");
 
 if (PHP_ZAN != "no") {
 
-    EXTENSION("zan", "swoole.c swoole_event.c swoole_async.c src\\Base.c", true);
+    EXTENSION("zan", "\
+            swoole.c \
+            swoole_event.c \
+            swoole_async.c src\\Base.c \
+            src\\memory\\zanShmPool.c \
+            win32\\zanShm.c \
+            src\\lock\\zanLockBase.c"
+    , true);
 
 	  ADD_FLAG('CFLAGS_ZAN', "/I " + configure_module_dirname);
 	  ADD_FLAG('CFLAGS_ZAN', "/I " + configure_module_dirname + "/include");
