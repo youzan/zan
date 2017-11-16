@@ -18,14 +18,16 @@
 
 #include "zanIpc.h"
 #include "zanLog.h"
+#include "zanGlobalVar.h"
 #include <Windows.h>
 
 void* zan_shm_malloc(size_t size)
 {
     zanShareMemory object;
+    void *mem;
 
     size += sizeof(zanShareMemory);               //zanShareMemory 对象保存在整个内存块的头部
-    void *mem = zanShm_mmap_create(&object, size, NULL);
+    mem = zanShm_mmap_create(&object, size, NULL);
     if (mem == NULL)
     {
         zanError("zanShm_mmap_create failed.");
@@ -33,7 +35,7 @@ void* zan_shm_malloc(size_t size)
     }
     memcpy(mem, &object, sizeof(zanShareMemory)); //zanShareMemory 对象保存在整个内存块的头部
 
-    return mem + sizeof(zanShareMemory);
+    return ((char *)mem) + sizeof(zanShareMemory);
 }
 
 void* zan_shm_calloc(size_t num, size_t _size)
@@ -42,6 +44,7 @@ void* zan_shm_calloc(size_t num, size_t _size)
 
     int size = sizeof(zanShareMemory) + (num * _size);
     void *mem = zanShm_mmap_create(&object, size, NULL);
+    void *ret_mem;
     if (mem == NULL)
     {
         zanError("zanShm_mmap_create failed.");
@@ -49,7 +52,7 @@ void* zan_shm_calloc(size_t num, size_t _size)
     }
 
     memcpy(mem, &object, sizeof(zanShareMemory));  //zanShareMemory 对象保存在整个内存块的头部
-    void *ret_mem = mem + sizeof(zanShareMemory);
+    ret_mem = ((char *)mem) + sizeof(zanShareMemory);
 
     bzero(ret_mem, size - sizeof(zanShareMemory)); //calloc需要初始化
     return ret_mem;
@@ -60,13 +63,13 @@ void zan_shm_free(void *ptr)
     //取整块内存的起始地址, 然后释放
     //ptr 指向内存块起始地址偏移 sizeof(zanShareMemory) 的位置
     //zanShareMemory 对象存储在整块内存的头部
-    zanShareMemory *object = (zanShareMemory *)(ptr - sizeof(zanShareMemory));
+    zanShareMemory *object = (zanShareMemory *)(((char *)ptr) - sizeof(zanShareMemory));
     zanShm_mmap_free(object);
 }
 
 void* zan_shm_realloc(void *ptr, size_t new_size)
 {
-    zanShareMemory *object = (zanShareMemory *)(ptr - sizeof(zanShareMemory));
+    zanShareMemory *object = (zanShareMemory *)(((char *)ptr) - sizeof(zanShareMemory));
     if (object->size >= new_size)
     {
         zanError("error: new_size=%d is less than oldsize=%d", (int)new_size, object->size);
@@ -94,8 +97,6 @@ void *zanShm_mmap_create(zanShareMemory *object, int size, char *mapfile)
     }
 
     bzero(object, sizeof(zanShareMemory));
-    int flag = MAP_SHARED;
-
 
     HANDLE hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE,
 		NULL, PAGE_READWRITE, 0, size, NULL);
@@ -112,9 +113,8 @@ void *zanShm_mmap_create(zanShareMemory *object, int size, char *mapfile)
             size);
     CloseHandle(hMapFile);
     object->size = size;
-    object->mem  = mem;
 
-    return mem;
+    return object->mem;
 }
 
 int zanShm_mmap_free(zanShareMemory *object)
@@ -126,5 +126,5 @@ int zanShm_mmap_free(zanShareMemory *object)
         return ZAN_ERR;
     }
 
-	return UnmapViewOfFil(object->mem) ? ZAN_OK : ZAN_ERR;
+	return UnmapViewOfFile(object->mem) ? ZAN_OK : ZAN_ERR;
 }

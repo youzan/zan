@@ -32,6 +32,10 @@
 #include "zanLog.h"
 #include "win32/def.h"
 
+#ifdef PHP_WIN32
+#include <io.h>
+#endif
+
 zanServerG   ServerG;              //Local Global Variable
 zanServerGS *ServerGS = NULL;      //Share Memory Global Variable
 zanWorkerG   ServerWG;             //Worker Global Variable
@@ -304,6 +308,8 @@ uint32_t zanServer_worker_schedule(zanServer *serv, uint32_t networker_id, uint3
 #ifdef HAVE_KQUEUE
             uint32_t ipv6_last_int = *(((uint32_t *) &conn->info.addr.inet_v6.sin6_addr) + 3);
             target_worker_id = ipv6_last_int % servSet->worker_num;
+#elif defined PHP_WIN32
+            target_worker_id = conn->info.addr.inet_v6.sin6_addr.u.Word[3] % servSet->worker_num; // todo check
 #else
             target_worker_id = conn->info.addr.inet_v6.sin6_addr.s6_addr32[3] % servSet->worker_num;
 #endif

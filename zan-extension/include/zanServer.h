@@ -41,6 +41,7 @@ extern "C" {
 #define zanServer_get_minfd(serv, networker_index) (serv->connection_list[networker_index][ZAN_SERVER_MIN_FD_INDEX].fd)
 
 #define SW_HEARTBEAT_IDLE          0   //心跳存活最大时间
+
 #define SW_HEARTBEAT_CHECK         0   //心跳定时侦测时间
 
 //UDP, UDP必然超过0x1000000

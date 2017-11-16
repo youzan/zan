@@ -39,9 +39,9 @@ typedef struct _zanShmPool
  */
 typedef struct _zanShmGlobal
 {
-    int     size;      //总容量
-    void    *mem;      //剩余内存的指针
-    int     offset;    //内存分配游标
+    int     size;
+    void    *mem;
+    int     offset;
     char    shared;
     int     pagesize;
     zanLock lock;

@@ -26,4 +26,8 @@ typedef int socklen_t;
 typedef long off_t;
 #define STDOUT_FILENO _fileno(stdout)
 
+#define bzero ZeroMemory
+
+#define R_OK 0
+
 #endif

@@ -20,7 +20,7 @@
  * for windows
  */
 #include "zanSystem.h"
-#include "unistd.h"
+#include <Windows.h>
 
 int zan_get_cpu_num()
 {

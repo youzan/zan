@@ -13,8 +13,10 @@ if (PHP_ZAN != "no") {
             swoole.c \
             swoole_event.c \
             swoole_async.c src\\Base.c \
-            src\\memory\\zanShmPool.c \
             win32\\zanShm.c \
+            win32\\zanSystem.c \
+            src\\memory\\zanShmPool.c \
+            src\\network\\zanServer.c \
             src\\lock\\zanLockBase.c"
     , true);
 

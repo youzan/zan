@@ -53,7 +53,7 @@ zanShmPool* zanShmGlobal_new(int pagesize, char shared)
     gm_ptr = (zanShmGlobal *) gShm.mem;
     gShm.offset += sizeof(zanShmGlobal);
 
-    zanShmPool *pShmPool = (zanShmPool *) (gShm.mem + gShm.offset);
+    zanShmPool *pShmPool = (zanShmPool *) (((char *)gShm.mem) + gShm.offset);
     gShm.offset += sizeof(zanShmPool);
 
     pShmPool->object  = gm_ptr;
@@ -80,7 +80,7 @@ static void* zanShmGlobal_new_page(zanShmGlobal *gShm)
 
     gShm->offset = 0;
     gShm->size = gShm->pagesize - sizeof(char*);
-    gShm->mem  = page + sizeof(char*);
+    gShm->mem  = ((char *)page) + sizeof(char*);
     return page;
 }
 
@@ -109,7 +109,7 @@ static void *zanShmGlobal_alloc(zanShmPool *pool, uint32_t size)
         gm->cur_page = page;
     }
 
-    void *mem = gm->mem + gm->offset;
+    void *mem = ((char *)gm->mem) + gm->offset;
     gm->offset += size;
     gm->lock.unlock(&gm->lock);
     return mem;
