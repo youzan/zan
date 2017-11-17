@@ -12,11 +12,13 @@ if (PHP_ZAN != "no") {
     EXTENSION("zan", "\
             swoole.c \
             swoole_event.c \
-            swoole_async.c src\\Base.c \
+            src\\Base.c \
             win32\\zanShm.c \
             win32\\zanSystem.c \
+            win32\\zanMutex.c \
             src\\memory\\zanShmPool.c \
             src\\network\\zanServer.c \
+            src\\util\\zanLog.c \
             src\\lock\\zanLockBase.c"
     , true);
 

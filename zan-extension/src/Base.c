@@ -35,7 +35,9 @@ void zan_init(void)
 
     bzero(&ServerG, sizeof(zanServerG));
     bzero(&ServerWG, sizeof(zanWorkerG));
+#ifndef PHP_WIN32
     bzero(&ZanAIO, sizeof(zanAsyncIO));
+#endif
 
     //init global shared memory, 初始化内存池
     ServerG.g_shm_pool = zanShmGlobal_new(ZAN_GLOBAL_MEMORY_PAGESIZE, 1);

@@ -77,7 +77,7 @@ static int zanMutex_lock(zanLock *lock)
 
     dwRet = WaitForSingleObject(lock->object.mutex._lock, INFINITE);
     if (WAIT_OBJECT_0 != dwRet) {
-        zanError("WaitForSingleObject return ret=%d, errno=%d", dwRet, GetLastError())
+        zanError("WaitForSingleObject return ret=%d, errno=%d", dwRet, GetLastError());
         return ZAN_ERR;
     }
     return ZAN_OK;

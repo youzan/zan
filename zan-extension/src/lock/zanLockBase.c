@@ -28,7 +28,9 @@ extern int zanRWLock_create(zanLock *lock, int use_in_process);
 extern int zanSpinLock_create(zanLock *object, int spin);
 #endif
 extern int zanFileLock_create(zanLock *lock, int fd);
+#ifndef PHP_WIN32
 extern int zanSem_create(zanLock *lock, key_t key);
+#endif
 extern int zanAtomicLock_create(zanLock *object, int spin);
 
 int zanLock_create(zanLock *lock, enum ZAN_LOCK_TYPE lock_type, int lock_arg)
@@ -42,11 +44,11 @@ int zanLock_create(zanLock *lock, enum ZAN_LOCK_TYPE lock_type, int lock_arg)
 #ifndef PHP_WIN32
     } else if (lock_type == ZAN_FILELOCK) {
         return zanFileLock_create(lock, lock_arg);
+    } else if (lock_type == ZAN_SEM) {
+        return zanSem_create(lock, lock_arg);
 #endif
     } else if (lock_type == ZAN_MUTEX) {
         return zanMutex_create(lock, lock_arg);
-    } else if (lock_type == ZAN_SEM) {
-        return zanSem_create(lock, lock_arg);
     } else if (lock_type == ZAN_SPINLOCK) {
 #ifdef HAVE_SPINLOCK
         return zanSpinLock_create(lock, lock_arg);
