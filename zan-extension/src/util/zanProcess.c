@@ -24,6 +24,7 @@ extern char *program_invocation_name;
 
 void zan_setproctitle(char *title, int prefix_only)
 {
+    SWOOLE_FETCH_TSRMLS;
     if (strcmp(sapi_module.name, "cli") != 0) {
         return;
     }
