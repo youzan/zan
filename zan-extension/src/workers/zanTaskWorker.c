@@ -24,6 +24,7 @@
 #include "zanServer.h"
 #include "zanWorkers.h"
 #include "zanLog.h"
+#include "zanProcess.h"
 
 static swEventData *current_task;
 
@@ -358,6 +359,9 @@ static void zanTaskworker_onStart(zanProcessPool *pool, zanWorker *worker)
     zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
 
     zanTaskWorker_signal_init();
+
+    zan_setproctitle("task:", 1);
+
     if (serv->onWorkerStart)
     {
         //zanDebug("taskworker: call worker onStart, worker_id=%d, process_type=%d", worker->worker_id, worker->process_type);

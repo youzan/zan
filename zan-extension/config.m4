@@ -331,6 +331,7 @@ dnl        src/memory/Table.c \
         src/util/zanBinaryData.c \
         src/util/Sendfile.c \
         src/util/zanLog.c \
+        src/util/zanProcess.c \
         src/dns/DNS.c \
         src/signal/Signal.c \
         src/ipc/zanCond.c \
