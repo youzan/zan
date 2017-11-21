@@ -16,9 +16,11 @@ if (PHP_ZAN != "no") {
             win32\\zanShm.c \
             win32\\zanSystem.c \
             win32\\zanMutex.c \
+            win32\\zanSocket.c \
             src\\memory\\zanShmPool.c \
             src\\network\\zanServer.c \
             src\\util\\zanLog.c \
+            src\\lock\\zanAtomicLock.c \
             src\\lock\\zanLockBase.c"
     , true);
 

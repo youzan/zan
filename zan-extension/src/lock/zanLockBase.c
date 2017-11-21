@@ -46,15 +46,15 @@ int zanLock_create(zanLock *lock, enum ZAN_LOCK_TYPE lock_type, int lock_arg)
         return zanFileLock_create(lock, lock_arg);
     } else if (lock_type == ZAN_SEM) {
         return zanSem_create(lock, lock_arg);
-#endif
-    } else if (lock_type == ZAN_MUTEX) {
-        return zanMutex_create(lock, lock_arg);
     } else if (lock_type == ZAN_SPINLOCK) {
 #ifdef HAVE_SPINLOCK
         return zanSpinLock_create(lock, lock_arg);
 #endif
         zanFatalError("ZAN_SPINLOCK lock_type not support, exit.");
         return ZAN_ERR;
+#endif
+    } else if (lock_type == ZAN_MUTEX) {
+        return zanMutex_create(lock, lock_arg);
     } else if (lock_type == ZAN_ATOMLOCK) {
         return zanAtomicLock_create(lock, lock_arg);
     } else {

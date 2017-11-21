@@ -73,5 +73,5 @@ static int zanAtomicLock_trylock(zanLock *lock)
     }
 
     sw_atomic_t *atomic = &lock->object.atomlock.lock_t;
-    return (*(atomic) == 0 && sw_atomic_cmp_set(atomic, 0, 1));
+    return *(atomic) == 0 && sw_atomic_cmp_set((volatile long *)atomic, 0, 1);
 }

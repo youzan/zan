@@ -30,17 +30,16 @@ typedef volatile uint64_t  atomic_uint_t;
 typedef atomic_uint_t      sw_atomic_t;
 
 #ifdef PHP_WIN32
-
+// todo
 #define sw_atomic_fetch_add(value, add)   InterLockedExchangeAdd64(value, add)
 #define sw_atomic_fetch_sub(value, sub)   InterLockedExchangeSub64(value, sub)
-#define sw_atomic_add_fetch(value, add)
-#define sw_atomic_sub_fetch(value, sub)
-
+#define sw_atomic_add_fetch(value, add)   InterLockedExchangeAdd64(value, add)
+#define sw_atomic_sub_fetch(value, sub)   InterLockedExchangeAdd64(value, add)
 #define sw_atomic_memory_barrier()
 #define sw_atomic_set(ptr, value)
 #define sw_atomic_release(ptr)
 
-#define sw_atomic_cmp_set(lock, old, set)
+#define sw_atomic_cmp_set(lock, old, set) (InterlockedCompareExchange(lock, set, old) == set)
 
 #else
 
