@@ -23,6 +23,7 @@
 #include "zanWorkers.h"
 #include "zanServer.h"
 #include "zanLog.h"
+#include "zanProcess.h"
 
 int zan_spawn_net_process(zanProcessPool *pool);
 
@@ -353,6 +354,8 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
     ServerStatsG->workers_state[worker_id].start_time = time(NULL);
     zan_stats_incr(&ServerStatsG->workers_state[worker_id].start_count);
     zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
+
+    zan_setproctitle("worker:", 1);
 
     if (serv->onWorkerStart)
     {

@@ -26,6 +26,7 @@
 #include "zanGlobalDef.h"
 #include "zanWorkers.h"
 #include "zanLog.h"
+#include "zanProcess.h"
 
 int zanPool_networker_alloc(zanProcessPool *pool);
 int zanPool_networker_init(zanProcessPool *pool);
@@ -253,6 +254,8 @@ static void zanNetworker_onStart(zanProcessPool *pool, zanWorker *worker)
     swoole_cpu_setAffinity(worker->worker_id, ServerG.serv);
 
     zan_stats_set_worker_status(worker, ZAN_WORKER_IDLE);
+
+    zan_setproctitle("net:", 1);
 
     if (serv->onNetWorkerStart)
     {
