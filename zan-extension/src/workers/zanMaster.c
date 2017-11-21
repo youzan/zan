@@ -24,6 +24,7 @@
 #include "zanWorkers.h"
 #include "zanLog.h"
 #include "zanGlobalDef.h"
+#include "zanProcess.h"
 
 extern int zanPool_worker_alloc(zanProcessPool *pool);
 extern int zanPool_taskworker_alloc(zanProcessPool *pool);
@@ -391,6 +392,8 @@ int zan_master_process_loop(zanServer *serv)
     ServerG.use_timerfd = 0;
 
     memset(&MasterProcess, 0, sizeof(MasterProcess));
+
+    zan_setproctitle("master:", 1);
 
     if (serv->onStart)
     {
