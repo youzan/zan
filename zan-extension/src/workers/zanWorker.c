@@ -320,6 +320,13 @@ static void zanWorker_onStart(zanProcessPool *pool, zanWorker *worker)
     //signal init
     zanWorker_signal_init();
 
+#ifdef HAVE_SIGNALFD
+    if (ServerG.use_signalfd)
+    {
+        swSignalfd_setup(ServerG.main_reactor);
+    }
+#endif
+
     /// 设置cpu 亲和性
     swoole_cpu_setAffinity(ServerWG.worker_id, serv);
 
@@ -409,14 +416,8 @@ int zanWorker_loop(zanProcessPool *pool, zanWorker *worker)
     reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_READ, zanWorker_onPipeRead);
     reactor->setHandle(reactor, SW_FD_PIPE | SW_EVENT_WRITE, swReactor_onWrite);
 
-#ifdef HAVE_SIGNALFD
-    if (ServerG.use_signalfd)
-    {
-        swSignalfd_setup(ServerG.main_reactor);
-    }
-#endif
-
     pool->onWorkerStart(pool, worker);
+
     zanDebug("worker loop in: worker_id=%d, process_type=%d, pid=%d, reactor->add pipe_worker=%d, event=%d, pipe_master=%d",
             worker->worker_id, ServerG.process_type, ServerG.process_pid, worker->pipe_worker, SW_FD_PIPE | SW_EVENT_READ, worker->pipe_master);
 
