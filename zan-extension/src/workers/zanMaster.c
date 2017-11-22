@@ -500,7 +500,7 @@ int zan_master_process_loop(zanServer *serv)
         }
         else
         {
-            zanWarn("server is not running");
+            zanDebug("server is not running");
             break;
         }
         //zanDebug("wait success, child pid=%d exit, status=%d", pid, status);
