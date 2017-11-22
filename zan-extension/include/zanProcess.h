@@ -16,5 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
+void zan_initproctitle();
 void zan_setproctitle(char *title, int prefix_only);
+void zan_freeproctitle();
 
