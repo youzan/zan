@@ -153,14 +153,17 @@ int zanPool_networker_init(zanProcessPool *pool)
 
 static void zanNetWorker_signal_init(void)
 {
-    swSignal_set(SIGHUP, NULL, 1, 0);
-    swSignal_set(SIGPIPE, NULL, 1, 0);
-    swSignal_set(SIGUSR1, NULL, 1, 0);
-    swSignal_set(SIGUSR2, NULL, 1, 0);
-    swSignal_set(SIGINT, zanNetWorker_signal_handler, 1, 0);
-    swSignal_set(SIGQUIT, zanNetWorker_signal_handler, 1, 0);
-    swSignal_set(SIGTERM, zanNetWorker_signal_handler, 1, 0);
-    swSignal_set(SIGALRM, swSystemTimer_signal_handler, 1, 0);
+    swSignal_clear();
+    ServerG.use_signalfd = ServerG.enable_signalfd;
+
+    swSignal_add(SIGHUP, NULL);
+    swSignal_add(SIGPIPE, NULL);
+    swSignal_add(SIGUSR1, NULL);
+    swSignal_add(SIGUSR2, NULL);
+    swSignal_add(SIGINT, zanNetWorker_signal_handler);
+    swSignal_add(SIGQUIT, zanNetWorker_signal_handler);
+    swSignal_add(SIGTERM, zanNetWorker_signal_handler);
+    swSignal_add(SIGALRM, swSystemTimer_signal_handler);
 #ifdef SIGRTMIN
     swSignal_set(SIGRTMIN, zanNetWorker_signal_handler, 1, 0);
 #endif
@@ -250,6 +253,13 @@ static void zanNetworker_onStart(zanProcessPool *pool, zanWorker *worker)
     zanServer *serv = ServerG.serv;
 
     zanNetWorker_signal_init();
+
+#ifdef HAVE_SIGNALFD
+    if (ServerG.use_signalfd)
+    {
+        swSignalfd_setup(ServerG.main_reactor);
+    }
+#endif
 
     swoole_cpu_setAffinity(worker->worker_id, ServerG.serv);
 

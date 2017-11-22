@@ -232,7 +232,7 @@ static void swSignalfd_clear()
 		bzero(&signals, sizeof(signals));
 		bzero(&signalfd_mask, sizeof(signalfd_mask));
     }
-	
+
     signal_fd = 0;
 }
 
@@ -252,7 +252,7 @@ static int swSignalfd_onSignal(swReactor *reactor, swEvent *event)
         zanWarn("unknown signal[%d].", siginfo.ssi_signo);
         return ZAN_ERR;
 	}
-	
+
     if (signals[siginfo.ssi_signo].active)
     {
         if (signals[siginfo.ssi_signo].callback)
