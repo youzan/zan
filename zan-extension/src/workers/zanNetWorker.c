@@ -1413,7 +1413,9 @@ void zan_networker_shutdown(zanProcessPool *pool)
 
         if (swKill(worker->worker_pid, SIGTERM) < 0)
         {
-            zanWarn("kill(%d) failed.", worker->worker_pid);
+            if (errno != ESRCH) {
+                zanWarn("kill(%d) failed, errno:%d, error:%s.", worker->worker_pid, errno, strerror(errno));
+            }
             continue;
         }
         if (swWaitpid(worker->worker_pid, &status, 0) < 0)
