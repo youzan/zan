@@ -368,7 +368,6 @@ void zanTaskWorker_signal_handler(int signo)
         case SIGTERM:
         case SIGINT:
         case SIGQUIT:
-            //zanWarn("signal SIGTERM coming");
             if (ServerG.main_reactor)
             {
                 ServerG.main_reactor->running = 0;
