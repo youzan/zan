@@ -27,6 +27,7 @@
 #include "swError.h"
 #include "swBaseOperator.h"
 #include "zanLog.h"
+#include "zanProcess.h"
 
 #if PHP_MAJOR_VERSION < 7
 #include "ext/standard/php_smart_str.h"
@@ -534,6 +535,8 @@ PHP_MINIT_FUNCTION(zan)
 
     swoole_objects.size = 65536;
     swoole_objects.array = calloc(swoole_objects.size, sizeof(void*));
+
+    zan_initproctitle();
 
     return SUCCESS;
 }

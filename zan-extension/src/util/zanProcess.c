@@ -21,6 +21,15 @@
 #include "zanLog.h"
 
 extern char *program_invocation_name;
+static char *origin_cmdline = NULL;
+
+void zan_initproctitle()
+{
+    int size = strlen(program_invocation_name) + 1;
+    origin_cmdline = malloc(size);
+    bzero(origin_cmdline, size);
+    strcpy(origin_cmdline, program_invocation_name);
+}
 
 void zan_setproctitle(char *title, int prefix_only)
 {
@@ -38,7 +47,7 @@ void zan_setproctitle(char *title, int prefix_only)
 
     if (prefix_only) {
         int size = 0;
-        size += strlen(program_invocation_name) + 1;
+        size += strlen(origin_cmdline) + 1;
         size += strlen(settitle) + 1;
 
         for (i = 0; i < SG(request_info).argc; i++) {
@@ -51,7 +60,7 @@ void zan_setproctitle(char *title, int prefix_only)
         strcat(tmpbuff, settitle);
         strcat(tmpbuff, " ");
 
-        strcat(tmpbuff, program_invocation_name);
+        strcat(tmpbuff, origin_cmdline);
         strcat(tmpbuff, " ");
 
         for (i = 0; i < SG(request_info).argc; i++) {
@@ -85,5 +94,12 @@ void zan_setproctitle(char *title, int prefix_only)
     }
     if (tmpbuff) {
         free(tmpbuff);
+    }
+}
+
+void zan_freeproctitle()
+{
+    if (origin_cmdline) {
+        free(origin_cmdline);
     }
 }
