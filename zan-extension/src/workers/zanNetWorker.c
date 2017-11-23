@@ -401,6 +401,7 @@ int zanNetworker_tcp_setup(swReactor *reactor, zanServer *serv)
 
     reactor->setHandle(reactor, SW_FD_TCP | SW_EVENT_READ, zanNetworker_onRead);
     reactor->setHandle(reactor, SW_FD_TCP | SW_EVENT_WRITE, zanNetworker_onWrite);
+    reactor->setHandle(reactor, SW_FD_CLOSE, zanNetworker_onClose);
 
     int pipe_fd = -1;
     swConnection *conn_pipe = NULL;
