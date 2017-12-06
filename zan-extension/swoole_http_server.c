@@ -2446,6 +2446,7 @@ static void worker_error_handler(int error_num, const char *error_filename, cons
             buffer_len = sizeof(buffer) - 1;
         }
 
+        current_ctx->response.status = 500;
         zval *zresponse = current_ctx->response.zobject;
         zval *function = NULL;
         SW_MAKE_STD_ZVAL(function);
