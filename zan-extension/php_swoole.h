@@ -14,7 +14,7 @@
   | zan@zanphp.io so we can mail you a copy immediately.                 |
   +----------------------------------------------------------------------+
   | Author: Tianfeng Han  <mikan.tenny@gmail.com>                        |
-  |         Zan Group   <zan@zanphp.io>                                  |  
+  |         Zan Group   <zan@zanphp.io>                                  |
   +----------------------------------------------------------------------+
 */
 
@@ -459,6 +459,9 @@ void php_swoole_get_recv_data(zval *zdata, swEventData *req, char *header, uint3
 void php_swoole_onConnect(swServer *serv, swDataHead *);
 int php_swoole_onReceive(swServer *serv, swEventData *req);
 void php_swoole_onClose(swServer *, swDataHead *);
+void php_swoole_onWorkerStart(swServer *, int worker_id);
+void php_swoole_onWorkerStop(swServer *, int worker_id);
+void php_swoole_onWorkerError(swServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo);
 
 #define php_swoole_array_get_value(ht, str, v)     (sw_zend_hash_find(ht, str, sizeof(str), (void **) &v) == SUCCESS && !ZVAL_IS_NULL(v))
 #define php_swoole_array_get_ptr_value(ht, str, v)     (sw_zend_hash_find(ht, str, strlen(str)+1, (void **) &v) == SUCCESS && !ZVAL_IS_NULL(v))

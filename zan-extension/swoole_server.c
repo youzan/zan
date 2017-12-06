@@ -268,9 +268,6 @@ static void php_swoole_onShutdown(swServer *);
 
 static int php_swoole_onPacket(swServer *, swEventData *);
 
-static void php_swoole_onWorkerStart(swServer *, int worker_id);
-static void php_swoole_onWorkerStop(swServer *, int worker_id);
-static void php_swoole_onWorkerError(swServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo);
 static void php_swoole_onUserWorkerStart(swServer *serv, swWorker *worker);
 
 static int php_swoole_onTask(swServer *, swEventData *task);
@@ -728,7 +725,7 @@ static int php_swoole_onPacket(swServer *serv, swEventData *req)
     return SW_OK;
 }
 
-static void php_swoole_onWorkerStart(swServer *serv, int worker_id)
+void php_swoole_onWorkerStart(swServer *serv, int worker_id)
 {
 
     SWOOLE_FETCH_TSRMLS;
@@ -787,7 +784,7 @@ static void php_swoole_onWorkerStart(swServer *serv, int worker_id)
     }
 }
 
-static void php_swoole_onWorkerStop(swServer *serv, int worker_id)
+void php_swoole_onWorkerStop(swServer *serv, int worker_id)
 {
 
     SWOOLE_FETCH_TSRMLS;
@@ -901,7 +898,7 @@ static int php_swoole_onTask(swServer *serv, swEventData *req)
 }
 
 
-static void php_swoole_onWorkerError(swServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo)
+void php_swoole_onWorkerError(swServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo)
 {
 
     SWOOLE_FETCH_TSRMLS;
@@ -1902,7 +1899,7 @@ PHP_METHOD(swoole_server, set)
 
     sw_zend_call_method_with_1_params(&port_object, swoole_server_port_class_entry_ptr, NULL, "set", &retval, zset);
     zend_update_property(swoole_server_class_entry_ptr, zobject, ZEND_STRL("setting"), zset TSRMLS_CC);
-	
+
     sw_zval_ptr_dtor(&zset);
 
     RETURN_TRUE;
