@@ -2413,14 +2413,16 @@ static PHP_METHOD(swoole_http_response, __destruct)
 
 static void worker_error_handler(int error_num, const char *error_filename, const uint error_lineno, const char *format, va_list args)
 {
+    SWOOLE_FETCH_TSRMLS;
+
     zend_bool _old_in_compilation;
-	zend_execute_data *_old_current_execute_data;
+    zend_execute_data *_old_current_execute_data;
 
-	_old_in_compilation = CG(in_compilation);
-	_old_current_execute_data = EG(current_execute_data);
+    _old_in_compilation = CG(in_compilation);
+    _old_current_execute_data = EG(current_execute_data);
 
-	if (!PG(modules_activated) || !EG(objects_store).object_buckets || !current_ctx) {
-		call_old_error_handler(error_num, error_filename, error_lineno, format, args);
+    if (!PG(modules_activated) || !EG(objects_store).object_buckets || !current_ctx) {
+        call_old_error_handler(error_num, error_filename, error_lineno, format, args);
         return;
     }
     if (error_num == E_USER_ERROR ||
@@ -2433,7 +2435,7 @@ static void worker_error_handler(int error_num, const char *error_filename, cons
         size_t buffer_len;
 
 #ifdef va_copy
-		va_list argcopy;
+        va_list argcopy;
         va_copy(argcopy, args);
         buffer_len = vslprintf(buffer, sizeof(buffer)-1, format, argcopy);
         va_end(argcopy);
@@ -2460,18 +2462,21 @@ static void worker_error_handler(int error_num, const char *error_filename, cons
             {
                 swError("Write error msg failure");
             }
+            sw_zval_ptr_dtor(&buff);
         } else {
             if (sw_call_user_function_ex(EG(function_table), &zresponse, function, &retval, 0, NULL, 0, NULL TSRMLS_CC) == FAILURE)
             {
                 swError("Call response->end() failure");
             }
         }
+        if (retval) sw_zval_ptr_dtor(&retval);
+        sw_zval_ptr_dtor(&function);
     }
     zend_try {
         call_old_error_handler(error_num, error_filename, error_lineno, format, args);
     } zend_catch {
         CG(in_compilation) = _old_in_compilation;
         EG(current_execute_data) = _old_current_execute_data;
-	} zend_end_try();
+    } zend_end_try();
 }
 
