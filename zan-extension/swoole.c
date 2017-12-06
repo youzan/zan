@@ -186,7 +186,7 @@ const zend_function_entry zan_functions[] =
 {
     PHP_FE(swoole_version, NULL)
     PHP_FE(swoole_cpu_num, NULL)
-    
+
     /*------nova_packet------*/
     PHP_FE(nova_decode, arginfo_nova_decode)
     PHP_FE(nova_encode, arginfo_nova_encode)
@@ -196,7 +196,7 @@ const zend_function_entry zan_functions[] =
     PHP_FE(nova_get_sequence, NULL)
     PHP_FE(nova_get_time, NULL)
     PHP_FE(nova_get_ip, NULL)
-    
+
     /*------swoole_event-----*/
     PHP_FE(swoole_event_add, arginfo_swoole_event_add)
     PHP_FE(swoole_event_set, arginfo_swoole_event_set)
@@ -517,7 +517,7 @@ PHP_MINIT_FUNCTION(zan)
 #ifdef SW_USE_REDIS
     swoole_redis_init(module_number TSRMLS_CC);
 #endif
-    
+
     swoole_aio_init(module_number TSRMLS_CC);
     swoole_process_init(module_number TSRMLS_CC);
     swoole_http_server_init(module_number TSRMLS_CC);
