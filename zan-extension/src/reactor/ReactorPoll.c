@@ -17,9 +17,10 @@
 */
 
 #include "swoole.h"
-#include "swLog.h"
 #include "swError.h"
 #include "swReactor.h"
+
+#include "zanLog.h"
 
 #ifdef SW_MAINREACTOR_USE_POLL
 
@@ -50,25 +51,25 @@ int swReactorPoll_create(swReactor *reactor, int max_fd_num)
     swReactorPoll *object = sw_malloc(sizeof(swReactorPoll));
     if (object == NULL)
     {
-        swWarn("malloc[0] failed");
-        return SW_ERR;
+        zanWarn("malloc[0] failed");
+        return ZAN_ERR;
     }
     bzero(object, sizeof(swReactorPoll));
 
     object->fds = sw_calloc(max_fd_num, sizeof(swPollFdInfo));
     if (object->fds == NULL)
     {
-        swWarn("malloc[1] failed");
+        zanWarn("malloc[1] failed");
         sw_free(object);
-        return SW_ERR;
+        return ZAN_ERR;
     }
     object->events = sw_calloc(max_fd_num, sizeof(struct pollfd));
     if (object->events == NULL)
     {
-        swWarn("malloc[2] failed");
+        zanWarn("malloc[2] failed");
         sw_free(object->fds);
         sw_free(object);
-        return SW_ERR;
+        return ZAN_ERR;
     }
     object->max_fd_num = max_fd_num;
     reactor->max_event_num = max_fd_num;
@@ -81,7 +82,7 @@ int swReactorPoll_create(swReactor *reactor, int max_fd_num)
     reactor->wait = swReactorPoll_wait;
     reactor->free = swReactorPoll_free;
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static void swReactorPoll_free(swReactor *reactor)
@@ -96,21 +97,21 @@ static int swReactorPoll_add(swReactor *reactor, int fd, int fdtype)
 {
     if (swReactorPoll_exist(reactor, fd))
     {
-        swWarn("fd#%d is already exists.", fd);
-        return SW_ERR;
+        zanWarn("fd#%d is already exists.", fd);
+        return ZAN_ERR;
     }
 
     if (swReactor_add(reactor, fd, fdtype) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swReactorPoll *object = reactor->object;
     int cur = reactor->event_num;
     if (reactor->event_num == object->max_fd_num)
     {
-        swWarn("too many connection, more than %d", object->max_fd_num);
-        return SW_ERR;
+        zanWarn("too many connection, more than %d", object->max_fd_num);
+        return ZAN_ERR;
     }
 
     swTrace("fd=%d, fdtype=%d", fd, fdtype);
@@ -132,7 +133,7 @@ static int swReactorPoll_add(swReactor *reactor, int fd, int fdtype)
         object->events[cur].events |= POLLHUP;
     }
     reactor->event_num++;
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactorPoll_set(swReactor *reactor, int fd, int fdtype)
@@ -160,10 +161,10 @@ static int swReactorPoll_set(swReactor *reactor, int fd, int fdtype)
             }
             //execute parent method
             swReactor_set(reactor, fd, fdtype);
-            return SW_OK;
+            return ZAN_OK;
         }
     }
-    return SW_ERR;
+    return ZAN_ERR;
 }
 
 static int swReactorPoll_del(swReactor *reactor, int fd)
@@ -175,7 +176,7 @@ static int swReactorPoll_del(swReactor *reactor, int fd)
 
     if (swReactor_del(reactor, fd) < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     for (i = 0; i < reactor->event_num; i++)
@@ -199,10 +200,10 @@ static int swReactorPoll_del(swReactor *reactor, int fd)
                     object->events[i] = object->events[i + 1];
                 }
             }
-            return SW_OK;
+            return ZAN_OK;
         }
     }
-    return SW_ERR;
+    return ZAN_ERR;
 }
 
 static int swReactorPoll_wait(swReactor *reactor, struct timeval *timeo)
@@ -215,14 +216,14 @@ static int swReactorPoll_wait(swReactor *reactor, struct timeval *timeo)
 
     if (reactor->timeout_msec == 0)
     {
-    	reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
+        reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
     }
 
     while (reactor->running > 0)
     {
         msec = reactor->timeout_msec;
         /// 等待超时时间矫正，防止有defer 需要执行，但epoll_wait没有唤醒
-		msec = reactor->defer_callback_list? 1:msec;
+        msec = reactor->defer_callback_list? 1:msec;
         ret = poll(object->events, reactor->event_num, msec);
         if (ret < 0)
         {
@@ -252,40 +253,40 @@ static int swReactorPoll_wait(swReactor *reactor, struct timeval *timeo)
                 swTrace("Event: fd=%d|from_id=%d|type=%d", event.fd, reactor->id, object->fds[i].fdtype);
                 event.socket->event_trigger = 1;
                 //error
-				if ((object->events[i].revents & (POLLHUP | POLLERR)) &&
-						!event.socket->removed && event.socket->event_trigger)
-				{
-					handle = swReactor_getHandle(reactor, SW_EVENT_ERROR, event.type);
-					ret = handle(reactor, &event);
-					if (ret < 0)
-					{
-						swWarn("poll[POLLERR] handler failed. fd=%d.", event.fd);
-					}
+                if ((object->events[i].revents & (POLLHUP | POLLERR)) &&
+                        !event.socket->removed && event.socket->event_trigger)
+                {
+                    handle = swReactor_getHandle(reactor, SW_EVENT_ERROR, event.type);
+                    ret = handle(reactor, &event);
+                    if (ret < 0)
+                    {
+                        zanWarn("poll[POLLERR] handler failed. fd=%d.", event.fd);
+                    }
 
-					event.socket->event_trigger = 0;
-					continue;
-				}
+                    event.socket->event_trigger = 0;
+                    continue;
+                }
 
                 //in
                 if ((object->events[i].revents & POLLIN) &&
-                		!event.socket->removed && event.socket->event_trigger)
+                        !event.socket->removed && event.socket->event_trigger)
                 {
                     handle = swReactor_getHandle(reactor, SW_EVENT_READ, event.type);
                     ret = handle(reactor, &event);
                     if (ret < 0)
                     {
-                        swWarn("poll[POLLIN] handler failed. fd=%d.", event.fd);
+                        zanWarn("poll[POLLIN] handler failed. fd=%d.", event.fd);
                     }
                 }
                 //out
                 if ((object->events[i].revents & POLLOUT) &&
-                		!event.socket->removed && event.socket->event_trigger)
+                        !event.socket->removed && event.socket->event_trigger)
                 {
                     handle = swReactor_getHandle(reactor, SW_EVENT_WRITE, event.type);
                     ret = handle(reactor, &event);
                     if (ret < 0)
                     {
-                    	swWarn("poll[POLLOUT] handler failed. fd=%d.", event.fd);
+                        zanWarn("poll[POLLOUT] handler failed. fd=%d.", event.fd);
                     }
                 }
 
@@ -294,12 +295,12 @@ static int swReactorPoll_wait(swReactor *reactor, struct timeval *timeo)
         }
 
         if (reactor->onFinish != NULL)
-		{
-			reactor->onFinish(reactor);
-		}
+        {
+            reactor->onFinish(reactor);
+        }
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static int swReactorPoll_exist(swReactor *reactor, int fd)

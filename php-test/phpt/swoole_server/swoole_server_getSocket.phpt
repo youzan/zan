@@ -11,33 +11,47 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 下午4:34
- */
+
 require_once __DIR__ . "/../inc/zan.inc";
 
-$simple_tcp_server = __DIR__ . "/../../apitest/swoole_server/opcode_server.php";
-$port = get_one_free_port();
+$host = TCP_SERVER_HOST1;
+$port = TCP_SERVER_PORT1;
 
-start_server($simple_tcp_server, TCP_SERVER_HOST, $port);
 
-suicide(2000);
-usleep(500 * 1000);
+$serv = new swoole_server($host, $port);
+$serv->set([
+    'worker_num' => 1,
+    'net_worker_num' => 1,
+    'log_file' => '/tmp/test_log.log',
+]);
 
-makeTcpClient(TCP_SERVER_HOST, $port, function(\swoole_client $cli) use($port) {
-    // 并且编译swoole时需要开启--enable-sockets选项
-    $r = $cli->send(opcode_encode("getSocket", [$port]));
-    assert($r !== false);
-}, function(\swoole_client $cli, $recv) {
-    list($op, $data) = opcode_decode($recv);
-    assert($data !== false);
-    swoole_event_exit();
-    echo "SUCCESS";
+$serv->on('Start', function ($serv) {
+    $socket = $serv->getSocket();
+    if ($socket) {
+        echo "onStart, getSocket.\n";
+    }
 });
+
+$serv->on('Connect', function ($serv, $fd){
+    //echo "Server: onConnected, client_fd=$fd\n";
+});
+
+$serv->on('Receive', function ($serv, $fd, $from_id, $data) {
+    echo "Server: Receive data: $data";
+});
+
+$serv->on('WorkerStart', function ($serv, $worker_id) {  
+    //echo "onWorkerStart, worker_id=$worker_id\n";
+    if (0 == $worker_id) {
+        swoole_timer_after(500, function() use($serv) {
+            $serv->shutdown();
+        });
+    }
+});
+
+
+$serv->start();
 
 ?>
 --EXPECT--
-SUCCESS
+onStart, getSocket.

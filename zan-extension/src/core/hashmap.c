@@ -18,10 +18,11 @@
 
 
 #include "swoole.h"
-#include "swLog.h"
 #include "swUthash.h"
 #include "swHash.h"
 #include "swBaseData.h"
+
+#include "zanLog.h"
 
 typedef struct swHashMap_node
 {
@@ -121,10 +122,10 @@ static sw_inline int swHashMap_node_add(swHashMap_node *root, swHashMap_node *ad
 
 static sw_inline swHashMap_node* swHashMap_node_each(swHashMap* hmap)
 {
-	if (!hmap)
-	{
-		return NULL;
-	}
+    if (!hmap)
+    {
+        return NULL;
+    }
 
     swHashMap_node *iterator = hmap->iterator;
     swHashMap_node *tmp;
@@ -155,15 +156,15 @@ swHashMap* swHashMap_create(uint32_t bucket_num, swHashMap_dtor dtor)
     swHashMap *hmap = sw_malloc(sizeof(swHashMap));
     if (!hmap)
     {
-        swFatalError("malloc[1] failed.");
+        zanFatalError("malloc[1] failed.");
         return NULL;
     }
 
     swHashMap_node *root = sw_malloc(sizeof(swHashMap_node));
     if (!root)
     {
-    	sw_free(hmap);
-    	swFatalError("malloc[2] failed.");
+        sw_free(hmap);
+        zanFatalError("malloc[2] failed.");
         return NULL;
     }
 
@@ -173,9 +174,9 @@ swHashMap* swHashMap_create(uint32_t bucket_num, swHashMap_dtor dtor)
     root->hh.tbl = (UT_hash_table*) sw_malloc(sizeof(UT_hash_table));
     if (!(root->hh.tbl))
     {
-    	sw_free(hmap);
-    	sw_free(root);
-        swFatalError("malloc for table failed.");
+        sw_free(hmap);
+        sw_free(root);
+        zanFatalError("malloc for table failed.");
         return NULL;
     }
 
@@ -187,7 +188,7 @@ swHashMap* swHashMap_create(uint32_t bucket_num, swHashMap_dtor dtor)
     root->hh.tbl->buckets = (UT_hash_bucket*) sw_malloc(SW_HASHMAP_INIT_BUCKET_N * sizeof(struct UT_hash_bucket));
     if (!root->hh.tbl->buckets)
     {
-    	swFatalError("malloc for buckets failed.");
+        zanFatalError("malloc for buckets failed.");
         return NULL;
     }
 
@@ -202,15 +203,15 @@ swHashMap* swHashMap_create(uint32_t bucket_num, swHashMap_dtor dtor)
 
 int swHashMap_add(swHashMap* hmap, char *key, uint16_t key_len, void *data)
 {
-	if (!data)
-	{
-		return SW_ERR;
-	}
+    if (!data)
+    {
+        return SW_ERR;
+    }
 
     swHashMap_node *node = (swHashMap_node*) sw_malloc(sizeof(swHashMap_node));
     if (node == NULL)
     {
-    	swFatalError("malloc failed.");
+        zanFatalError("malloc failed.");
         return SW_ERR;
     }
 
@@ -228,7 +229,7 @@ void swHashMap_add_int(swHashMap *hmap, uint64_t key, void *data)
     swHashMap_node *root = hmap->root;
     if (node == NULL)
     {
-    	swFatalError("malloc failed");
+        zanFatalError("malloc failed");
         return;
     }
 
@@ -379,10 +380,10 @@ void* swHashMap_each_int(swHashMap* hmap, uint64_t *key)
 
 void swHashMap_free(swHashMap* hmap)
 {
-	if (!hmap)
-	{
-		return;
-	}
+    if (!hmap)
+    {
+        return;
+    }
 
     swHashMap_node *find, *tmp = NULL;
     swHashMap_node *root = hmap->root;

@@ -59,7 +59,7 @@ static inline int sw_zend_hash_find(HashTable *ht, char *k, int len, void **v)
 
 #define SW_MAKE_STD_ZVAL(p)                   MAKE_STD_ZVAL(p)
 #define SW_ALLOC_INIT_ZVAL(p)                 ALLOC_INIT_ZVAL(p)
-#define SW_ALLOC_INIT_THE_ZVAL(p,_p)		     ALLOC_INIT_ZVAL(p)
+#define SW_ALLOC_INIT_THE_ZVAL(p,_p)             ALLOC_INIT_ZVAL(p)
 #define SW_SEPARATE_ZVAL(p)
 #define sw_copy_to_stack(a, b)
 
@@ -154,14 +154,17 @@ static inline int SW_Z_TYPE_P(zval *z)
 inline int SW_Z_TYPE_P(zval *z);
 #define SW_Z_TYPE_PP(z)        SW_Z_TYPE_P(*z)
 
+#define zan_convert_to_long(val) convert_to_long(val)
+#define zan_convert_to_boolean(val) convert_to_boolean(val)
+
 static sw_inline int sw_convert_to_string(zval* val)
 {
     int type = Z_TYPE_P(val);
     if (type <= IS_STRING && IS_ARRAY != type && IS_OBJECT != type){
-		convert_to_string(val);
-    		return SW_OK;
+        convert_to_string(val);
+            return SW_OK;
     } else {
-    		return SW_ERR;
+            return SW_ERR;
     }
 }
 
@@ -260,7 +263,7 @@ static sw_inline int sw_call_user_function_ex(HashTable *function_table, zval** 
 
 #define SW_MAKE_STD_ZVAL(p)             zval _stack_zval_##p; bzero(&_stack_zval_##p,sizeof(zval));p = &(_stack_zval_##p)
 #define SW_ALLOC_INIT_ZVAL(p)           do{p = (zval *)emalloc(sizeof(zval));bzero(p, sizeof(zval));}while(0)
-#define SW_ALLOC_INIT_THE_ZVAL(p,_p)	    do{bzero(&_p,sizeof(_p));p = &_p;}while(0)
+#define SW_ALLOC_INIT_THE_ZVAL(p,_p)        do{bzero(&_p,sizeof(_p));p = &_p;}while(0)
 #define SW_SEPARATE_ZVAL(p)             zval _##p;\
     memcpy(&_##p, p, sizeof(_##p));\
     p = &_##p
@@ -305,19 +308,22 @@ static sw_inline int sw_call_user_function_ex(HashTable *function_table, zval** 
 #define sw_smart_str                          smart_string
 #define zend_get_class_entry                  Z_OBJCE_P
 
+#define zan_convert_to_long(val) convert_to_long_ex(val)
+#define zan_convert_to_boolean(val) convert_to_boolean_ex(val)
+
 static sw_inline int sw_convert_to_string(zval* val)
 {
-	if (Z_TYPE_P(val) <= IS_STRING){
-		convert_to_string(val);
-		return SW_OK;
-	} else {
-		return SW_ERR;
-	}
+    if (Z_TYPE_P(val) <= IS_STRING){
+        convert_to_string_ex(val);
+        return SW_OK;
+    } else {
+        return SW_ERR;
+    }
 }
 
 static sw_inline zval* sw_zval_dup(zval *val)
 {
-	if (!val) return NULL;
+    if (!val) return NULL;
     zval *dup = NULL;
     SW_ALLOC_INIT_ZVAL(dup);
     memcpy(dup, val, sizeof(zval));
@@ -326,7 +332,7 @@ static sw_inline zval* sw_zval_dup(zval *val)
 
 static sw_inline void sw_zval_free(zval *val)
 {
-	if (!val) return ;
+    if (!val) return ;
     sw_zval_ptr_dtor(&val);
     efree(val);
 }

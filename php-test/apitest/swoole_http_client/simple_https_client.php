@@ -58,8 +58,8 @@ function makeHttpClient($host = HTTP_SERVER_HOST, $port = HTTP_SERVER_PORT, $ssl
     ]);
     if ($ssl) {
         $httpClient->set([
-            'ssl_cert_file' => __DIR__ . '../swoole_http_server/localhost-ssl/server.crt',
-            'ssl_key_file' => __DIR__ . '../swoole_http_server/localhost-ssl/server.key',
+            'ssl_cert_file' => __DIR__ . '/../swoole_http_server/localhost-ssl/server.crt',
+            'ssl_key_file' => __DIR__ . '/../swoole_http_server/localhost-ssl/server.key',
         ]);
     }
 

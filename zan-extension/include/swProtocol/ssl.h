@@ -26,20 +26,27 @@ extern "C"
 {
 #endif
 
-
 #ifdef SW_USE_OPENSSL
 
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/conf.h>
 
 #define SW_SSL_BUFFER      1
 #define SW_SSL_CLIENT      2
 
-#endif
+typedef struct _swSSL_option
+{
+    char *cert_file;
+    char *key_file;
+    char *passphrase;
+    char *client_cert_file;
+    uint8_t verify_depth;
+    uint8_t method;
+    uint8_t disable_compress :1;
+} swSSL_option;
 
-
-#ifdef SW_USE_OPENSSL
 
 enum swSSLState
 {
@@ -85,21 +92,24 @@ typedef struct
     char *ciphers;
     char *ecdh_curve;
     char *session_cache;
+    char *dhparam;
 } swSSL_config;
 
 void swSSL_init(void);
 int swSSL_server_set_cipher(SSL_CTX* ssl_context, swSSL_config *cfg);
 void swSSL_server_http_advise(SSL_CTX* ssl_context, swSSL_config *cfg);
-SSL_CTX* swSSL_get_context(int method, char *cert_file, char *key_file);
+SSL_CTX* swSSL_get_context(swSSL_option *option);
 void swSSL_free_context(SSL_CTX* ssl_context);
 int swSSL_create(swConnection *conn, SSL_CTX* ssl_context, int flags);
 int swSSL_set_client_certificate(SSL_CTX *ctx, char *cert_file, int depth);
 int swSSL_get_client_certificate(SSL *ssl, char *buffer, size_t length);
+int swSSL_verify(swConnection *conn, int allow_self_signed);
 int swSSL_accept(swConnection *conn);
 int swSSL_connect(swConnection *conn);
 void swSSL_close(swConnection *conn);
 ssize_t swSSL_recv(swConnection *conn, void *__buf, size_t __n);
 ssize_t swSSL_send(swConnection *conn, void *__buf, size_t __n);
+int swSSL_sendfile(swConnection *conn, int fd, off_t *offset, size_t size);
 
 #endif
 

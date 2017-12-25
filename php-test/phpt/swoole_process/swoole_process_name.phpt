@@ -15,21 +15,28 @@ assert.quiet_eval=0
 --FILE--
 <?php
 
-$name = "SWOOLE_PROCESS_TEST_" . rand(1, 100);
+$os = php_uname('s');
+if (strcmp("Darwin", $os) == 0) {
+    echo "SUCCESS";
+}
+else {
+    $name = "SWOOLE_PROCESS_TEST_" . rand(1, 100);
 
-$proc = new \swoole_process(function($childProc) { 
-	global $name;
-	$childProc->name($name);
-	sleep(PHP_INT_MAX); 
-});
+    $proc = new \swoole_process(function($childProc) { 
+    	global $name;
+    	$childProc->name($name);
+    	sleep(PHP_INT_MAX); 
+    });
 
-$pid = $proc->start();
-$count = trim(`ps aux|grep $name|grep -v grep|wc -l`);
-assert($count == 1);
-\swoole_process::kill($pid, SIGKILL);
+    $pid = $proc->start();
+    $count = trim(`ps aux|grep $name|grep -v grep|wc -l`);
+    assert($count == 1);
+    \swoole_process::kill($pid, SIGKILL);
 
-\swoole_process::wait(true);
-echo "SUCCESS";
+    \swoole_process::wait(true);
+    echo "SUCCESS";
+}
+
 ?>
 --EXPECT--
 SUCCESS

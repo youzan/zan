@@ -29,46 +29,30 @@
 #include "swProtocol/http.h"
 #include "swConnection.h"
 #include "swBaseOperator.h"
-#include "swGlobalVars.h"
+//#include "swGlobalVars.h"
 
 
-swServerG SwooleG;				/// 超全局本地变量，此全局变量子进程中修改，其它进程不感知
-swServerGS *SwooleGS = NULL;		/// 超全局共享变量，此全局变量是基于共享内存的，修改字段，其它进程可感知
-swWorkerG SwooleWG;				/// 进程内全局变量，此全局变量在worker进程内初始化
+#if 0
+swServerG SwooleG;              /// 超全局本地变量，此全局变量子进程中修改，其它进程不感知
+swServerGS *SwooleGS = NULL;        /// 超全局共享变量，此全局变量是基于共享内存的，修改字段，其它进程可感知
+swWorkerG SwooleWG;             /// 进程内全局变量，此全局变量在worker进程内初始化
 swServerStats *SwooleStats = NULL;
 __thread swThreadG SwooleTG;   /// 线程独立变量
-
-
-#if SW_REACTOR_SCHEDULE == 3
-static sw_inline void swServer_reactor_schedule(swServer *serv)
-{
-    //以第1个为基准进行排序，取出最小值
-    int index = 0, event_num = serv->reactor_threads[0].reactor.event_num;
-    serv->reactor_next_i = 0;
-    for (index = 1; index < serv->reactor_num; index++)
-    {
-        if (serv->reactor_threads[index].reactor.event_num < event_num)
-        {
-            serv->reactor_next_i = index;
-            event_num = serv->reactor_threads[index].reactor.event_num;
-        }
-    }
-}
-
 #endif
 
-static int swServer_start_check(swServer *serv);
+//static int swServer_start_check(swServer *serv);
 
-static void swServer_signal_init(void);
-static void swServer_signal_hanlder(int sig);
+//static void swServer_signal_init(void);
+//static void swServer_signal_hanlder(int sig);
 
-static int swServer_send1(swServer *serv, swSendData *resp);
-static int swServer_send2(swServer *serv, swSendData *resp);
+//static int swServer_send1(swServer *serv, swSendData *resp);
+//static int swServer_send2(swServer *serv, swSendData *resp);
 
-static void (*onConnect_callback)(swServer *, int, int);
-static int (*onReceive_callback)(swServer *, char *, int, int, int);
-static void (*onClose_callback)(swServer *, int, int);
+//static void (*onConnect_callback)(swServer *, int, int);
+//static int (*onReceive_callback)(swServer *, char *, int, int, int);
+//static void (*onClose_callback)(swServer *, int, int);
 
+#if 0
 static int swServer_start_check(swServer *serv)
 {
     if (serv->onReceive == NULL && serv->onPacket == NULL)
@@ -176,7 +160,7 @@ static void swServer_signal_hanlder(int sig)
         swSystemTimer_signal_handler(SIGALRM);
         break;
     case SIGCHLD:
-    	/// 需要看看在信号处理函数中 调用swWaitpid；若有问题还是要调用原始接口swWaitpid
+        /// 需要看看在信号处理函数中 调用swWaitpid；若有问题还是要调用原始接口swWaitpid
         if (swWaitpid(SwooleGS->manager_pid, &status, WNOHANG) > 0 && SwooleG.running > 0)
         {
             swWarn("Fatal Error: manager process exit. status=%d, signal=%d.", WEXITSTATUS(status), WTERMSIG(status));
@@ -200,7 +184,7 @@ static void swServer_signal_hanlder(int sig)
         }
         else
         {
-        	/// 需要看看在信号处理函数中 调用swKill；若有问题还是要调用原始接口kill
+            /// 需要看看在信号处理函数中 调用swKill；若有问题还是要调用原始接口kill
             swKill(SwooleGS->manager_pid, sig);
         }
         break;
@@ -211,7 +195,7 @@ static void swServer_signal_hanlder(int sig)
             int index;
             swWorker *worker = NULL;
             for (index = 0; index < SwooleG.serv->worker_num + SwooleG.task_worker_num +
-            									SwooleG.serv->user_worker_num; index++)
+                                                SwooleG.serv->user_worker_num; index++)
             {
                 worker = swServer_get_worker(SwooleG.serv, index);
                 swKill(worker->pid, SIGRTMIN);
@@ -243,7 +227,7 @@ static int swServer_send1(swServer *serv, swSendData *resp)
 static int swServer_send2(swServer *serv, swSendData *resp)
 {
     int ret = (resp->info.from_id >= serv->reactor_num)? swServer_udp_send(serv, resp):
-    								swWrite(resp->info.fd, resp->data, resp->info.len);
+                                    swWrite(resp->info.fd, resp->data, resp->info.len);
 
     if (ret < 0)
     {
@@ -252,6 +236,7 @@ static int swServer_send2(swServer *serv, swSendData *resp)
 
     return ret;
 }
+
 
 void swServer_store_listen_socket(swServer *serv)
 {
@@ -353,7 +338,7 @@ int swServer_worker_init(swServer *serv, swWorker *worker)
  */
 void swServer_init(swServer *serv)
 {
-	bzero(serv, sizeof(swServer));
+    bzero(serv, sizeof(swServer));
 
     swoole_init();
     serv->factory_mode = SW_MODE_BASE;
@@ -431,33 +416,33 @@ int swServer_start(swServer *serv)
 
     //run as daemon
     if (serv->daemonize){
-		/**
-			* redirect STDOUT to log file
-		*/
-    	if (SwooleG.log_fd > STDOUT_FILENO)
-		{
-			swoole_redirect_stdout(SwooleG.log_fd);
-		}
-		/**
-		 * redirect STDOUT_FILENO/STDERR_FILENO to /dev/null
-		 */
-		else
-		{
-			SwooleG.null_fd = open("/dev/null", O_WRONLY);
-			if (SwooleG.null_fd > 0)
-			{
-				swoole_redirect_stdout(SwooleG.null_fd);
-			}
-			else
-			{
-				swSysError("open(/dev/null) failed.");
-			}
-		}
+        /**
+            * redirect STDOUT to log file
+        */
+        if (SwooleG.log_fd > STDOUT_FILENO)
+        {
+            swoole_redirect_stdout(SwooleG.log_fd);
+        }
+        /**
+         * redirect STDOUT_FILENO/STDERR_FILENO to /dev/null
+         */
+        else
+        {
+            SwooleG.null_fd = open("/dev/null", O_WRONLY);
+            if (SwooleG.null_fd > 0)
+            {
+                swoole_redirect_stdout(SwooleG.null_fd);
+            }
+            else
+            {
+                swSysError("open(/dev/null) failed.");
+            }
+        }
 
-		if (swoole_daemon(0, 1) < 0)
-		{
-			return SW_ERR;
-		}
+        if (swoole_daemon(0, 1) < 0)
+        {
+            return SW_ERR;
+        }
     }
 
     //master pid
@@ -471,7 +456,7 @@ int swServer_start(swServer *serv)
     serv->workers = SwooleG.memory_pool->alloc(SwooleG.memory_pool, serv->worker_num * sizeof(swWorker));
     if (!serv->workers)
     {
-    	swFatalError("gmalloc[object->workers] failed");
+        swFatalError("gmalloc[object->workers] failed");
         return SW_ERR;
     }
 
@@ -544,7 +529,7 @@ int swServer_start(swServer *serv)
     {
         if (swPort_set_option(ls) < 0)
         {
-        	return SW_ERR;
+            return SW_ERR;
         }
     }
 
@@ -625,8 +610,8 @@ uint32_t swServer_worker_schedule(swServer *serv, uint32_t schedule_key)
     if (serv->dispatch_mode == SW_DISPATCH_ROUND || serv->dispatch_mode == SW_DISPATCH_FDMOD)
     {
         target_worker_id = (serv->dispatch_mode == SW_DISPATCH_ROUND )?
-        							sw_atomic_fetch_add(&serv->worker_round_id, 1) % serv->worker_num:
-        							schedule_key % serv->worker_num;
+                                    sw_atomic_fetch_add(&serv->worker_round_id, 1) % serv->worker_num:
+                                    schedule_key % serv->worker_num;
     }
     //Using the IP touch access to hash
     else if (serv->dispatch_mode == SW_DISPATCH_IPMOD)
@@ -636,7 +621,7 @@ uint32_t swServer_worker_schedule(swServer *serv, uint32_t schedule_key)
         if (!conn || SW_SOCK_TCP == conn->socket_type)
         {
             target_worker_id = (!conn)? schedule_key % serv->worker_num :
-            				conn->info.addr.inet_v4.sin_addr.s_addr % serv->worker_num;
+                            conn->info.addr.inet_v4.sin_addr.s_addr % serv->worker_num;
         }
         //IPv6
         else
@@ -653,7 +638,7 @@ uint32_t swServer_worker_schedule(swServer *serv, uint32_t schedule_key)
     {
         swConnection *conn = swServer_connection_get(serv, schedule_key);
         target_worker_id = (!conn)? (schedule_key % serv->worker_num):
-        					((conn->uid)? conn->uid % serv->worker_num:schedule_key % serv->worker_num);
+                            ((conn->uid)? conn->uid % serv->worker_num:schedule_key % serv->worker_num);
     }
     //Preemptive distribution
     else
@@ -1031,7 +1016,7 @@ create_error:
     //bind address and port
     if (swSocket_bind(sock, ls->type, ls->host, ls->port) < 0)
     {
-    	close(sock);
+        close(sock);
         goto create_error;
     }
 
@@ -1140,3 +1125,58 @@ void swServer_set_callback_onClose(swServer *serv, void (*callback)(swServer *, 
     onClose_callback = callback;
     serv->onClose = swServer_scalar_onClose_callback;
 }
+
+
+//---------
+
+swConnection *swWorker_get_connection(swServer *serv, int session_id)
+{
+    int real_fd = swServer_get_fd(serv, session_id);
+    swConnection *conn = swServer_connection_get(serv, real_fd);
+    return conn;
+}
+
+swString *swWorker_get_buffer(swServer *serv, int worker_id)
+{
+    //input buffer
+    return (serv->factory_mode != SW_MODE_PROCESS)?
+           SwooleWG.buffer_input[0]:SwooleWG.buffer_input[worker_id];
+}
+
+swConnection *swServer_connection_verify(swServer *serv, int session_id)
+{
+    swSession *session = swServer_get_session(serv, session_id);
+    int fd = session->fd;
+    swConnection *conn = swServer_connection_get(serv, fd);
+    if (!conn || conn->active == 0)
+    {
+        return NULL;
+    }
+    if (session->id != session_id || conn->session_id != session_id)
+    {
+        return NULL;
+    }
+#ifdef SW_USE_OPENSSL
+    if (conn->ssl && conn->ssl_state != SW_SSL_STATE_READY)
+    {
+        //swNotice("SSL not ready");
+        return NULL;
+    }
+#endif
+    return conn;
+}
+
+void swServer_connection_ready(swServer *serv, int fd, int reactor_id)
+{
+    swDataHead connect_event;
+    connect_event.type = SW_EVENT_CONNECT;
+    connect_event.from_id = reactor_id;
+    connect_event.fd = fd;
+
+    if (serv->factory.notify(&serv->factory, &connect_event) < 0)
+    {
+        //swWarn("send notification [fd=%d] failed.", fd);
+    }
+}
+
+#endif

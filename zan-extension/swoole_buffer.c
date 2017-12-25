@@ -20,6 +20,7 @@
 
 
 #include "php_swoole.h"
+#include "zanLog.h"
 
 static void swoole_buffer_recycle(swString *buffer);
 
@@ -109,6 +110,12 @@ static void swoole_buffer_recycle(swString *buffer)
 
 static PHP_METHOD(swoole_buffer, __construct)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("new swoole_buffer can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long size = SW_STRING_BUFFER_DEFAULT;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &size))
     {
@@ -143,6 +150,12 @@ static PHP_METHOD(swoole_buffer, __destruct)
 
 static PHP_METHOD(swoole_buffer, append)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->append can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     swString str;
     bzero(&str, sizeof(str));
 
@@ -160,11 +173,11 @@ static PHP_METHOD(swoole_buffer, append)
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     if ((str.length + buffer->length) > buffer->size &&
-    					(str.length + buffer->length) > SW_STRING_BUFFER_MAXLEN)
+                        (str.length + buffer->length) > SW_STRING_BUFFER_MAXLEN)
     {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "buffer size must not exceed %d", SW_STRING_BUFFER_MAXLEN);
         RETURN_FALSE;
@@ -173,20 +186,26 @@ static PHP_METHOD(swoole_buffer, append)
     size_t size_old = buffer->size;
     if (swString_append(buffer,&str) < 0)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     if (buffer->size > size_old)
-	{
-		zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("capacity"), buffer->size TSRMLS_CC);
-	}
+    {
+        zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("capacity"), buffer->size TSRMLS_CC);
+    }
 
-	zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("length"), buffer->length TSRMLS_CC);
-	RETURN_LONG(buffer->length);
+    zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("length"), buffer->length TSRMLS_CC);
+    RETURN_LONG(buffer->length);
 }
 
 static PHP_METHOD(swoole_buffer, substr)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->substr can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long offset;
     long length = -1;
     zend_bool seek = 0;
@@ -199,7 +218,7 @@ static PHP_METHOD(swoole_buffer, substr)
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     seek = (seek && !(offset == 0 && length <= buffer->length))? 0:seek;
@@ -212,31 +231,37 @@ static PHP_METHOD(swoole_buffer, substr)
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "offset(%ld,%ld) out of bounds.", offset, length);
         RETURN_FALSE;
     }
-	
-	SW_RETVAL_STRINGL(buffer->str + offset, length, 1);
+
+    SW_RETVAL_STRINGL(buffer->str + offset, length, 1);
     if (seek)
     {
         buffer->offset += length;
         zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("length"),
-                											buffer->length - buffer->offset TSRMLS_CC);
-				
+                                                            buffer->length - buffer->offset TSRMLS_CC);
+
         if (buffer->offset > SW_STRING_BUFFER_GARBAGE_MIN &&
-        		buffer->offset * SW_STRING_BUFFER_GARBAGE_RATIO > buffer->size)
+                buffer->offset * SW_STRING_BUFFER_GARBAGE_RATIO > buffer->size)
         {
-			// Do recycle when the garbage is to large.
-			swoole_buffer_recycle(buffer);
+            // Do recycle when the garbage is to large.
+            swoole_buffer_recycle(buffer);
         }
     }
-	
-	return;
+
+    return;
 }
 
 static PHP_METHOD(swoole_buffer, __toString)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->__toString can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     SW_RETURN_STRINGL(buffer->str + buffer->offset, buffer->length - buffer->offset, 1);
@@ -244,6 +269,12 @@ static PHP_METHOD(swoole_buffer, __toString)
 
 static PHP_METHOD(swoole_buffer, write)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->write can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long offset;
     char *new_str = NULL;
     zend_size_t length = 0;
@@ -254,52 +285,58 @@ static PHP_METHOD(swoole_buffer, write)
 
     if (!new_str || length < 1)
     {
-    	php_error_docref(NULL TSRMLS_CC, E_WARNING, "string empty.");
-    	RETURN_FALSE;
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "string empty.");
+        RETURN_FALSE;
     }
 
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     offset = (offset < 0)? buffer->length - buffer->offset + offset:offset;
     if (offset < 0)
     {
-    	php_error_docref(NULL TSRMLS_CC, E_WARNING, "offset(%ld) out of bounds.", offset);
-    	RETURN_FALSE;
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "offset(%ld) out of bounds.", offset);
+        RETURN_FALSE;
     }
 
     offset += buffer->offset;
 
     if ((length + offset) > buffer->size && (length + offset) > SW_STRING_BUFFER_MAXLEN)
-	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "buffer size must not exceed %d", SW_STRING_BUFFER_MAXLEN);
-		RETURN_FALSE;
-	}
+    {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "buffer size must not exceed %d", SW_STRING_BUFFER_MAXLEN);
+        RETURN_FALSE;
+    }
 
     size_t size_old = buffer->size;
     int ret = swString_write_ptr(buffer, offset, new_str,length);
     if (ret != SW_OK)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     if (buffer->size > size_old)
-	{
-		zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("capacity"),
-																				buffer->size TSRMLS_CC);
-	}
+    {
+        zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("capacity"),
+                                                                                buffer->size TSRMLS_CC);
+    }
 
-	zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("length"),
-																buffer->length - buffer->offset TSRMLS_CC);
+    zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("length"),
+                                                                buffer->length - buffer->offset TSRMLS_CC);
 
-	RETURN_LONG(buffer->length - buffer->offset);
+    RETURN_LONG(buffer->length - buffer->offset);
 }
 
 static PHP_METHOD(swoole_buffer, read)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->read can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long offset = 0;
     long length = 0;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &offset, &length))
@@ -310,27 +347,33 @@ static PHP_METHOD(swoole_buffer, read)
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     offset = (offset < 0)? buffer->length - buffer->offset + offset:offset;
-	if (offset < 0)
-	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "offset(%ld) out of bounds.", offset);
-		RETURN_FALSE;
-	}
+    if (offset < 0)
+    {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "offset(%ld) out of bounds.", offset);
+        RETURN_FALSE;
+    }
 
-	offset += buffer->offset;
-	if (length > buffer->length - offset)
-	{
-		RETURN_FALSE;
-	}
+    offset += buffer->offset;
+    if (length > buffer->length - offset)
+    {
+        RETURN_FALSE;
+    }
 
     SW_RETURN_STRINGL(buffer->str + offset, length, 1);
 }
 
 static PHP_METHOD(swoole_buffer, expand)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->expand can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     long size = -1;
     if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &size))
     {
@@ -340,20 +383,20 @@ static PHP_METHOD(swoole_buffer, expand)
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     if (size <= buffer->size || size > SW_STRING_BUFFER_MAXLEN)
     {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "new size must more than %ld and need less than %d",
-        														buffer->size,SW_STRING_BUFFER_MAXLEN);
+                                                                buffer->size,SW_STRING_BUFFER_MAXLEN);
         RETURN_FALSE;
     }
 
     int iret = swString_extend(buffer, size);
     if (iret != SW_OK)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
 
     zend_update_property_long(swoole_buffer_class_entry_ptr, getThis(), ZEND_STRL("capacity"), size TSRMLS_CC);
@@ -362,10 +405,16 @@ static PHP_METHOD(swoole_buffer, expand)
 
 static PHP_METHOD(swoole_buffer, recycle)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->recycle can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	return;
+        return;
     }
 
     swoole_buffer_recycle(buffer);
@@ -375,10 +424,16 @@ static PHP_METHOD(swoole_buffer, recycle)
 
 static PHP_METHOD(swoole_buffer, clear)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("swoole_buffer->clear can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     swString *buffer = swoole_get_object(getThis());
     if (!buffer)
     {
-    	return;
+        return;
     }
 
     buffer->length = 0;

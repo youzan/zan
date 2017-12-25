@@ -17,13 +17,13 @@ var_dump(swoole_timer_tick(-1, function() {}));;
 var_dump(swoole_timer_tick(0, function() {}));;
 ?>
 --EXPECTF--
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @%f]	WARNING	php_swoole_add_timer: The given parameters is too big and must be greater than 0.
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @%f]	WARNING	zif_swoole_timer_after: add timer node failed.
+[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @.%f] WARNING php_swoole_add_timer(:%d): The given parameters is too big and must be greater than 0.
+[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @.%f] WARNING zif_swoole_timer_after(:%d): add timer node failed.
 bool(false)
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @%f]	WARNING	php_swoole_add_timer: The given parameters is too big and must be greater than 0.
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @%f]	WARNING	zif_swoole_timer_after: add timer node failed.
+[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @.%f] WARNING php_swoole_add_timer(:%d): The given parameters is too big and must be greater than 0.
+[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @.%f] WARNING zif_swoole_timer_after(:%d): add timer node failed.
 bool(false)
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @%f]	WARNING	php_swoole_add_timer: The given parameters is too big and must be greater than 0.
+[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @.%f] WARNING php_swoole_add_timer(:%d): The given parameters is too big and must be greater than 0.
 bool(false)
-[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @%f]	WARNING	php_swoole_add_timer: The given parameters is too big and must be greater than 0.
+[%d%d%d%d-%d%d-%d%d %d%d:%d%d:%d%d @.%f] WARNING php_swoole_add_timer(:%d): The given parameters is too big and must be greater than 0.
 bool(false)

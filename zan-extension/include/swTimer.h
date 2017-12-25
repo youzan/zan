@@ -21,8 +21,8 @@
 #define _SW_TIMER_H_
 
 #include "swoole.h"
-#include "swPipe.h"
 #include "swBaseData.h"
+#include "zanIpc.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -30,13 +30,13 @@ extern "C"
 #endif
 
 enum USER_TYPE{
-	PHPTIMER_USED = 1,		/// php 用户
-	TCPCLIENT_USED, 		/// tcpclient 用户
-	HTTPCLIENT_USED,		/// httpClient 用户
-	REDIS_USED,				/// redis 用户
-	MYSQL_USED,				/// mysql 用户
-	CONNPOOL_USED,			/// 连接池 用户
-	TIMER_TYPE_NUMS
+    PHPTIMER_USED = 1,      /// php 用户
+    TCPCLIENT_USED,         /// tcpclient 用户
+    HTTPCLIENT_USED,        /// httpClient 用户
+    REDIS_USED,             /// redis 用户
+    MYSQL_USED,             /// mysql 用户
+    CONNPOOL_USED,          /// 连接池 用户
+    TIMER_TYPE_NUMS
 };
 
 typedef struct _swTimer_node
@@ -46,7 +46,7 @@ typedef struct _swTimer_node
     int64_t exec_msec;
     uint32_t interval;
     long id;
-    uint8_t remove;
+    int remove;
     uint8_t used_type;       //参考 @USER_TYPE
 } swTimer_node;
 
@@ -63,12 +63,14 @@ struct _swTimer
     int num;
     int use_pipe;
     int64_t lasttime;
-    int fd;				/// fd == 0 未初始化，fd < 0 ;fd > 0 使用信号驱动时为pipe fd，使用time fd 为timefd
+    int fd;             /// fd == 0 未初始化，fd < 0 ;fd > 0 使用信号驱动时为pipe fd，使用time fd 为timefd
     long _next_id;
     long _current_id;
     int64_t _next_msec;
     int64_t _cur_exec_msec;
-    swPipe pipe;
+    ///swPipe pipe;
+    zanPipe pipe;
+
     /*-----------------for EventTimer-------------------*/
     struct timeval basetime;
     /*--------------------------------------------------*/
@@ -83,8 +85,8 @@ struct _swTimer
 
 typedef struct _swTimer_cfg
 {
-	uint8_t use_time_wheel;
-	int     precision;
+    uint8_t use_time_wheel;
+    int     precision;
 }swTimer_cfg;
 
 extern swTimer_cfg timer_cfg;
@@ -95,7 +97,7 @@ int register_tick_cb(swTimer* timer,int type,user_cb callback);
 int register_dict_cb(swTimer* timer,int type,user_dict_cb callback);
 
 long swTimer_add(swTimer *timer, long _msec, int interval, void *data,int used_type);
-void swTimer_del(swTimer *timer, long id);
+int swTimer_del(swTimer *timer, long id);
 int swTimer_exist(swTimer *timer,long id);
 
 void swTimer_free(swTimer *timer);

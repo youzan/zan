@@ -16,19 +16,17 @@
  +----------------------------------------------------------------------+
  */
 
-#include "swLog.h"
-#include "swLock.h"
-#include "swFactory.h"
-#include "swGlobalVars.h"
+#include "zanGlobalVar.h"
+#include "zanLog.h"
 
 #define swThreadPool_thread(p,id) (&p->threads[id])
 static void* swThreadPool_loop(void *arg);
 
 int swThreadPool_create(swThreadPool *pool, int thread_num)
 {
-	if (!pool){
-		return SW_ERR;
-	}
+    if (!pool){
+        return ZAN_ERR;
+    }
 
     bzero(pool, sizeof(swThreadPool));
     pool->threads = (swThread *) sw_calloc(thread_num, sizeof(swThread));
@@ -36,43 +34,29 @@ int swThreadPool_create(swThreadPool *pool, int thread_num)
 
     if (pool->threads == NULL || pool->params == NULL)
     {
-    	sw_free(pool->threads);
-    	sw_free(pool->params);
-        swFatalError("swThreadPool_create malloc fail");
-        return SW_ERR;
-    }
-
-    swTrace("threads=%p|params=%p", pool->threads, pool->params);
-
-#ifdef SW_THREADPOOL_USE_CHANNEL
-    pool->chan = swChannel_create(1024 * 256, 512, 0);
-    if (pool->chan == NULL)
-    {
-        swError("swThreadPool_create create channel failed");
         sw_free(pool->threads);
         sw_free(pool->params);
-        return SW_ERR;
+        zanFatalError("swThreadPool_create malloc fail");
+        return ZAN_ERR;
     }
-#else
+
+    zanTrace("threads=%p|params=%p", pool->threads, pool->params);
     if (swRingQueue_init(&pool->queue, SW_THREADPOOL_QUEUE_LEN) < 0)
     {
-    	sw_free(pool->threads);
-    	sw_free(pool->params);
-        return SW_ERR;
+        sw_free(pool->threads);
+        sw_free(pool->params);
+        return ZAN_ERR;
     }
-#endif
 
-//    pthread_mutex_init(&(pool->mutex), NULL);
-//    pthread_cond_init(&(pool->cond), NULL);
-    if (swCond_create(&pool->cond) < 0){
-    	sw_free(pool->threads);
-    	sw_free(pool->params);
-    	return SW_ERR;
+    if (zanCond_create(&pool->cond) < 0) {
+        sw_free(pool->threads);
+        sw_free(pool->params);
+        return ZAN_ERR;
     }
 
     pool->thread_num = thread_num;
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swThreadPool_dispatch(swThreadPool *pool, void *task, int task_len)
@@ -82,24 +66,20 @@ int swThreadPool_dispatch(swThreadPool *pool, void *task, int task_len)
     pool->cond.lock.lock(&pool->cond.lock);
     for (index = 0;index < 5;index++)
     {
-#ifdef SW_THREADPOOL_USE_CHANNEL
-		ret = swChannel_push(pool->chan, task, task_len);
-#else
-		ret = swRingQueue_push(&pool->queue, task);
-#endif
-		if (ret >= 0)
-		{
-		   break;
-		}
+        ret = swRingQueue_push(&pool->queue, task);
+        if (ret >= 0)
+        {
+           break;
+        }
 
-		usleep(index+10);
-		continue;
+        usleep(index+10);
+        continue;
     }
 
     pool->cond.lock.unlock(&pool->cond.lock);
     if (ret < 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
     else
     {
@@ -119,25 +99,24 @@ int swThreadPool_run(swThreadPool *pool)
         pool->params[index].object = pool;
         if (pthread_create(&(swThreadPool_thread(pool,index)->tid), NULL, swThreadPool_loop, &pool->params[index]) < 0)
         {
-            swSysError("pthread_create failed");
-            return SW_ERR;
+            zanError("pthread_create failed");
+            return ZAN_ERR;
         }
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }
 
 int swThreadPool_free(swThreadPool *pool)
 {
     if (pool->shutdown)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     pool->shutdown = 1;
 
     //broadcast all thread
-//    pthread_cond_broadcast(&(pool->cond));
     pool->cond.broadcast(&pool->cond);
     int index = 0;
     for (index = 0; index < pool->thread_num; index++)
@@ -145,16 +124,11 @@ int swThreadPool_free(swThreadPool *pool)
         pthread_join((swThreadPool_thread(pool,index)->tid), NULL);
     }
 
-#ifdef SW_THREADPOOL_USE_CHANNEL
-    swChannel_free(pool->chan);
-#else
     swRingQueue_free(&pool->queue);
-#endif
-
     pool->cond.free(&pool->cond);
     sw_free(pool->threads);
     sw_free(pool->params);
-    return SW_OK;
+    return ZAN_OK;
 }
 
 static void* swThreadPool_loop(void *arg)
@@ -168,29 +142,25 @@ static void* swThreadPool_loop(void *arg)
         pool->onStart(pool, id);
     }
 
-    while (SwooleG.running)
+    while (ServerG.running)
     {
- //     pthread_mutex_lock(&(pool->mutex));
-    	pool->cond.lock.lock(&pool->cond.lock);
+        pool->cond.lock.lock(&pool->cond.lock);
         if (pool->shutdown)
         {
-//            pthread_mutex_unlock(&(pool->mutex));
-        	pool->cond.lock.unlock(&pool->cond.lock);
-            swTrace("thread [%d] will exit\n", id);
+            pool->cond.lock.unlock(&pool->cond.lock);
+            zanTrace("thread [%d] will exit\n", id);
             pthread_exit(NULL);
         }
 
         while (!pool->shutdown && pool->task_num == 0)
         {
-//            pthread_cond_wait(&(pool->cond), &(pool->mutex));
-        	pool->cond.wait(&pool->cond);
+            pool->cond.wait(&pool->cond);
         }
 
-        swTrace("thread [%d] is starting to work\n", id);
+        zanTrace("thread [%d] is starting to work\n", id);
 
         void *task = NULL;
         int ret = swRingQueue_pop(&pool->queue, &task);
-//      pthread_mutex_unlock(&(pool->mutex));
         pool->cond.lock.unlock(&pool->cond.lock);
 
         if (ret >= 0)
