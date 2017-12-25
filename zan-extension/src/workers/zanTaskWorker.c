@@ -32,6 +32,7 @@ int zan_spawn_task_process(zanProcessPool *pool);
 
 int zanPool_taskworker_alloc(zanProcessPool *pool);
 int zanPool_taskworker_init(zanProcessPool *pool);
+void zanTaskWorker_signal_handler(int signo);
 
 static void zanPool_taskworker_free(zanProcessPool *pool);
 
