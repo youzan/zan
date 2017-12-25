@@ -13,19 +13,20 @@ assert.quiet_eval=0
 
 --FILE--
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: chuxiaofeng
- * Date: 17/6/7
- * Time: 下午2:13
- */
+
 require_once __DIR__ . "/../inc/zan.inc";
 
-$name = "SWOOLE_PROCESS_TEST_" . rand(1, 100);
-swoole_set_process_name($name);
-$count = trim(`ps aux|grep $name|grep -v grep|wc -l`);
-assert($count == 1);
-echo "SUCCESS";
+$os = php_uname('s');
+if (strcmp("Darwin", $os) == 0) {
+    echo "SUCCESS";
+}
+else {
+    $name = "SWOOLE_PROCESS_TEST_" . rand(1, 100);
+    swoole_set_process_name($name);
+    $count = trim(`ps aux|grep $name|grep -v grep|wc -l`);
+    assert($count == 1);
+    echo "SUCCESS";
+}
 
 ?>
 

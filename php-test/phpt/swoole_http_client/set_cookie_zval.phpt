@@ -27,7 +27,7 @@ function get() {
     ];
 
     $cli->setCookies($zval["cookies"]);
-
+     echo "SUCCESS";
     if ($i++ > 10) {
         echo "SUCCESS";
         swoole_event_exit();

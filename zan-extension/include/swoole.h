@@ -91,16 +91,6 @@ typedef unsigned long ulong_t;
 #define CLOCK_REALTIME 0
 #endif
 
-#if !defined(__GNUC__) || __GNUC__ < 3
-#define __builtin_expect(x, expected_value) (x)
-#endif
-#ifndef likely
-#define likely(x)        __builtin_expect(!!(x), 1)
-#endif
-#ifndef unlikely
-#define unlikely(x)      __builtin_expect(!!(x), 0)
-#endif
-
 #define SW_START_LINE  "-------------------------START----------------------------"
 #define SW_END_LINE    "-------------------------END------------------------------"
 #define SW_SPACE       ' '
@@ -108,9 +98,6 @@ typedef unsigned long ulong_t;
 /*----------------------------------------------------------------------------*/
 
 #include "swoole_config.h"
-
-#define SW_TIMEO_SEC           0
-#define SW_TIMEO_USEC          3000000
 
 #define SW_MAX_UINT            4294967295
 #define SW_MAX_INT             2147483647
@@ -125,11 +112,8 @@ typedef unsigned long ulong_t;
 #define SW_STRL(s)             s, sizeof(s)
 #define SW_START_SLEEP         usleep(100000)  //sleep 1s,wait fork and pthread_create
 
-#define METHOD_DEF(class,name,...)  class##_##name(class *object, ##__VA_ARGS__)
-#define METHOD(class,name,...)      class##_##name(object, ##__VA_ARGS__)
-
 //-------------------------------------------------------------------------------
-#define SW_ASYNCERR			   1
+#define SW_ASYNCERR            1
 #define SW_OK                  0
 #define SW_ERR                -1
 #define SW_AGAIN              -2
@@ -137,6 +121,10 @@ typedef unsigned long ulong_t;
 #define SW_DONE               -4
 #define SW_DECLINED           -5
 #define SW_ABORT              -6
+
+//===============just for refactor...
+#define ZAN_OK                 0
+#define ZAN_ERR               -1
 
 //-------------------------------------------------------------------------------
 enum swReturnType
@@ -175,29 +163,20 @@ enum swBool_type
 };
 
 //-------------------------------------------------------------------------------
-enum swServer_mode
-{
-    SW_MODE_BASE          =  1,
-    SW_MODE_THREAD        =  2,
-    SW_MODE_PROCESS       =  3,
-    SW_MODE_SINGLE        =  4,
-};
-
 enum swCloseType
 {
-	SW_CLOSE_PASSIVE = 32, 			///被动关闭
-	SW_CLOSE_INITIATIVE,			///主动关闭
+    SW_CLOSE_PASSIVE = 32,          ///被动关闭
+    SW_CLOSE_INITIATIVE,            ///主动关闭
 };
 
 enum swClientTimeoutType
 {
-	SW_CLIENT_INVAILED_TIMEOUT = 0,
-	SW_CLIENT_CONNECT_TIMEOUT = 1,
-	SW_CLIENT_RECV_TIMEOUT = 2,
+    SW_CLIENT_INVAILED_TIMEOUT = 0,
+    SW_CLIENT_CONNECT_TIMEOUT = 1,
+    SW_CLIENT_RECV_TIMEOUT = 2,
 };
 
-
-#define SW_MODE_PACKET		   0x10
+#define SW_MODE_PACKET         0x10
 #define SW_SOCK_SSL            (1u << 9)
 #define SW_MAX_FDTYPE          32 //32 kinds of event
 
@@ -207,21 +186,15 @@ enum swClientTimeoutType
 typedef unsigned char uchar;
 #endif
 
-typedef struct
-{
-    uint32_t id;
-    uint32_t fd :24;
-    uint32_t reactor_id :8;
-} swSession;
-
 typedef struct _swDataHead
 {
-    int fd;  //文件描述符
-    uint16_t len;  //长度
-    int16_t from_id;  //Reactor Id
-    uint8_t type;  //类型
-    uint8_t from_fd;
+    int      fd;
+    uint8_t  type;
+    uint8_t  from_fd;
+    uint16_t len;
+    uint16_t from_id;
     uint16_t worker_id;
+    uint16_t networker_id;
 } swDataHead;
 
 typedef struct _swUdpFd
@@ -230,11 +203,27 @@ typedef struct _swUdpFd
     int sock;
 } swUdpFd;
 
-void swoole_init(void);
-void swoole_clean(void);
-void swoole_update_time(void);
-double swoole_microtime(void);
-void set_log_level();
+//=============================
+typedef struct
+{
+    uint32_t session_id;
+    uint32_t accept_fd;
+    uint8_t  reactor_id;
+    uint8_t  networker_id;
+} zanSession;
+
+//for test
+enum zanServer_mode
+{
+    ZAN_MODE_BASE          =  1,
+    ZAN_MODE_PROCESS       =  2,
+};
+
+void zan_init(void);
+void zan_clean(void);
+void zan_update_time(void);
+void zan_set_loglevel(uint8_t);
+double get_microtime(void);
 
 #ifdef __cplusplus
 }

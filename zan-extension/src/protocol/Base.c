@@ -16,12 +16,13 @@
  +----------------------------------------------------------------------+
  */
 
+#include "php_swoole.h"
 #include "swoole.h"
-#include "swLog.h"
 #include "swConnection.h"
-#include "swGlobalVars.h"
 #include "swBaseOperator.h"
 #include "swProtocol/protocol.h"
+#include "zanGlobalVar.h"
+#include "zanLog.h"
 
 
 /**
@@ -43,10 +44,10 @@ int swProtocol_get_package_length(swProtocol *protocol, swConnection *conn, char
     //Protocol length is not legitimate, out of bounds or exceed the allocated length
     if (body_length < 0)
     {
-		char addr[SW_IP_MAX_LENGTH] = {0};
-		swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
-		swError("invalid package, remote_addr=%s:%d, length=%d, size=%d.",addr, swConnection_get_port(conn), body_length, size);
-		return SW_ERR;
+        char addr[SW_IP_MAX_LENGTH] = {0};
+        swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
+        zanError("invalid package, remote_addr=%s:%d, length=%d, size=%d.",addr, swConnection_get_port(conn), body_length, size);
+        return ZAN_ERR;
     }
     //total package length
     return protocol->package_body_offset + body_length;
@@ -54,9 +55,9 @@ int swProtocol_get_package_length(swProtocol *protocol, swConnection *conn, char
 
 static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void *object, swString *buffer)
 {
+    char *stack_buf = (char *)emalloc(SW_BUFFER_SIZE_BIG);
+    memset(stack_buf, 0, SW_BUFFER_SIZE_BIG);
 
-
-    char stack_buf[SW_BUFFER_SIZE_BIG] = {0};
     int eof_pos;
     if (buffer->length - buffer->offset < protocol->package_eof_len)
     {
@@ -73,6 +74,7 @@ static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void 
     if (eof_pos < 0)
     {
         buffer->offset = buffer->length - protocol->package_eof_len;
+        swoole_efree(stack_buf);
         return buffer->length;
     }
 
@@ -102,6 +104,7 @@ static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void 
                 memcpy(buffer->str, stack_buf, remaining_length);
                 buffer->length = remaining_length;
                 buffer->offset = 0;
+                swoole_efree(stack_buf);
                 return remaining_length;
             }
             else
@@ -116,12 +119,13 @@ static sw_inline int swProtocol_split_package_by_eof(swProtocol *protocol, void 
     }
     //swNotice("#[3] length=%ld, size=%ld, offset=%ld", buffer->length, buffer->size, buffer->offset);
     swString_clear(buffer);
+    swoole_efree(stack_buf);
     return 0;
 }
 
 /**
- * @return SW_ERR: close the connection
- * @return SW_OK: continue
+ * @return ZAN_ERR: close the connection
+ * @return ZAN_OK: continue
  */
 int swProtocol_recv_check_length(swProtocol *protocol, swConnection *conn, swString *buffer)
 {
@@ -138,17 +142,18 @@ int swProtocol_recv_check_length(swProtocol *protocol, swConnection *conn, swStr
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-            swSysError("recv(%d, %p, %d) failed.", conn->fd, recvbuf, recvbuf_size);
-            return SW_OK;
+            zanError("recv(%d, %p, %d) failed.", conn->fd, recvbuf, recvbuf_size);
+            zanError("recv(%d, %p, %d) failed.", conn->fd, recvbuf, recvbuf_size);
+            return ZAN_OK;
         case SW_CLOSE:
-            return SW_ERR;
+            return ZAN_ERR;
         default:
-            return SW_OK;
+            return ZAN_OK;
         }
     }
     else if (n == 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
     else
     {
@@ -165,7 +170,7 @@ int swProtocol_recv_check_length(swProtocol *protocol, swConnection *conn, swStr
             }
             else
             {
-                return SW_OK;
+                return ZAN_OK;
             }
         }
         else
@@ -174,26 +179,26 @@ int swProtocol_recv_check_length(swProtocol *protocol, swConnection *conn, swStr
             //invalid package, close connection.
             if (package_length < 0)
             {
-                return SW_ERR;
+                return ZAN_ERR;
             }
             //no length
             else if (package_length == 0)
             {
-                return SW_OK;
+                return ZAN_OK;
             }
             else if (package_length > protocol->package_max_length)
             {
-            	char addr[SW_IP_MAX_LENGTH] = {0};
-            	swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
-                swWarn("package is too big, remote_addr=%s:%d, length=%d.", addr, swConnection_get_port(conn), package_length);
-                return SW_ERR;
+                char addr[SW_IP_MAX_LENGTH] = {0};
+                swConnection_get_ip(conn,addr,SW_IP_MAX_LENGTH);
+                zanWarn("package is too big, remote_addr=%s:%d, length=%d.", addr, swConnection_get_port(conn), package_length);
+                return ZAN_ERR;
             }
             //get length success
             else
             {
                 if (buffer->size < package_length && swString_extend(buffer, package_length) < 0)
                 {
-                    return SW_ERR;
+                    return ZAN_ERR;
                 }
 
                 conn->recv_wait = 1;
@@ -209,12 +214,12 @@ int swProtocol_recv_check_length(swProtocol *protocol, swConnection *conn, swStr
             }
         }
     }
-    return SW_OK;
+    return ZAN_OK;
 }
 
 /**
- * @return SW_ERR: close the connection
- * @return SW_OK: continue
+ * @return ZAN_ERR: close the connection
+ * @return ZAN_OK: continue
  */
 int swProtocol_recv_check_eof(swProtocol *protocol, swConnection *conn, swString *buffer)
 {
@@ -233,17 +238,17 @@ int swProtocol_recv_check_eof(swProtocol *protocol, swConnection *conn, swString
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-            swSysError("recv from socket#%d failed.", conn->fd);
-            return SW_OK;
+            zanError("recv from socket#%d failed.", conn->fd);
+            return ZAN_OK;
         case SW_CLOSE:
-            return SW_ERR;
+            return ZAN_ERR;
         default:
-            return SW_OK;
+            return ZAN_OK;
         }
     }
     else if (n == 0)
     {
-        return SW_ERR;
+        return ZAN_ERR;
     }
     else
     {
@@ -251,14 +256,14 @@ int swProtocol_recv_check_eof(swProtocol *protocol, swConnection *conn, swString
 
         if (buffer->length < protocol->package_eof_len)
         {
-            return SW_OK;
+            return ZAN_OK;
         }
 
         if (protocol->split_by_eof)
         {
             if (swProtocol_split_package_by_eof(protocol, conn, buffer) == 0)
             {
-                return SW_OK;
+                return ZAN_OK;
             }
             else
             {
@@ -266,18 +271,18 @@ int swProtocol_recv_check_eof(swProtocol *protocol, swConnection *conn, swString
             }
         }
         else if (memcmp(buffer->str + buffer->length - protocol->package_eof_len,
-        					protocol->package_eof, protocol->package_eof_len) == 0)
+                            protocol->package_eof, protocol->package_eof_len) == 0)
         {
             protocol->onPackage(conn, buffer->str, buffer->length);
             swString_clear(buffer);
-            return SW_OK;
+            return ZAN_OK;
         }
 
         //over max length, will discard
         if (buffer->length == protocol->package_max_length)
         {
-            swWarn("Package is too big. package_length=%d", (int )buffer->length);
-            return SW_ERR;
+            zanWarn("Package is too big. package_length=%d", (int )buffer->length);
+            return ZAN_ERR;
         }
 
         //buffer is full, may have not read data
@@ -286,12 +291,12 @@ int swProtocol_recv_check_eof(swProtocol *protocol, swConnection *conn, swString
             recv_again = SW_TRUE;
             if (buffer->size < protocol->package_max_length)
             {
-                uint32_t extend_size = swoole_size_align(buffer->size * 2, SwooleG.pagesize);
+                uint32_t extend_size = swoole_size_align(buffer->size * 2, ServerG.pagesize);
                 extend_size = (extend_size > protocol->package_max_length)? protocol->package_max_length:extend_size;
 
                 if (swString_extend(buffer, extend_size) < 0)
                 {
-                    return SW_ERR;
+                    return ZAN_ERR;
                 }
             }
         }
@@ -302,5 +307,5 @@ int swProtocol_recv_check_eof(swProtocol *protocol, swConnection *conn, swString
         }
     }
 
-    return SW_OK;
+    return ZAN_OK;
 }

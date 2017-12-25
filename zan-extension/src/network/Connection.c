@@ -17,33 +17,31 @@
  |         Zan Group   <zan@zanphp.io>                                  |
  +----------------------------------------------------------------------+
  */
-
-
-
-#include "swServer.h"
-#include "swSendfile.h"
-#include "swConnection.h"
-#include "swBaseOperator.h"
+#include <sys/stat.h>
 
 #ifdef SW_USE_OPENSSL
 #include "swProtocol/ssl.h"
 #endif
 
-#include <sys/stat.h>
+#include "list.h"
+#include "swError.h"
+#include "swSendfile.h"
+#include "swConnection.h"
+#include "swBaseOperator.h"
+#include "zanServer.h"
+#include "zanLog.h"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL        0
 #endif
 
 typedef struct {
-	char *filename;
-	uint16_t name_len;
-	int fd;
-	off_t filesize;
-	off_t offset;
+    char *filename;
+    uint16_t name_len;
+    int fd;
+    off_t filesize;
+    off_t offset;
 } swTask_sendfile;
-
-
 
 int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
 {
@@ -61,7 +59,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
             int tcp_nodelay = 0;
             if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (const void *) &tcp_nodelay, sizeof(int)) == -1)
             {
-                swSysError("setsockopt(TCP_NODELAY) failed.");
+                zanError("setsockopt(TCP_NODELAY) failed.");
             }
         }
         /**
@@ -69,27 +67,37 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
          */
         if (swSocket_tcp_nopush(conn->fd, 1) == -1)
         {
-        	swSysError("swSocket_tcp_nopush() failed.");
+            zanError("swSocket_tcp_nopush() failed.");
         }
     }
 #endif
 
     int sendn = (task->filesize - task->offset > SW_SENDFILE_TRUNK) ?
-    			SW_SENDFILE_TRUNK : task->filesize - task->offset;
-    ret = swoole_sendfile(conn->fd, task->fd, &task->offset, sendn);
-    swTrace("ret=%d|task->offset=%lld|sendn=%d|filesize=%lld", ret, (long long int)(task->offset), sendn, (long long int)(task->filesize));
+                SW_SENDFILE_TRUNK : task->filesize - task->offset;
+
+#ifdef SW_USE_OPENSSL
+    if (conn->ssl)
+    {
+        ret = swSSL_sendfile(conn, task->fd, &task->offset, sendn);
+    }
+    else
+#endif
+    {
+        ret = swoole_sendfile(conn->fd, task->fd, &task->offset, sendn);
+    }
+    zanTrace("ret=%d|task->offset=%lld|sendn=%d|filesize=%lld", ret, (long long int)(task->offset), sendn, (long long int)(task->filesize));
 
     if (ret <= 0)
     {
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-            swSysError("sendfile() failed.");
+            zanError("sendfile() failed.");
             swBuffer_pop_trunk(conn->out_buffer, chunk);
-            return SW_OK;
+            return ZAN_OK;
         case SW_CLOSE:
             conn->close_wait = 1;
-            return SW_ERR;
+            return ZAN_ERR;
         default:
             break;
         }
@@ -108,7 +116,7 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
              */
             if (swSocket_tcp_nopush(conn->fd, 0) == -1)
             {
-            	swSysError("swSocket_tcp_nopush() failed.");
+                zanError("swSocket_tcp_nopush() failed.");
             }
 
             /**
@@ -119,13 +127,13 @@ int swConnection_onSendfile(swConnection *conn, swBuffer_trunk *chunk)
                 int value = 1;
                 if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (const void *) &value, sizeof(int)) == -1)
                 {
-                	swSysError("setsockopt(TCP_NODELAY) failed.");
+                    zanError("setsockopt(TCP_NODELAY) failed.");
                 }
             }
         }
 #endif
     }
-    return SW_OK;
+    return ZAN_OK;
 }
 
 /**
@@ -142,7 +150,7 @@ int swConnection_buffer_send(swConnection *conn)
     if (sendn == 0)
     {
         swBuffer_pop_trunk(buffer, trunk);
-        return SW_OK;
+        return ZAN_OK;
     }
 
     ret = swConnection_send(conn, trunk->store.ptr + trunk->offset, sendn, 0);
@@ -151,18 +159,18 @@ int swConnection_buffer_send(swConnection *conn)
         switch (swConnection_error(errno))
         {
         case SW_ERROR:
-        	swSysError("send to fd[%d] failed.", conn->fd);
+            zanError("send to fd[%d] failed.", conn->fd);
             break;
         case SW_CLOSE:
             conn->close_wait = 1;
-            return SW_ERR;
+            return ZAN_ERR;
         case SW_WAIT:
             conn->send_wait = 1;
-            return SW_ERR;
+            return ZAN_ERR;
         default:
             break;
         }
-        return SW_OK;
+        return ZAN_OK;
     }
     //trunk full send
     else if (ret == sendn || sendn == 0)
@@ -173,30 +181,17 @@ int swConnection_buffer_send(swConnection *conn)
     {
         trunk->offset += ret;
     }
-    return SW_OK;
-}
-
-swString* swConnection_get_string_buffer(swConnection *conn)
-{
-    swString *buffer = conn->object;
-    if (buffer == NULL)
-    {
-        return swString_new(SW_BUFFER_SIZE);
-    }
-    else
-    {
-        return buffer;
-    }
+    return ZAN_OK;
 }
 
 int swConnection_get_ip(swConnection *conn,char* addip,int len)
 {
     if (len < SW_IP_MAX_LENGTH || !addip){
-        swError("swConnnection get ip cache len %d must more than %d\n",len,SW_IP_MAX_LENGTH);
-        return SW_ERR;
+        zanError("swConnnection get ip cache len %d must more than %d\n",len,SW_IP_MAX_LENGTH);
+        return ZAN_ERR;
     }
 
-    const char	*ipstr = NULL;
+    const char  *ipstr = NULL;
     bzero(addip,len);
     if (swSocket_is_NET(conn->socket_type))
     {
@@ -206,7 +201,7 @@ int swConnection_get_ip(swConnection *conn,char* addip,int len)
         ipstr = inet_ntop(AF_INET6, &conn->info.addr.inet_v6.sin6_addr,addip,len);
     }
 
-    return (NULL == ipstr)? SW_ERR:SW_OK;
+    return (NULL == ipstr)? ZAN_ERR:ZAN_OK;
 }
 
 int swConnection_get_port(swConnection *conn)
@@ -220,7 +215,7 @@ int swConnection_get_port(swConnection *conn)
         return ntohs(conn->info.addr.inet_v6.sin6_port);
     }
 
-    return SW_ERR;
+    return ZAN_ERR;
 }
 
 ssize_t swConnection_recv(swConnection *conn, void *__buf, size_t __n, int __flags)
@@ -278,55 +273,6 @@ int swConnection_send(swConnection *conn, void *__buf, size_t __n, int __flags)
 #endif
 }
 
-int swConnection_sendfile_sync(swConnection *conn, char *filename, double timeout)
-{
-    if (conn->closed)
-    {
-        return SW_ERR;        
-    }
-
-    int timeout_ms = timeout < 0 ? -1 : timeout * 1000;
-    int sock = conn->fd;
-    int file_fd = open(filename, O_RDONLY);
-    if (file_fd < 0)
-    {
-    	swSysError("open(%s) failed.", filename);
-        return SW_ERR;
-    }
-
-    int iret = SW_OK;
-    int sendn = 0;
-    off_t offset = 0;
-    size_t file_size = get_filelen(file_fd);
-    if (file_size <= 0)
-    {
-        goto end;
-    }
-
-    while (offset < file_size)
-    {
-        if (swSocket_wait(sock, timeout_ms, SW_EVENT_WRITE) < 0)
-        {
-            iret = SW_ERR;
-            goto end;
-        }
-        else
-        {
-            sendn = (file_size - offset > SW_SENDFILE_TRUNK) ? SW_SENDFILE_TRUNK : file_size - offset;
-            if (swoole_sendfile(sock, file_fd, &offset, sendn) <= 0)
-            {
-                iret = SW_ERR;
-                swSysError("sendfile(%d, %s) failed.", sock, filename);
-                goto end;
-            }
-        }
-    }
-
-end:
-    close(file_fd);
-    return iret;
-}
-
 void swConnection_sendfile_destructor(swBuffer_trunk *chunk)
 {
     swTask_sendfile *task = chunk->store.ptr;
@@ -340,23 +286,23 @@ int swConnection_sendfile_async(swConnection *conn, char *filename)
     int file_fd = open(filename, O_RDONLY);
     if (file_fd < 0)
     {
-        swSysError("open(%s) failed.",filename);
-        return SW_ERR;
+        zanError("open(%s) failed.",filename);
+        return ZAN_ERR;
     }
 
     size_t filelen = get_filelen(file_fd);
     if (filelen <= 0)
     {
         close(file_fd);
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     swTask_sendfile *task = sw_malloc(sizeof(swTask_sendfile));
     if (task == NULL)
     {
         close(file_fd);
-        swFatalError("malloc for swTask_sendfile failed.");
-        return SW_ERR;
+        zanFatalError("malloc for swTask_sendfile failed.");
+        return ZAN_ERR;
     }
 
     bzero(task, sizeof(swTask_sendfile));
@@ -367,61 +313,17 @@ int swConnection_sendfile_async(swConnection *conn, char *filename)
     swBuffer_trunk *chunk = swConnection_get_out_buffer(conn, SW_CHUNK_SENDFILE);
     if (!chunk)
     {
-        swError("get out_buffer trunk failed.");
+        zanError("get out_buffer trunk failed.");
         swBuffer_trunk error_chunk;
         error_chunk.store.ptr = task;
         swConnection_sendfile_destructor(&error_chunk);
-        return SW_ERR;
+        return ZAN_ERR;
     }
 
     chunk->store.ptr = (void *) task;
     chunk->destroy = swConnection_sendfile_destructor;
 
-    return SW_OK;
-}
-
-
-void swConnection_clear_string_buffer(swConnection *conn)
-{
-    swString *buffer = conn->object;
-    if (buffer != NULL)
-    {
-        swString_free(buffer);
-        conn->object = NULL;
-    }
-}
-
-swBuffer_trunk* swConnection_get_in_buffer(swConnection *conn)
-{
-    swBuffer_trunk *trunk = NULL;
-    swBuffer *buffer;
-
-    if (conn->in_buffer == NULL)
-    {
-        buffer = swBuffer_new(SW_BUFFER_SIZE);
-        if (buffer == NULL)
-        {
-            return NULL;
-        }
-        //new trunk
-        trunk = swBuffer_new_trunk(buffer, SW_CHUNK_DATA, buffer->trunk_size);
-        if (trunk == NULL)
-        {
-            sw_free(buffer);
-            return NULL;
-        }
-        conn->in_buffer = buffer;
-    }
-    else
-    {
-        buffer = conn->in_buffer;
-        trunk = buffer->tail;
-        if (trunk == NULL || trunk->length == buffer->trunk_size)
-        {
-            trunk = swBuffer_new_trunk(buffer, SW_CHUNK_DATA, buffer->trunk_size);
-        }
-    }
-    return trunk;
+    return ZAN_OK;
 }
 
 swBuffer_trunk* swConnection_get_out_buffer(swConnection *conn, uint32_t type)
@@ -448,4 +350,97 @@ swBuffer_trunk* swConnection_get_out_buffer(swConnection *conn, uint32_t type)
         }
     }
     return trunk;
+}
+
+int swConnection_error(int err)
+{
+    switch (err)
+    {
+        case EFAULT:
+            abort();
+            return SW_ERROR;
+        case EBADF:
+        case ECONNRESET:
+#ifdef __CYGWIN__
+        case ECONNABORTED:
+#endif
+        case EPIPE:
+        case ENOTCONN:
+        case ETIMEDOUT:
+        case ECONNREFUSED:
+        case ENETDOWN:
+        case ENETUNREACH:
+        case EHOSTDOWN:
+        case EHOSTUNREACH:
+        case SW_ERROR_SSL_BAD_CLIENT:
+            return SW_CLOSE;
+        case EAGAIN:
+#ifdef HAVE_KQUEUE
+        case ENOBUFS:
+#endif
+        case 0:
+            return SW_WAIT;
+        default:
+            return SW_ERROR;
+    }
+}
+
+void zanReactor_enableAccept(swReactor *reactor)
+{
+    swListenPort *ls = NULL;
+    LL_FOREACH(ServerG.serv->listen_list, ls)
+    {
+        //UDP
+        if (swSocket_is_dgram(ls->type))
+        {
+            continue;
+        }
+        reactor->add(reactor, ls->sock, SW_FD_LISTEN);
+    }
+}
+
+int zanNetworker_dispatch(swConnection *conn, char *data, uint32_t length)
+{
+    zanFactory *factory = ServerG.factory;
+    swDispatchData task;
+    memset(&task, 0, sizeof(task));
+
+    task.data.info.fd = conn->fd;
+    task.data.info.from_id = conn->from_id;
+    task.data.info.type = SW_EVENT_PACKAGE_START;
+    task.data.info.networker_id = conn->networker_id;
+    task.target_worker_id = -1;
+
+    zanTrace("send string package, size=%u bytes.", length);
+
+    size_t send_n = length;
+    size_t offset = 0;
+
+    while (send_n > 0)
+    {
+        if (send_n > SW_BUFFER_SIZE)
+        {
+            task.data.info.len = SW_BUFFER_SIZE;
+        }
+        else
+        {
+            task.data.info.type = SW_EVENT_PACKAGE_END;
+            task.data.info.len = send_n;
+        }
+
+        task.data.info.fd = conn->fd;
+        memcpy(task.data.data, data + offset, task.data.info.len);
+
+        send_n -= task.data.info.len;
+        offset += task.data.info.len;
+
+        zanTrace("dispatch, type=%d|len=%d\n", task.data.info.type, task.data.info.len);
+
+        if (factory->dispatch(factory, &task) < 0)
+        {
+            break;
+        }
+    }
+
+    return ZAN_OK;
 }

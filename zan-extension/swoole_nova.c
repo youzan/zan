@@ -17,7 +17,8 @@
 */
 #include "php_swoole.h"
 #include "swProtocol/nova.h"
-#include "swBaseOperator.h"
+
+#include "zanLog.h"
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -50,10 +51,10 @@ static uint64_t swoole_get_seq_no()
 
 static int getServiceIp(char** ppIp)
 {
-	if (!ppIp || *ppIp != NULL)
-	{
-		return SW_ERR;
-	}
+    if (!ppIp || *ppIp != NULL)
+    {
+        return SW_ERR;
+    }
 
     void *in_addr = NULL;
     struct ifaddrs *ifa = NULL;
@@ -73,20 +74,20 @@ static int getServiceIp(char** ppIp)
     for(ifa=lsif; ifa != NULL; ifa=ifa->ifa_next) {
         if(ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET)
         {
-        	continue;
+            continue;
         }
 
-		in_addr = &(((struct sockaddr_in *)(ifa->ifa_addr))->sin_addr);
-		memset(pTmp,0x00,SW_IP_MAX_LENGTH);
-		if (!inet_ntop(AF_INET, in_addr, pTmp,SW_IP_MAX_LENGTH))
-		{
-			continue;
-		}
-		else if (strncmp(pTmp, "127.",strlen("127.")) != 0)
-		{
-			result = SW_OK;
-			break;
-		}
+        in_addr = &(((struct sockaddr_in *)(ifa->ifa_addr))->sin_addr);
+        memset(pTmp,0x00,SW_IP_MAX_LENGTH);
+        if (!inet_ntop(AF_INET, in_addr, pTmp,SW_IP_MAX_LENGTH))
+        {
+            continue;
+        }
+        else if (strncmp(pTmp, "127.",strlen("127.")) != 0)
+        {
+            result = SW_OK;
+            break;
+        }
     }
 
 get_result:
@@ -108,6 +109,12 @@ PHP_FUNCTION(nova_decode)
     zval* zdata;
     zval* zattach;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_decode can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
 #if PHP_MAJOR_VERSION < 7
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "szzzzzzz", &pBuf, &nBufLen, &zsname, &zmname, &zip, &zport, &zseqno, &zattach, &zdata )) {
 #else
@@ -117,22 +124,22 @@ PHP_FUNCTION(nova_decode)
     }
 
     if (swNova_IsNovaPack(pBuf, nBufLen) == SW_ERR) {
-        swWarn("not a nova packet");
+        zanWarn("not a nova packet");
         RETURN_FALSE;
     }
 
     //decode
     swNova_Header *pHeader = createNovaHeader();
     if (swNova_unpack(pBuf, nBufLen, pHeader) == SW_ERR) {
-        swWarn("unpack nova failer");
+        zanWarn("unpack nova failer");
         deleteNovaHeader(pHeader);
         RETURN_FALSE;
     }
 
     if (pHeader->msg_size > nBufLen) {
-    	swWarn("body len not enough,need %ld,but only have %ld",pHeader->msg_size,nBufLen);
-    	deleteNovaHeader(pHeader);
-    	RETURN_FALSE;
+        zanWarn("body len not enough,need %ld,but only have %ld",pHeader->msg_size,nBufLen);
+        deleteNovaHeader(pHeader);
+        RETURN_FALSE;
     }
 
     SW_ZVAL_STRINGL(zsname, pHeader->service_name, pHeader->service_len, 1);
@@ -152,27 +159,33 @@ PHP_FUNCTION(nova_decode_new)
     char* pBuf;
     zend_size_t nBufLen;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_decode_new can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pBuf, &nBufLen)) {
         RETURN_FALSE;
     }
 
     if (swNova_IsNovaPack(pBuf, nBufLen) == SW_ERR) {
-        swWarn("not a nova packet");
+        zanWarn("not a nova packet");
         RETURN_FALSE;
     }
 
     //decode
     swNova_Header *pHeader = createNovaHeader();
     if (swNova_unpack(pBuf, nBufLen, pHeader) == SW_ERR) {
-        swWarn("unpack nova failer");
+        zanWarn("unpack nova failer");
         deleteNovaHeader(pHeader);
         RETURN_FALSE;
     }
 
     if (pHeader->msg_size > nBufLen) {
-    	swWarn("body len not enough,need %ld,but only have %ld",pHeader->msg_size,nBufLen);
-    	deleteNovaHeader(pHeader);
-    	RETURN_FALSE;
+        zanWarn("body len not enough,need %ld,but only have %ld",pHeader->msg_size,nBufLen);
+        deleteNovaHeader(pHeader);
+        RETURN_FALSE;
     }
 
     array_init(return_value);
@@ -202,12 +215,18 @@ PHP_FUNCTION(nova_encode)
     zend_size_t nDataLen = 0;
     zval* zbuffer = NULL;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_encode can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
 #if PHP_MAJOR_VERSION < 7
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslllssz", &pServiceName, &nServiceNameLen, &pMethodName, &nMethodNameLen, &nIp, &nPort,
-    							&nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen, &zbuffer)) {
+                                &nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen, &zbuffer)) {
 #else
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslllssz/", &pServiceName, &nServiceNameLen, &pMethodName, &nMethodNameLen, &nIp, &nPort,
-    							&nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen, &zbuffer)) {
+                                &nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen, &zbuffer)) {
 #endif
         RETURN_FALSE;
     }
@@ -229,22 +248,22 @@ PHP_FUNCTION(nova_encode)
     int headLen = NOVA_HEADER_COMMON_LEN + pHeader->service_len + pHeader->method_len + pHeader->attach_len;
     if (headLen > 0x7fff)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
-   
+
     pHeader->head_size = (int16_t)headLen;
- 
+
     pHeader->service_name = sw_malloc(pHeader->service_len + 1);
     if (pServiceName)
     {
-    	memcpy(pHeader->service_name, pServiceName, pHeader->service_len);
+        memcpy(pHeader->service_name, pServiceName, pHeader->service_len);
     }
     pHeader->service_name[pHeader->service_len] = 0;
 
     pHeader->method_name = sw_malloc(pHeader->method_len + 1);
     if (pMethodName)
     {
-    	memcpy(pHeader->method_name, pMethodName, pHeader->method_len);
+        memcpy(pHeader->method_name, pMethodName, pHeader->method_len);
     }
     pHeader->method_name[pHeader->method_len] = 0;
 
@@ -253,7 +272,7 @@ PHP_FUNCTION(nova_encode)
     pHeader->attach = sw_malloc(pHeader->attach_len + 1);
     if (pAttach)
     {
-    	memcpy(pHeader->attach, pAttach, pHeader->attach_len);
+        memcpy(pHeader->attach, pAttach, pHeader->attach_len);
     }
     pHeader->attach[pHeader->attach_len] = 0;
 
@@ -287,8 +306,14 @@ PHP_FUNCTION(nova_encode_new)
     char* pData = NULL;
     zend_size_t nDataLen = 0;
 
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_encode_new can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     if(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslllss", &pServiceName, &nServiceNameLen, &pMethodName, &nMethodNameLen, &nIp, &nPort,
-    							&nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen)) {
+                                &nSeqNo, &pAttach, &nAttachLen, &pData, &nDataLen)) {
         RETURN_FALSE;
     }
 
@@ -309,22 +334,22 @@ PHP_FUNCTION(nova_encode_new)
     int headLen = NOVA_HEADER_COMMON_LEN + pHeader->service_len + pHeader->method_len + pHeader->attach_len;
     if (headLen > 0x7fff)
     {
-    	RETURN_FALSE;
+        RETURN_FALSE;
     }
-   
+
     pHeader->head_size = (int16_t)headLen;
- 
+
     pHeader->service_name = sw_malloc(pHeader->service_len + 1);
     if (pServiceName)
     {
-    	memcpy(pHeader->service_name, pServiceName, pHeader->service_len);
+        memcpy(pHeader->service_name, pServiceName, pHeader->service_len);
     }
     pHeader->service_name[pHeader->service_len] = 0;
 
     pHeader->method_name = sw_malloc(pHeader->method_len + 1);
     if (pMethodName)
     {
-    	memcpy(pHeader->method_name, pMethodName, pHeader->method_len);
+        memcpy(pHeader->method_name, pMethodName, pHeader->method_len);
     }
     pHeader->method_name[pHeader->method_len] = 0;
 
@@ -333,7 +358,7 @@ PHP_FUNCTION(nova_encode_new)
     pHeader->attach = sw_malloc(pHeader->attach_len + 1);
     if (pAttach)
     {
-    	memcpy(pHeader->attach, pAttach, pHeader->attach_len);
+        memcpy(pHeader->attach, pAttach, pHeader->attach_len);
     }
     pHeader->attach[pHeader->attach_len] = 0;
 
@@ -368,21 +393,39 @@ PHP_FUNCTION(is_nova_packet)
 
 PHP_FUNCTION(nova_get_sequence)
 {
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_get_sequence can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     RETURN_LONG(swoole_get_seq_no());
 }
 
 PHP_FUNCTION(nova_get_time)
 {
-    RETURN_LONG(SwooleGS->now);
+    if (is_master() || is_networker())
+    {
+        zanWarn("nova_get_time can not be used in master or networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
+    RETURN_LONG(ServerGS->server_time);
 }
 
 PHP_FUNCTION(nova_get_ip)
 {
+    if (is_networker())
+    {
+        zanWarn("nova_get_ip can not be used in networker process, type=%d", ServerG.process_type);
+        RETURN_FALSE;
+    }
+
     char* ip = NULL;
     if(getServiceIp(&ip) < 0)
     {
-    	sw_free(ip);
-    	RETURN_EMPTY_STRING();
+        sw_free(ip);
+        RETURN_EMPTY_STRING();
     }
 
     size_t buf_len = strlen(ip);

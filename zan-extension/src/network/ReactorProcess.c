@@ -24,6 +24,7 @@
 #include "list.h"
 #include "swWork.h"
 #include "swExecutor.h"
+#include "swLog.h"
 
 static int swReactorProcess_loop(swProcessPool *pool, swWorker *worker);
 static int swReactorProcess_onPipeRead(swReactor *reactor, swEvent *event);
@@ -72,7 +73,7 @@ int swReactorProcess_start(swServer *serv)
 
     //no worker
     if (serv->worker_num == 1 && SwooleG.task_worker_num == 0 &&
-    		serv->max_request == 0 && serv->user_worker_list == NULL)
+            serv->max_request == 0 && serv->user_worker_list == NULL)
     {
         swWorker single_worker;
         bzero(&single_worker, sizeof(single_worker));
