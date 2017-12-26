@@ -29,6 +29,9 @@
 
 
 ## 编译安装步骤
+
+**master分支做了较大改动，还在内测阶段，不建议上生产环境，如果要求稳定，可以下载release版本**
+
 ```
 git clone https://github.com/youzan/zan.git
 cd zan-extension
