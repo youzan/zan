@@ -44,9 +44,6 @@
 static void php_swoole_onStart(zanServer *);
 static void php_swoole_onShutdown(zanServer *);
 
-static void php_swoole_onWorkerStart(zanServer *, int worker_id);
-static void php_swoole_onWorkerStop(zanServer *, int worker_id);
-static void php_swoole_onWorkerError(zanServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo);
 static void php_swoole_onUserWorkerStart(zanServer *serv, zanWorker *worker);
 static void php_swoole_onNetWorkerStart(zanServer *, int worker_id);
 
@@ -577,7 +574,7 @@ static void php_swoole_onShutdown(zanServer *serv)
     }
 }
 
-static void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
+void php_swoole_onWorkerStart(zanServer *serv, int worker_id)
 {
     SWOOLE_FETCH_TSRMLS;
 
@@ -685,7 +682,7 @@ static void php_swoole_onNetWorkerStart(zanServer *serv, int worker_id)
     }
 }
 
-static void php_swoole_onWorkerError(zanServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo)
+void php_swoole_onWorkerError(zanServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo)
 {
 
     SWOOLE_FETCH_TSRMLS;
@@ -744,7 +741,7 @@ static void php_swoole_onWorkerError(zanServer *serv, int worker_id, pid_t worke
     }
 }
 
-static void php_swoole_onWorkerStop(zanServer *serv, int worker_id)
+void php_swoole_onWorkerStop(zanServer *serv, int worker_id)
 {
     SWOOLE_FETCH_TSRMLS;
 
@@ -759,7 +756,6 @@ static void php_swoole_onWorkerStop(zanServer *serv, int worker_id)
     zval* callback = php_sw_server_callbacks[SW_SERVER_CB_onWorkerStop];
     if (!callback || ZVAL_IS_NULL(callback))
     {
-        zanWarn("onWorkerStop callback is null");
         return;
     }
 

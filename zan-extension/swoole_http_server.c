@@ -58,6 +58,8 @@ swString *swoole_zlib_buffer = NULL;
 #endif
 swString *swoole_http_form_data_buffer;
 
+static http_context *current_ctx = NULL;
+
 enum http_global_flag
 {
     HTTP_GLOBAL_GET       = 1u << 1,
@@ -90,6 +92,10 @@ zend_class_entry *swoole_http_request_class_entry_ptr;
 
 static int http_onReceive(zanServer *serv, swEventData *req);
 static void http_onClose(zanServer *serv, swDataHead *info);
+static void http_onWorkerStart(zanServer *serv, int worker_id);
+static void http_onWorkerStop(zanServer *serv, int worker_id);
+static void (*old_error_handler)(int, const char *, const uint, const char*, va_list);
+static void worker_error_handler(int error_num, const char *error_filename, const uint error_lineno, const char *format, va_list args);
 
 static int http_request_on_path(php_http_parser *parser, const char *at, size_t length);
 static int http_request_on_query_string(php_http_parser *parser, const char *at, size_t length);
@@ -116,6 +122,20 @@ static int http_trim_double_quote(zval **value, char **ptr);
 #define http_strncasecmp(const_str, at, length) ((length >= sizeof(const_str)-1) &&\
        (strncasecmp(at, ZEND_STRL(const_str)) == 0))
 
+#ifdef va_copy
+#define call_old_error_handler(error_num, error_filename, error_lineno, format, args) \
+{ \
+	va_list copy; \
+	va_copy(copy, args); \
+	old_error_handler(error_num, error_filename, error_lineno, format, copy); \
+	va_end(copy); \
+}
+#else
+#define call_old_error_handler(error_num, error_filename, error_lineno, format, args) \
+{ \
+	old_error_handler(error_num, error_filename, error_lineno, format, args); \
+}
+#endif
 //header filed format,like:Content-Type
 static inline void http_header_key_format(char *key, int length)
 {
@@ -1079,6 +1099,8 @@ static int http_onReceive(zanServer *serv, swEventData *req)
             }
         }
 
+        current_ctx = ctx;
+
         if (sw_call_user_function_ex(EG(function_table), NULL, zcallback, &retval, 2, args, 0, NULL TSRMLS_CC) == FAILURE)
         {
             zanError("onRequest handler error");
@@ -1088,6 +1110,8 @@ static int http_onReceive(zanServer *serv, swEventData *req)
         {
             zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
         }
+
+        current_ctx = NULL;
 
         //websocket user handshake
         if (conn->websocket_status == WEBSOCKET_STATUS_HANDSHAKE)
@@ -1139,6 +1163,20 @@ static void http_onClose(zanServer *serv, swDataHead *ev)
 
     bzero(client, sizeof(swoole_http_client));
 }
+
+static void http_onWorkerStart(zanServer *serv, int worker_id)
+{
+    old_error_handler = zend_error_cb;
+    zend_error_cb = worker_error_handler;
+    php_swoole_onWorkerStart(serv, worker_id);
+}
+
+static void http_onWorkerStop(zanServer *serv, int worker_id)
+{
+    zend_error_cb = old_error_handler;
+    php_swoole_onWorkerStop(serv, worker_id);
+}
+
 
 static PHP_METHOD(swoole_http_server, on)
 {
@@ -1454,8 +1492,10 @@ static PHP_METHOD(swoole_http_server, start)
     }
 #endif
 
-    serv->onReceive = http_onReceive;
-    serv->onClose = http_onClose;
+    serv->onReceive     = http_onReceive;
+    serv->onClose       = http_onClose;
+    serv->onWorkerStart = http_onWorkerStart;
+    serv->onWorkerStop  = http_onWorkerStop;
 
     int is_update = 0;
     zval *zsetting = sw_zend_read_property(swoole_server_class_entry_ptr, getThis(), ZEND_STRL("setting"), 1 TSRMLS_CC);
@@ -2451,3 +2491,74 @@ static PHP_METHOD(swoole_http_response, __destruct)
         swoole_http_context_free(context TSRMLS_CC);
     }
 }
+
+static void worker_error_handler(int error_num, const char *error_filename, const uint error_lineno, const char *format, va_list args)
+{
+    SWOOLE_FETCH_TSRMLS;
+    zend_bool _old_in_compilation;
+    zend_execute_data *_old_current_execute_data;
+
+    _old_in_compilation = CG(in_compilation);
+    _old_current_execute_data = EG(current_execute_data);
+
+    if (!PG(modules_activated) || !EG(objects_store).object_buckets || !current_ctx) {
+        call_old_error_handler(error_num, error_filename, error_lineno, format, args);
+        return;
+    }
+    if (error_num == E_USER_ERROR ||
+            error_num == E_COMPILE_ERROR ||
+            error_num == E_CORE_ERROR ||
+            error_num == E_ERROR ||
+            error_num == E_PARSE) {
+
+        char buffer[1024] = {0};
+        size_t buffer_len;
+
+#ifdef va_copy
+        va_list argcopy;
+        va_copy(argcopy, args);
+        buffer_len = vslprintf(buffer, sizeof(buffer)-1, format, argcopy);
+        va_end(argcopy);
+#else
+        buffer_len = vslprintf(buffer, sizeof(buffer)-1, format, args);
+#endif
+        if (buffer_len > sizeof(buffer) - 1 || buffer_len == (size_t)-1) {
+            buffer_len = sizeof(buffer) - 1;
+        }
+
+        current_ctx->response.status = 500;
+        zval *zresponse = current_ctx->response.zobject;
+        zval *function = NULL;
+        SW_MAKE_STD_ZVAL(function);
+        SW_ZVAL_STRING(function, "end", 1);
+        zval *retval = NULL;
+
+        if (!current_ctx->send_header) {
+            zval **args[1];
+            zval *buff;
+            SW_MAKE_STD_ZVAL(buff);
+            SW_ZVAL_STRINGL(buff, buffer, buffer_len, 1);
+            args[0] = &buff;
+
+            if (sw_call_user_function_ex(EG(function_table), &zresponse, function, &retval, 1, args, 0, NULL TSRMLS_CC) == FAILURE)
+            {
+                zanError("Write error msg failure");
+            }
+            sw_zval_ptr_dtor(&buff);
+        } else {
+            if (sw_call_user_function_ex(EG(function_table), &zresponse, function, &retval, 0, NULL, 0, NULL TSRMLS_CC) == FAILURE)
+            {
+                zanError("Call response->end() failure");
+            }
+        }
+        if (retval) sw_zval_ptr_dtor(&retval);
+        sw_zval_ptr_dtor(&function);
+    }
+    zend_try {
+        call_old_error_handler(error_num, error_filename, error_lineno, format, args);
+    } zend_catch {
+        CG(in_compilation) = _old_in_compilation;
+        EG(current_execute_data) = _old_current_execute_data;
+    } zend_end_try();
+}
+

@@ -431,6 +431,9 @@ void php_swoole_get_recv_data(zval *zdata, swEventData *req, char *header, uint3
 void php_swoole_onConnect(zanServer *serv, swDataHead *);
 int php_swoole_onReceive(zanServer *serv, swEventData *req);
 void php_swoole_onClose(zanServer *, swDataHead *);
+void php_swoole_onWorkerStart(zanServer *, int worker_id);
+void php_swoole_onWorkerStop(zanServer *, int worker_id);
+void php_swoole_onWorkerError(zanServer *serv, int worker_id, pid_t worker_pid, int exit_code, int signo);
 
 #define php_swoole_array_get_value(ht, str, v)     (sw_zend_hash_find(ht, str, sizeof(str), (void **) &v) == SUCCESS && !ZVAL_IS_NULL(v))
 #define php_swoole_array_get_ptr_value(ht, str, v)     (sw_zend_hash_find(ht, str, strlen(str)+1, (void **) &v) == SUCCESS && !ZVAL_IS_NULL(v))
