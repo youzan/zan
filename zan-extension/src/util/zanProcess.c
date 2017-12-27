@@ -20,11 +20,17 @@
 #include "php_swoole.h"
 #include "zanLog.h"
 
+#if !(defined(__APPLE__) || defined(__FreeBSD__))
 extern char *program_invocation_name;
+#endif
+
 static char *origin_cmdline = NULL;
 
 void zan_initproctitle()
 {
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    const char *program_invocation_name = getprogname();
+#endif
     int size = strlen(program_invocation_name) + 1;
     origin_cmdline = malloc(size);
     bzero(origin_cmdline, size);
@@ -71,6 +77,10 @@ void zan_setproctitle(char *title, int prefix_only)
         settitle = tmpbuff;
     }
 
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    setprogname(settitle);
+    return;
+#endif
     zval *ztitle = NULL;
     zval **args[1];
     SW_MAKE_STD_ZVAL(ztitle);
