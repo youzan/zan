@@ -26,6 +26,7 @@
 #include "swSocket.h"
 #include "zanServer.h"
 #include "zanLog.h"
+#include "zanProcess.h"
 
 #include "ext/standard/php_var.h"
 
@@ -799,7 +800,8 @@ static void php_swoole_onUserWorkerStart(zanServer *serv, zanWorker *worker)
     zval *object = worker->ptr;
     zend_update_property_long(swoole_process_class_entry_ptr, object, ZEND_STRL("worker_id"), worker->worker_id TSRMLS_CC);
 
-    //
+    // todo optimize
+    zan_setproctitle("user:", 1);
     php_swoole_process_start(worker, object TSRMLS_CC);
 }
 
