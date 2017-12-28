@@ -571,7 +571,7 @@ static int zanWorker_onTask(zanFactory *factory, swEventData *task)
     //maximum number of requests, process will exit.
     if (!ServerWG.run_always && ServerWG.request_count >= ServerWG.max_request)
     {
-        zanWarn("run_always=%d, request_count=%d, max_request=%d", ServerWG.run_always, ServerWG.request_count, ServerWG.max_request);
+        zanTrace("run_always=%d, request_count=%d, max_request=%d", ServerWG.run_always, ServerWG.request_count, ServerWG.max_request);
         ServerG.running = 0;
         ServerG.main_reactor->running = 0;
     }
