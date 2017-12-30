@@ -54,6 +54,7 @@ int zanServer_create(zanServer *serv);
 int zanServer_start(zanServer *serv);
 void zanServer_clean(zanServer *serv);
 int zanServer_send(zanServer *serv, swSendData *resp);
+void zanServer_free(zanServer *serv);
 
 //master process loop
 int zan_master_process_loop(zanServer *serv);

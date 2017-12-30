@@ -60,9 +60,6 @@ static int zanFactory_shutdown(zanFactory *factory)
         return ZAN_ERR;
     }
 
-    ///TODO:::
-    //....
-
     zanDebug("factory shutdown.");
     return ZAN_OK;
 }

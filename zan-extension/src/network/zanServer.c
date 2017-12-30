@@ -155,8 +155,8 @@ int zanServer_start(zanServer *serv)
 
     int ret = zan_master_process_loop(serv);
 
-    exit(ret);
-    ///zanServer_free(serv);
+    //exit(ret);
+    zanServer_free(serv);
 
     return ZAN_OK;
 }
@@ -943,5 +943,12 @@ void zanServer_reopen_log_file(zanServer *serv)
     if (servSet->daemonize)
     {
         swoole_redirect_stdout(ServerG.log_fd);
+    }
+}
+
+void zanServer_free(zanServer *serv)
+{
+    if (serv->factory.shutdown != NULL) {
+        serv->factory.shutdown(&(serv->factory));
     }
 }
