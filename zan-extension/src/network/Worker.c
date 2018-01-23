@@ -217,9 +217,9 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         {
             serv->onReceive(serv, task);
             SwooleWG.request_count++;
-            sw_stats_incr(&SwooleStats->request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+            sw_stats_atom_incr(&SwooleStats->request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].request_count);
         }
         if (task->info.type == SW_EVENT_PACKAGE_END)
         {
@@ -263,9 +263,9 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         if (package->offset == package->length - sizeof(swDgramPacket))
         {
             SwooleWG.request_count++;
-            sw_stats_incr(&SwooleStats->request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+            sw_stats_atom_incr(&SwooleStats->request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].request_count);
             serv->onPacket(serv, task);
             swString_clear(package);
         }
@@ -454,7 +454,7 @@ int swWorker_loop(swFactory *factory, int worker_id)
     SwooleWG.id = worker_id;
     SwooleWG.request_count = 0;
     SwooleStats->workers[SwooleWG.id].request_count = 0;
-    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].start_count);
+    sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].start_count);
     SwooleG.pid = getpid();
 
     //signal init

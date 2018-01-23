@@ -37,6 +37,7 @@ typedef struct
 
 } swManagerProcess;
 
+// manager process
 static int swManager_loop_async(swFactory *factory);
 static int swManager_loop_sync(swFactory *factory);
 static void swManager_signal_handle(int sig);
@@ -472,6 +473,8 @@ static int swManager_loop_sync(swFactory *factory)
     swSignal_add(SIGRTMIN, swManager_signal_handle);
 #endif
     //swSignal_add(SIGINT, swManager_signal_handle);
+    swSignal_add(SIGALRM, swManager_signal_handle);
+    alarm(1);
 
     SwooleG.main_reactor = NULL;
     int pid = -1;
@@ -531,7 +534,7 @@ static int swManager_loop_sync(swFactory *factory)
                 }
                 else
                 {
-                    sw_stats_incr(status == 0 ? &SwooleStats->worker_normal_exit
+                    sw_stats_atom_incr(status == 0 ? &SwooleStats->worker_normal_exit
                             : &SwooleStats->worker_abnormal_exit);
                     swManager_check_exit_status(serv, index, pid, status);
                     pid = 0;
@@ -561,7 +564,7 @@ static int swManager_loop_sync(swFactory *factory)
                     exit_worker = swHashMap_find_int(SwooleGS->task_workers.map, pid);
                     if (exit_worker != NULL)
                     {
-                        sw_stats_incr(status == 0 ? &SwooleStats->task_worker_normal_exit
+                        sw_stats_atom_incr(status == 0 ? &SwooleStats->task_worker_normal_exit
                                 : &SwooleStats->task_worker_abnormal_exit);
                         swManager_check_exit_status(serv, exit_worker->id, pid, status);
                         if (exit_worker->deleted == 1)  //主动回收不重启
@@ -690,6 +693,13 @@ static pid_t swManager_spawn_worker(swFactory *factory, int worker_id)
     }
 }
 
+static int swManager_check_request_timeout()
+{
+    swWarn("trigger SIGALRM");
+    alarm(1);
+    return SW_OK;
+}
+
 static void swManager_signal_handle(int sig)
 {
     switch (sig)
@@ -716,6 +726,10 @@ static void swManager_signal_handle(int sig)
             ManagerProcess.reloading = 1;
             ManagerProcess.reload_task_worker = 1;
         }
+        break;
+    case SIGALRM:
+        // check request terminate timeout
+        swManager_check_request_timeout();
         break;
     default:
 #ifdef SIGRTMIN

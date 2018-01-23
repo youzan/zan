@@ -296,8 +296,9 @@ if test "$PHP_ZAN" != "no"; then
         src/core/array.c \
         src/core/list.c \
         src/core/heap.c \
-		src/core/log.c \
-		src/core/rbtree.c \
+	src/core/log.c \
+	src/core/rbtree.c \
+	src/core/clock.c \
         src/memory/ShareMemory.c \
         src/memory/MemoryGlobal.c \
         src/memory/RingBuffer.c \

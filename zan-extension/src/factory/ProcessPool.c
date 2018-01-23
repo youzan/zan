@@ -182,7 +182,7 @@ int swProcessPool_dispatch(swProcessPool *pool, swEventData *data, int *dst_work
     }
     else
     {
-    	sw_stats_incr(&worker->tasking_num);
+    	sw_stats_atom_incr(&worker->tasking_num);
     }
 
     return ret;
@@ -212,7 +212,7 @@ int swProcessPool_dispatch_blocking(swProcessPool *pool, swEventData *data, int 
     }
     else
     {
-        sw_stats_incr(&worker->tasking_num);
+        sw_stats_atom_incr(&worker->tasking_num);
     }
 
     return ret;

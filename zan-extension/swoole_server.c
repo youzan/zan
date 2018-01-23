@@ -2570,7 +2570,7 @@ PHP_METHOD(swoole_server, taskwait)
     if (swProcessPool_dispatch_blocking(&SwooleGS->task_workers, &buf, (int*) &dst_worker_id) >= 0)
     {
         task_notify_pipe->timeout = timeout;
-        sw_stats_incr(&SwooleStats->tasking_num);
+        sw_stats_atom_incr(&SwooleStats->tasking_num);
         int ret = task_notify_pipe->read(task_notify_pipe, &notify, sizeof(notify));
         if (ret > 0)
         {
@@ -2626,7 +2626,7 @@ PHP_METHOD(swoole_server, task)
     	RETURN_FALSE;
     }
 
-    sw_stats_incr(&SwooleStats->tasking_num);
+    sw_stats_atom_incr(&SwooleStats->tasking_num);
     RETURN_LONG(buf.info.fd);
 }
 
