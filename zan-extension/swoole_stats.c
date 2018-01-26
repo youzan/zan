@@ -18,6 +18,7 @@
 
 #include "swGlobalVars.h"
 #include "swWork.h"
+#include "swClock.h"
 
 void sw_stats_set_worker_status(swWorker *worker, int status)
 {
@@ -28,6 +29,7 @@ void sw_stats_set_worker_status(swWorker *worker, int status)
         if (swIsWorker())
         {
             sw_stats_incr(&SwooleStats->active_worker);
+            swClock_get(&SwooleStats->workers[SwooleWG.id].accepted);
             if (SwooleStats->active_worker > SwooleStats->max_active_worker)
             {
                 SwooleStats->max_active_worker = SwooleStats->active_worker;

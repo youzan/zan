@@ -27,6 +27,7 @@ typedef struct {
     sw_atomic_long_t total_request_count;
     sw_atomic_long_t request_count;
     sw_atomic_t start_count;
+    struct timeval accepted;
 } swWorkerStats;
 
 typedef struct
@@ -50,8 +51,11 @@ typedef struct
     swLock             lock;
 } swServerStats;
 
-#define sw_stats_incr(val) sw_atomic_fetch_add(val, 1)
-#define sw_stats_decr(val) sw_atomic_fetch_sub(val, 1)
+#define sw_stats_atom_incr(val) sw_atomic_fetch_add(val, 1)
+#define sw_stats_atom_decr(val) sw_atomic_fetch_sub(val, 1)
+#define sw_stats_incr(val) ((*val)++)
+#define sw_stats_decr(val) ((*val)--)
+
 
 void sw_stats_set_worker_status(swWorker *worker, int status);
 

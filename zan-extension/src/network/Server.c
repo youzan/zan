@@ -30,11 +30,11 @@
 #include "swConnection.h"
 #include "swBaseOperator.h"
 #include "swGlobalVars.h"
-
+#include "swClock.h"
 
 swServerG SwooleG;				/// 超全局本地变量，此全局变量子进程中修改，其它进程不感知
 swServerGS *SwooleGS = NULL;		/// 超全局共享变量，此全局变量是基于共享内存的，修改字段，其它进程可感知
-swWorkerG SwooleWG;				/// 进程内全局变量，此全局变量在worker进程内初始化
+swWorkerG SwooleWG;				/// 进程内全局变量，此全局变量在worker进程内初始
 swServerStats *SwooleStats = NULL;
 __thread swThreadG SwooleTG;   /// 线程独立变量
 
@@ -356,6 +356,7 @@ void swServer_init(swServer *serv)
 	bzero(serv, sizeof(swServer));
 
     swoole_init();
+    swClock_init();
     serv->factory_mode = SW_MODE_BASE;
 
     serv->reactor_num = SW_REACTOR_NUM > SW_REACTOR_MAX_THREAD ? SW_REACTOR_MAX_THREAD : SW_REACTOR_NUM;
@@ -984,9 +985,9 @@ swListenPort* swServer_add_port(swServer *serv, int type, char *host, int port)
 			swFatalError("this port is listen now");
 			return NULL;
 		}
-		
+
 	}
-	
+
     swListenPort *ls = SwooleG.memory_pool->alloc(SwooleG.memory_pool, sizeof(swListenPort));
     if (ls == NULL)
     {

@@ -26,6 +26,7 @@
 #include "swSignal.h"
 #include "swExecutor.h"
 #include "swBaseOperator.h"
+#include "swClock.h"
 
 #include <sys/wait.h>
 
@@ -37,11 +38,15 @@ typedef struct
 
 } swManagerProcess;
 
+// manager process
 static int swManager_loop_async(swFactory *factory);
 static int swManager_loop_sync(swFactory *factory);
 static void swManager_signal_handle(int sig);
 static pid_t swManager_spawn_worker(swFactory *factory, int worker_id);
 static void swManager_check_exit_status(swServer *serv, int worker_id, pid_t pid, int status);
+
+static int swManager_init_process_check();
+static int swManager_check_request_timeout();
 
 static swManagerProcess ManagerProcess;
 
@@ -472,6 +477,7 @@ static int swManager_loop_sync(swFactory *factory)
     swSignal_add(SIGRTMIN, swManager_signal_handle);
 #endif
     //swSignal_add(SIGINT, swManager_signal_handle);
+    swManager_init_process_check();
 
     SwooleG.main_reactor = NULL;
     int pid = -1;
@@ -531,7 +537,7 @@ static int swManager_loop_sync(swFactory *factory)
                 }
                 else
                 {
-                    sw_stats_incr(status == 0 ? &SwooleStats->worker_normal_exit
+                    sw_stats_atom_incr(status == 0 ? &SwooleStats->worker_normal_exit
                             : &SwooleStats->worker_abnormal_exit);
                     swManager_check_exit_status(serv, index, pid, status);
                     pid = 0;
@@ -561,7 +567,7 @@ static int swManager_loop_sync(swFactory *factory)
                     exit_worker = swHashMap_find_int(SwooleGS->task_workers.map, pid);
                     if (exit_worker != NULL)
                     {
-                        sw_stats_incr(status == 0 ? &SwooleStats->task_worker_normal_exit
+                        sw_stats_atom_incr(status == 0 ? &SwooleStats->task_worker_normal_exit
                                 : &SwooleStats->task_worker_abnormal_exit);
                         swManager_check_exit_status(serv, exit_worker->id, pid, status);
                         if (exit_worker->deleted == 1)  //主动回收不重启
@@ -690,6 +696,38 @@ static pid_t swManager_spawn_worker(swFactory *factory, int worker_id)
     }
 }
 
+static int swManager_init_process_check()
+{
+    if (SwooleG.serv->terminate_timeout) {
+        swSignal_add(SIGALRM, swManager_signal_handle);
+        alarm(1);
+    }
+    return SW_OK;
+}
+
+static int swManager_check_request_timeout()
+{
+    int i, consumed;
+    swServer *serv = SwooleG.serv;
+    struct timeval tv;
+    struct timeval now;
+
+    swClock_get(&now);
+
+    for (i = 0; i < serv->worker_num; i++) {
+        tv = SwooleStats->workers[i].accepted;
+        if (serv->workers[i].status == SW_WORKER_BUSY) {
+            consumed = (now.tv_sec - tv.tv_sec) * 1000000 + (now.tv_usec - tv.tv_usec);
+            if (consumed > (serv->terminate_timeout * 1000000)) {
+                kill(serv->workers[i].pid, SIGUSR2);
+            }
+        }
+    }
+
+    alarm(1);
+    return SW_OK;
+}
+
 static void swManager_signal_handle(int sig)
 {
     switch (sig)
@@ -716,6 +754,10 @@ static void swManager_signal_handle(int sig)
             ManagerProcess.reloading = 1;
             ManagerProcess.reload_task_worker = 1;
         }
+        break;
+    case SIGALRM:
+        // check request terminate timeout
+        swManager_check_request_timeout();
         break;
     default:
 #ifdef SIGRTMIN

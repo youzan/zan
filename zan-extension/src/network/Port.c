@@ -442,7 +442,7 @@ recv_data:
             goto close_fd;
         }
 
-        //support method:get post put delete patch head options   
+        //support method:get post put delete patch head options
         if ((request->method > 0 && request->method <= HTTP_PATCH) || request->method == HTTP_OPTIONS)
         {
         	//receive data of http header

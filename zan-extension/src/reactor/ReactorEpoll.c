@@ -223,7 +223,7 @@ static int swReactorEpoll_wait(swReactor *reactor, struct timeval *timeo)
 
     if (reactor->timeout_msec == 0)
     {
-    		reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
+        reactor->timeout_msec = (timeo == NULL)? -1:timeo->tv_sec * 1000 + timeo->tv_usec / 1000;
     }
 
     while (reactor->running > 0)

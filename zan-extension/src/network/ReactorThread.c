@@ -877,8 +877,8 @@ int swReactorThread_close(swReactor *reactor, int fd)
         assert(fd % serv->reactor_num == SwooleTG.id);
     }
 
-    sw_stats_incr(&SwooleStats->close_count);
-    sw_stats_decr(&SwooleStats->connection_num);
+    sw_stats_atom_incr(&SwooleStats->close_count);
+    sw_stats_atom_decr(&SwooleStats->connection_num);
 
     swTrace("Close Event.fd=%d|from=%d", fd, reactor->id);
 

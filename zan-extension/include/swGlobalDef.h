@@ -70,6 +70,11 @@ struct _swServer
      */
     uint32_t max_request;
 
+    /**
+     * request terminate timeout
+     */
+    uint32_t terminate_timeout;
+
     int timeout_sec;
     int timeout_usec;
 

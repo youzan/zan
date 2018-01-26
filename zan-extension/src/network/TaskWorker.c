@@ -81,8 +81,8 @@ int swTaskWorker_onTask(swProcessPool *pool, swEventData *task)
         ret = serv->onTask(serv, task);
     }
 
-    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
-    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
+    sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+    sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
     return ret;
 }
 

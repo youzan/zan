@@ -20,9 +20,14 @@
 #include "swSignal.h"
 #include "swServer.h"
 #include "swWork.h"
+#include "swClock.h"
 
 #include <pwd.h>
 #include <grp.h>
+#include <setjmp.h>
+
+static sigjmp_buf bl;
+static swHashMap *activefd = NULL;
 
 static int swWorker_onPipeReceive(swReactor *reactor, swEvent *event);
 
@@ -43,6 +48,8 @@ int swWorker_create(swWorker *worker)
     }
     swMutex_create(&worker->lock, 1);
 
+    activefd = swHashMap_create(128, NULL);
+
     return SW_OK;
 }
 
@@ -52,6 +59,39 @@ void swWorker_free(swWorker *worker)
     {
         sw_shm_free(worker->send_shm);
     }
+    if (activefd) {
+        swHashMap_free(activefd);
+    }
+}
+
+static void swWorker_check_timeout()
+{
+    struct timeval tv;
+    struct timeval now;
+    int consumed;
+
+    swClock_get(&now);
+    tv = SwooleStats->workers[SwooleWG.id].accepted;
+    consumed = (now.tv_sec - tv.tv_sec) * 1000000 + (now.tv_usec - tv.tv_usec);
+    if (consumed > (SwooleG.serv->terminate_timeout * 1000000)) {
+        if (SwooleG.main_reactor) {
+            SwooleG.main_reactor->running = 0;
+        } else {
+            SwooleG.running = 0;
+        }
+        siglongjmp(bl, 1);
+    }
+}
+
+static void swWorker_discard_connections()
+{
+    uint64_t key;
+    swFactory *factory = SwooleG.factory;
+
+    while (swHashMap_each_int(activefd, &key) != NULL) {
+        swWarn("discard connect: %d", key);
+        factory->end(factory, key);
+    }
 }
 
 void swWorker_signal_init(void)
@@ -59,7 +99,6 @@ void swWorker_signal_init(void)
     swSignal_add(SIGHUP, NULL);
     swSignal_add(SIGPIPE, NULL);
     swSignal_add(SIGUSR1, swWorker_signal_handler);
-    swSignal_add(SIGUSR2, NULL);
     //swSignal_add(SIGINT, swWorker_signal_handler);
     swSignal_add(SIGTERM, swWorker_signal_handler);
     swSignal_add(SIGALRM, swSystemTimer_signal_handler);
@@ -68,6 +107,7 @@ void swWorker_signal_init(void)
 #ifdef SIGRTMIN
     swSignal_set(SIGRTMIN, swWorker_signal_handler, 1, 0);
 #endif
+    swSignal_set(SIGUSR2, swWorker_signal_handler, 1, 0);
 }
 
 void swWorker_signal_handler(int signo)
@@ -128,7 +168,7 @@ void swWorker_signal_handler(int signo)
         }
         break;
     case SIGUSR2:
-        swWarn("signal SIGUSR2 coming.");
+        swWorker_check_timeout();
         break;
     default:
 #ifdef SIGRTMIN
@@ -215,11 +255,12 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         }
         do_task:
         {
+            swHashMap_add_int(activefd, task->info.fd, activefd);
             serv->onReceive(serv, task);
             SwooleWG.request_count++;
-            sw_stats_incr(&SwooleStats->request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+            sw_stats_atom_incr(&SwooleStats->request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].request_count);
         }
         if (task->info.type == SW_EVENT_PACKAGE_END)
         {
@@ -263,9 +304,10 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         if (package->offset == package->length - sizeof(swDgramPacket))
         {
             SwooleWG.request_count++;
-            sw_stats_incr(&SwooleStats->request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
-            sw_stats_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+            sw_stats_atom_incr(&SwooleStats->request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
+            sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+            swHashMap_add_int(activefd, task->info.fd, activefd);
             serv->onPacket(serv, task);
             swString_clear(package);
         }
@@ -281,6 +323,7 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         }
 #endif
         factory->end(factory, task->info.fd);
+        swHashMap_del_int(activefd, task->info.fd);
         break;
 
     case SW_EVENT_CONNECT:
@@ -450,11 +493,15 @@ int swWorker_loop(swFactory *factory, int worker_id)
     SwooleG.use_signalfd = 0;
 #endif
 
+    if (SwooleG.serv->terminate_timeout) {
+        SwooleG.use_signalfd = 0;
+    }
+
     //worker_id
     SwooleWG.id = worker_id;
     SwooleWG.request_count = 0;
     SwooleStats->workers[SwooleWG.id].request_count = 0;
-    sw_stats_incr(&SwooleStats->workers[SwooleWG.id].start_count);
+    sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].start_count);
     SwooleG.pid = getpid();
 
     //signal init
@@ -502,8 +549,16 @@ int swWorker_loop(swFactory *factory, int worker_id)
         swSignalfd_setup(SwooleG.main_reactor);
     }
 #endif
+
+    if (sigsetjmp(bl, 1)) {
+        swWorker_discard_connections();
+        goto clean;
+    }
+
     //main loop
     SwooleG.main_reactor->wait(SwooleG.main_reactor, NULL);
+
+clean:
     //clear pipe buffer
     swWorker_clean();
     //worker shutdown

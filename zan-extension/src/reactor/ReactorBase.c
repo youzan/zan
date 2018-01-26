@@ -223,10 +223,13 @@ static void swReactor_onTimeout_and_Finish(swReactor *reactor)
     {
         swTimer_select(&SwooleG.timer);
     }
+
     //server master
-    if (SwooleG.serv && SwooleTG.update_time)
-    {
-        swoole_update_time();
+    if (SwooleG.serv) {
+        if (SwooleTG.update_time)
+        {
+            swoole_update_time();
+        }
     }
 
     //defer callback
@@ -383,7 +386,7 @@ static int swReactor_write(swReactor *reactor, int fd, void *buf, int n)
                 goto do_buffer;
             }
         }
-        
+
 #ifdef HAVE_KQUEUE
         else if (errno == EAGAIN || errno == ENOBUFS)
 #else
