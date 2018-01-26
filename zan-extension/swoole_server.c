@@ -1807,6 +1807,15 @@ PHP_METHOD(swoole_server, set)
         convert_to_long(value);
         serv->max_request = (int) Z_LVAL_P(value);
     }
+
+    // request terminate timeout
+    value = NULL;
+    if (sw_zend_hash_find(vht, ZEND_STRS("request_terminate_timeout"), (void **)&value) == SUCCESS)
+    {
+        convert_to_long(value);
+        serv->terminate_timeout = (uint32_t)Z_LVAL_P(value);
+    }
+
     //cpu affinity
     value = NULL;
     if (sw_zend_hash_find(vht, ZEND_STRS("open_cpu_affinity"), (void **) &value) == SUCCESS)

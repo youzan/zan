@@ -34,7 +34,8 @@
 
 swServerG SwooleG;				/// 超全局本地变量，此全局变量子进程中修改，其它进程不感知
 swServerGS *SwooleGS = NULL;		/// 超全局共享变量，此全局变量是基于共享内存的，修改字段，其它进程可感知
-swWorkerG SwooleWG;				/// 进程内全局变量，此全局变量在worker进程内初始 swServerStats *SwooleStats = NULL;
+swWorkerG SwooleWG;				/// 进程内全局变量，此全局变量在worker进程内初始
+swServerStats *SwooleStats = NULL;
 __thread swThreadG SwooleTG;   /// 线程独立变量
 
 

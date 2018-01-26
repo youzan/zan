@@ -20,9 +20,13 @@
 #include "swSignal.h"
 #include "swServer.h"
 #include "swWork.h"
+#include "swClock.h"
 
 #include <pwd.h>
 #include <grp.h>
+#include <setjmp.h>
+
+static sigjmp_buf bl;
 
 static int swWorker_onPipeReceive(swReactor *reactor, swEvent *event);
 
@@ -54,12 +58,30 @@ void swWorker_free(swWorker *worker)
     }
 }
 
+static void swWorker_check_timeout()
+{
+    struct timeval tv;
+    struct timeval now;
+    int consumed;
+
+    swClock_get(&now);
+    tv = SwooleStats->workers[SwooleWG.id].accepted;
+    consumed = (now.tv_sec - tv.tv_sec) * 1000000 + (now.tv_usec - tv.tv_usec);
+    if (consumed > (SwooleG.serv->terminate_timeout * 1000000)) {
+        if (SwooleG.main_reactor) {
+            SwooleG.main_reactor->running = 0;
+        } else {
+            SwooleG.running = 0;
+        }
+        siglongjmp(bl, 1);
+    }
+}
+
 void swWorker_signal_init(void)
 {
     swSignal_add(SIGHUP, NULL);
     swSignal_add(SIGPIPE, NULL);
     swSignal_add(SIGUSR1, swWorker_signal_handler);
-    swSignal_add(SIGUSR2, NULL);
     //swSignal_add(SIGINT, swWorker_signal_handler);
     swSignal_add(SIGTERM, swWorker_signal_handler);
     swSignal_add(SIGALRM, swSystemTimer_signal_handler);
@@ -68,6 +90,7 @@ void swWorker_signal_init(void)
 #ifdef SIGRTMIN
     swSignal_set(SIGRTMIN, swWorker_signal_handler, 1, 0);
 #endif
+    swSignal_set(SIGUSR2, swWorker_signal_handler, 1, 0);
 }
 
 void swWorker_signal_handler(int signo)
@@ -128,7 +151,7 @@ void swWorker_signal_handler(int signo)
         }
         break;
     case SIGUSR2:
-        swWarn("signal SIGUSR2 coming.");
+        swWorker_check_timeout();
         break;
     default:
 #ifdef SIGRTMIN
@@ -450,6 +473,10 @@ int swWorker_loop(swFactory *factory, int worker_id)
     SwooleG.use_signalfd = 0;
 #endif
 
+    if (SwooleG.serv->terminate_timeout) {
+        SwooleG.use_signalfd = 0;
+    }
+
     //worker_id
     SwooleWG.id = worker_id;
     SwooleWG.request_count = 0;
@@ -502,8 +529,16 @@ int swWorker_loop(swFactory *factory, int worker_id)
         swSignalfd_setup(SwooleG.main_reactor);
     }
 #endif
+
+    if (sigsetjmp(bl, 1)) {
+        goto clean;
+    }
+
     //main loop
     SwooleG.main_reactor->wait(SwooleG.main_reactor, NULL);
+
+clean:
+    swWarn("worker stop");
     //clear pipe buffer
     swWorker_clean();
     //worker shutdown
