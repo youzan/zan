@@ -27,6 +27,7 @@
 #include <setjmp.h>
 
 static sigjmp_buf bl;
+static swHashMap *activefd = NULL;
 
 static int swWorker_onPipeReceive(swReactor *reactor, swEvent *event);
 
@@ -47,6 +48,8 @@ int swWorker_create(swWorker *worker)
     }
     swMutex_create(&worker->lock, 1);
 
+    activefd = swHashMap_create(128, NULL);
+
     return SW_OK;
 }
 
@@ -55,6 +58,9 @@ void swWorker_free(swWorker *worker)
     if (worker->send_shm)
     {
         sw_shm_free(worker->send_shm);
+    }
+    if (activefd) {
+        swHashMap_free(activefd);
     }
 }
 
@@ -74,6 +80,17 @@ static void swWorker_check_timeout()
             SwooleG.running = 0;
         }
         siglongjmp(bl, 1);
+    }
+}
+
+static void swWorker_discard_connections()
+{
+    uint64_t key;
+    swFactory *factory = SwooleG.factory;
+
+    while (swHashMap_each_int(activefd, &key) != NULL) {
+        swWarn("discard connect: %d", key);
+        factory->end(factory, key);
     }
 }
 
@@ -238,6 +255,7 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         }
         do_task:
         {
+            swHashMap_add_int(activefd, task->info.fd, activefd);
             serv->onReceive(serv, task);
             SwooleWG.request_count++;
             sw_stats_atom_incr(&SwooleStats->request_count);
@@ -289,6 +307,7 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
             sw_stats_atom_incr(&SwooleStats->request_count);
             sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].total_request_count);
             sw_stats_atom_incr(&SwooleStats->workers[SwooleWG.id].request_count);
+            swHashMap_add_int(activefd, task->info.fd, activefd);
             serv->onPacket(serv, task);
             swString_clear(package);
         }
@@ -304,6 +323,7 @@ int swWorker_onTask(swFactory *factory, swEventData *task)
         }
 #endif
         factory->end(factory, task->info.fd);
+        swHashMap_del_int(activefd, task->info.fd);
         break;
 
     case SW_EVENT_CONNECT:
@@ -531,6 +551,7 @@ int swWorker_loop(swFactory *factory, int worker_id)
 #endif
 
     if (sigsetjmp(bl, 1)) {
+        swWorker_discard_connections();
         goto clean;
     }
 
@@ -538,7 +559,6 @@ int swWorker_loop(swFactory *factory, int worker_id)
     SwooleG.main_reactor->wait(SwooleG.main_reactor, NULL);
 
 clean:
-    swWarn("worker stop");
     //clear pipe buffer
     swWorker_clean();
     //worker shutdown
