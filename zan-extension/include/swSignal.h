@@ -28,10 +28,10 @@ extern "C"
 {
 #endif
 
-typedef void (*swSignalFunc)(int);
+typedef void (*swSignalHander)(int);
 
-swSignalFunc swSignal_set(int sig, swSignalFunc func, int restart, int mask);
-void swSignal_add(int signo, swSignalFunc func);
+swSignalHander swSignal_set(int sig, swSignalHander func, int restart, int mask);
+void swSignal_add(int signo, swSignalHander func);
 void swSignal_callback(int signo);
 void swSignal_clear(void);
 void swSignal_none(void);
